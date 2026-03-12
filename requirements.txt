@@ -10,5 +10,6 @@ marshmallow
 flask-cors
 requests
 defusedxml
+psycopg2
 
 
