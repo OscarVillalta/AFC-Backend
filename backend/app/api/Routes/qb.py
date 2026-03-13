@@ -2,11 +2,13 @@ import os, requests
 from flask import Blueprint, request, jsonify
 from marshmallow import ValidationError
 from app.api.Schemas.qb_schema import QBJobResultSchema, QBJobSchema
+from app.config import Config
 
 QB_AGENT_URL = QB_AGENT_URL = os.getenv("QB_AGENT_URL", "http://127.0.0.1:5055")
 
 def qb_agent_post(job: dict, timeout=60) -> dict:
-    r = requests.post(f"{QB_AGENT_URL}/jobs", json=job, timeout=timeout)
+    headers = {"X-API-Key": Config.QB_API_KEY}
+    r = requests.post(f"{Config.QB_AGENT_URL}/jobs", json=job, headers=headers, timeout=timeout)
     r.raise_for_status()
     return r.json()
 
@@ -27,9 +29,11 @@ def run_qb_job():
             "details": err.messages
         }), 400
 
+    headers = {"X-API-Key": Config.QB_API_KEY}
     r = requests.post(
-        f"{QB_AGENT_URL}/jobs",
+        f"{Config.QB_AGENT_URL}/jobs",
         json=job,
+        headers=headers,
         timeout=60
     )
     r.raise_for_status()
