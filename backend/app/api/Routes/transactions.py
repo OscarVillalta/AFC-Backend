@@ -40,25 +40,38 @@ def validate_product_or_child_product_exclusive(data):
     return None
 
 
-def _get_entity_and_quantity(db, product_id=None, child_product_id=None):
+def _get_entity_and_quantity(db, product_id=None, child_product_id=None, warehouse_id=None):
     """
-    Helper to fetch a product/child_product and its quantity record.
+    Helper to fetch a product/child_product and its quantity record for the given warehouse.
     """
+    from sqlalchemy import select as _select
+
     if product_id:
         product = db.get(Product, product_id)
         if not product:
             return None, None, {"error": "Product not found"}, 404
-        if not product.quantity:
-            return None, None, {"error": "Quantity record not found for product"}, 404
-        return product, product.quantity, None, None
+        qty = db.execute(
+            _select(Quantity).where(
+                (Quantity.product_id == product_id) &
+                (Quantity.warehouse_id == warehouse_id)
+            )
+        ).scalar_one_or_none()
+        if not qty:
+            return None, None, {"error": "Quantity record not found for product in this warehouse"}, 404
+        return product, qty, None, None
 
     if child_product_id:
         child_product = db.get(ChildProduct, child_product_id)
         if not child_product:
             return None, None, {"error": "Child product not found"}, 404
-        qty = child_product.quantity
+        qty = db.execute(
+            _select(Quantity).where(
+                (Quantity.product_id == child_product.parent_product_id) &
+                (Quantity.warehouse_id == warehouse_id)
+            )
+        ).scalar_one_or_none()
         if not qty:
-            return None, None, {"error": "Parent product's quantity record not found"}, 404
+            return None, None, {"error": "Parent product's quantity record not found in this warehouse"}, 404
         return child_product, qty, None, None
 
     return None, None, {"error": "Either product_id or child_product_id is required"}, 400
@@ -355,17 +368,32 @@ def create_transaction():
     product = None
     child_product = None
     qty_record = None
+    warehouse_id = g.active_warehouse_id
     
     if "product_id" in data and data["product_id"] is not None:
+        from sqlalchemy import select as _select
         product = db.get(Product, data["product_id"])
-        if not product or not product.quantity:
+        if not product:
             return jsonify({"error": "Product or quantity record not found"}), 404
-        qty_record = product.quantity
+        qty_record = db.execute(
+            _select(Quantity).where(
+                (Quantity.product_id == data["product_id"]) &
+                (Quantity.warehouse_id == warehouse_id)
+            )
+        ).scalar_one_or_none()
+        if not qty_record:
+            return jsonify({"error": "Product or quantity record not found"}), 404
     else:
         child_product = db.get(ChildProduct, data["child_product_id"])
         if not child_product:
             return jsonify({"error": "Child product not found"}), 404
-        qty_record = child_product.quantity
+        from sqlalchemy import select as _select
+        qty_record = db.execute(
+            _select(Quantity).where(
+                (Quantity.product_id == child_product.parent_product_id) &
+                (Quantity.warehouse_id == warehouse_id)
+            )
+        ).scalar_one_or_none()
         if not qty_record:
             return jsonify({"error": "Parent product's quantity record not found"}), 404
 
@@ -404,6 +432,7 @@ def create_transaction():
         child_product_id=child_product.id if child_product else None,
         order_id=order.id if order else None,
         order_item_id=order_item.id if order_item else None,
+        warehouse_id=warehouse_id,
         quantity_delta=qty_delta,
         reason=data["reason"],
         note=data.get("note"),
@@ -476,6 +505,7 @@ def produce_product():
         db,
         product_id=data.get("source_product_id"),
         child_product_id=data.get("source_child_product_id"),
+        warehouse_id=g.active_warehouse_id,
     )
     if err:
         return jsonify(err), status
@@ -484,6 +514,7 @@ def produce_product():
         db,
         product_id=data.get("target_product_id"),
         child_product_id=data.get("target_child_product_id"),
+        warehouse_id=g.active_warehouse_id,
     )
     if err:
         return jsonify(err), status
@@ -522,6 +553,7 @@ def produce_product():
         consume_txn = Transaction(
             product_id=source_entity.id if isinstance(source_entity, Product) else None,
             child_product_id=source_entity.id if isinstance(source_entity, ChildProduct) else None,
+            warehouse_id=g.active_warehouse_id,
             quantity_delta=-source_qty,
             reason=reason,
             note=note,
@@ -533,6 +565,7 @@ def produce_product():
         produce_txn = Transaction(
             product_id=target_entity.id if isinstance(target_entity, Product) else None,
             child_product_id=target_entity.id if isinstance(target_entity, ChildProduct) else None,
+            warehouse_id=g.active_warehouse_id,
             quantity_delta=target_qty,
             reason=reason,
             note=note,

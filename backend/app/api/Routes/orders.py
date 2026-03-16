@@ -81,12 +81,15 @@ def get_orders() -> Tuple[Any, int]:
         
         if search:
             query = query.where(Order.order_number.ilike(f"%{search}%"))
+
+        # Scope to the active warehouse
+        query = query.where(Order.warehouse_id == g.active_warehouse_id)
         
         query = query.order_by(Order.created_at.desc()).offset(offset).limit(limit)
         results = db.execute(query).scalars().all()
         
         total = db.execute(
-            select(func.count()).select_from(Order)
+            select(func.count()).select_from(Order).where(Order.warehouse_id == g.active_warehouse_id)
         ).scalar()
         
         return jsonify({
@@ -302,6 +305,9 @@ def create_order():
         return jsonify({"errors": err.messages}), 400
 
     order = Order.from_dict(data)
+
+    # Assign active warehouse to the order
+    order.warehouse_id = g.active_warehouse_id
 
     # ===============================
     # Generate AFC order number
@@ -776,18 +782,28 @@ def allocate_all(order_id):
             product_id=item.product_id,
             order_id=order.id,
             order_item_id=item.id,
+            warehouse_id=order.warehouse_id,
             quantity_delta=qty_delta,
             reason="allocation",
             state=TransactionState.PENDING.value,
         )
 
-        qty = item.product.quantity
+        # Use the order's warehouse quantity for the pending effect
+        from sqlalchemy import select as _sa_select
+        from database.models import Quantity as _Qty
+        qty = db.execute(
+            _sa_select(_Qty).where(
+                (_Qty.product_id == item.product_id) &
+                (_Qty.warehouse_id == order.warehouse_id)
+            )
+        ).scalar_one_or_none() if item.product_id else None
 
         # Apply pending effect
-        if qty_delta < 0:
-            qty.reserved += remaining
-        else:
-            qty.ordered += remaining
+        if qty is not None:
+            if qty_delta < 0:
+                qty.reserved += remaining
+            else:
+                qty.ordered += remaining
 
         db.add(txn)
         created.append(txn)

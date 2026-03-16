@@ -9,8 +9,9 @@ inventory_stats_bp = Blueprint("inventory_stats", __name__)
 @inventory_stats_bp.route("/inventory/stats", methods=["GET"])
 def get_inventory_stats():
     db = g.db
+    warehouse_id = g.active_warehouse_id
 
-    # Only count parent products (those that have a Quantity row)
+    # Only count parent products that have a Quantity row in the active warehouse
     base = (
         select(
             func.count(Quantity.id).label("total_skus"),
@@ -34,6 +35,7 @@ def get_inventory_stats():
         )
         .select_from(Quantity)
         .join(Product, Product.id == Quantity.product_id)
+        .where(Quantity.warehouse_id == warehouse_id)
     )
 
     row = db.execute(base).mappings().one()
