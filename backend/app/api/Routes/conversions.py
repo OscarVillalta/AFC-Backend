@@ -10,6 +10,7 @@ from database.models import (
     Order,
     Product,
     ChildProduct,
+    Quantity,
     Transaction,
     TransactionReason,
     TransactionState,
@@ -84,17 +85,14 @@ def _serialize_batch(batch: ConversionBatch, conversions_total: int | None = Non
 
 
 def _validate_and_get_product_with_quantity(db, product_id: int | None = None, child_product_id: int | None = None, warehouse_id: int | None = None):
-    from sqlalchemy import select as _select
-    from database.models import Quantity as _Qty
-
     if product_id is not None:
         product = db.get(Product, product_id)
         if not product:
             raise ValueError("Product not found.")
         qty = db.execute(
-            _select(_Qty).where(
-                (_Qty.product_id == product_id) &
-                (_Qty.warehouse_id == warehouse_id)
+            select(Quantity).where(
+                (Quantity.product_id == product_id) &
+                (Quantity.warehouse_id == warehouse_id)
             )
         ).scalar_one_or_none()
         if qty is None:
@@ -106,9 +104,9 @@ def _validate_and_get_product_with_quantity(db, product_id: int | None = None, c
         if not child:
             raise ValueError("Child product not found.")
         qty = db.execute(
-            _select(_Qty).where(
-                (_Qty.product_id == child.parent_product_id) &
-                (_Qty.warehouse_id == warehouse_id)
+            select(Quantity).where(
+                (Quantity.product_id == child.parent_product_id) &
+                (Quantity.warehouse_id == warehouse_id)
             )
         ).scalar_one_or_none()
         if qty is None:

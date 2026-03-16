@@ -2,7 +2,7 @@ from flask import Blueprint, g, jsonify, request
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.api.Schemas.order_item_schema import OrderItemSchema
-from database.models import OrderItem, Order, Product, ChildProduct, Transaction, TransactionState, OrderType, OrderItemType
+from database.models import OrderItem, Order, Product, ChildProduct, Transaction, TransactionState, OrderType, OrderItemType, Quantity
 from marshmallow import ValidationError
 from typing import Tuple, Any
 
@@ -367,12 +367,10 @@ def allocate_remaining_order_items(item_id):
 
     qty_record = None
     if product_id_for_qty:
-        from sqlalchemy import select as _sa_select
-        from database.models import Quantity as _Qty
         qty_record = db.execute(
-            _sa_select(_Qty).where(
-                (_Qty.product_id == product_id_for_qty) &
-                (_Qty.warehouse_id == order.warehouse_id)
+            select(Quantity).where(
+                (Quantity.product_id == product_id_for_qty) &
+                (Quantity.warehouse_id == order.warehouse_id)
             )
         ).scalar_one_or_none()
 
@@ -599,12 +597,10 @@ def create_order_item_transaction(order_item_id):
 
     # Get the quantity record scoped to the order's warehouse
     product_id_for_qty = product.id if product else (child_product.parent_product_id if child_product else None)
-    from sqlalchemy import select as _sa_select
-    from database.models import Quantity as _Qty
     qty = db.execute(
-        _sa_select(_Qty).where(
-            (_Qty.product_id == product_id_for_qty) &
-            (_Qty.warehouse_id == order.warehouse_id)
+        select(Quantity).where(
+            (Quantity.product_id == product_id_for_qty) &
+            (Quantity.warehouse_id == order.warehouse_id)
         )
     ).scalar_one_or_none() if product_id_for_qty else None
 

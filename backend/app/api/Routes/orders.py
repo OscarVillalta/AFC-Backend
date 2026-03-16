@@ -789,12 +789,10 @@ def allocate_all(order_id):
         )
 
         # Use the order's warehouse quantity for the pending effect
-        from sqlalchemy import select as _sa_select
-        from database.models import Quantity as _Qty
         qty = db.execute(
-            _sa_select(_Qty).where(
-                (_Qty.product_id == item.product_id) &
-                (_Qty.warehouse_id == order.warehouse_id)
+            select(Quantity).where(
+                (Quantity.product_id == item.product_id) &
+                (Quantity.warehouse_id == order.warehouse_id)
             )
         ).scalar_one_or_none() if item.product_id else None
 

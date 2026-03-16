@@ -62,6 +62,14 @@ def update_warehouse(id):
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
 
+    # If name is being updated, check uniqueness
+    if "name" in data and data["name"] != warehouse.name:
+        existing = db.execute(
+            select(Warehouse).where(Warehouse.name == data["name"])
+        ).scalar_one_or_none()
+        if existing:
+            return jsonify({"error": f"Warehouse with name '{data['name']}' already exists"}), 400
+
     for key, value in data.items():
         setattr(warehouse, key, value)
 

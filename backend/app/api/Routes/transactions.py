@@ -44,14 +44,12 @@ def _get_entity_and_quantity(db, product_id=None, child_product_id=None, warehou
     """
     Helper to fetch a product/child_product and its quantity record for the given warehouse.
     """
-    from sqlalchemy import select as _select
-
     if product_id:
         product = db.get(Product, product_id)
         if not product:
             return None, None, {"error": "Product not found"}, 404
         qty = db.execute(
-            _select(Quantity).where(
+            select(Quantity).where(
                 (Quantity.product_id == product_id) &
                 (Quantity.warehouse_id == warehouse_id)
             )
@@ -65,7 +63,7 @@ def _get_entity_and_quantity(db, product_id=None, child_product_id=None, warehou
         if not child_product:
             return None, None, {"error": "Child product not found"}, 404
         qty = db.execute(
-            _select(Quantity).where(
+            select(Quantity).where(
                 (Quantity.product_id == child_product.parent_product_id) &
                 (Quantity.warehouse_id == warehouse_id)
             )
@@ -371,12 +369,11 @@ def create_transaction():
     warehouse_id = g.active_warehouse_id
     
     if "product_id" in data and data["product_id"] is not None:
-        from sqlalchemy import select as _select
         product = db.get(Product, data["product_id"])
         if not product:
             return jsonify({"error": "Product or quantity record not found"}), 404
         qty_record = db.execute(
-            _select(Quantity).where(
+            select(Quantity).where(
                 (Quantity.product_id == data["product_id"]) &
                 (Quantity.warehouse_id == warehouse_id)
             )
@@ -387,9 +384,8 @@ def create_transaction():
         child_product = db.get(ChildProduct, data["child_product_id"])
         if not child_product:
             return jsonify({"error": "Child product not found"}), 404
-        from sqlalchemy import select as _select
         qty_record = db.execute(
-            _select(Quantity).where(
+            select(Quantity).where(
                 (Quantity.product_id == child_product.parent_product_id) &
                 (Quantity.warehouse_id == warehouse_id)
             )

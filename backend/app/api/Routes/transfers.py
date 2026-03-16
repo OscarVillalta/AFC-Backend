@@ -113,7 +113,7 @@ def create_transfer():
     # ── Create ledger transactions & update quantities atomically ─────────────
     try:
         timestamp = datetime.now(timezone.utc)
-        note = data.get("note") or f"Transfer of {quantity} units from warehouse {from_warehouse_id} to {to_warehouse_id}"
+        note = data.get("note") or f"Transfer of {quantity} units from '{from_warehouse.name}' to '{to_warehouse.name}'"
 
         # Outgoing transaction for source warehouse (negative delta)
         outgoing_txn = Transaction(
