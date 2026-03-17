@@ -21,7 +21,7 @@ def get_products():
         select(Product)
         .options(
             selectinload(Product.category),
-            selectinload(Product.quantity),
+            selectinload(Product.quantities),
             selectinload(Product.air_filter).selectinload(AirFilter.supplier),
             selectinload(Product.stock_item).selectinload(StockItem.supplier)
         )
@@ -65,7 +65,7 @@ def get_product(id):
         .where(Product.id == id)
         .options(
             selectinload(Product.category),
-            selectinload(Product.quantity),
+            selectinload(Product.quantities),
             selectinload(Product.air_filter).selectinload(AirFilter.supplier),
             selectinload(Product.stock_item).selectinload(StockItem.supplier),
             selectinload(Product.child_products).selectinload(ChildProduct.air_filter).selectinload(AirFilter.supplier),
@@ -157,7 +157,7 @@ def get_products_names():
         select(Product)
         .options(
             selectinload(Product.category),
-            selectinload(Product.quantity),
+            selectinload(Product.quantities),
             selectinload(Product.air_filter).selectinload(AirFilter.supplier),
             selectinload(Product.stock_item).selectinload(StockItem.supplier)
         )

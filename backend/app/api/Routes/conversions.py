@@ -10,6 +10,7 @@ from database.models import (
     Order,
     Product,
     ChildProduct,
+    Quantity,
     Transaction,
     TransactionReason,
     TransactionState,
@@ -83,32 +84,41 @@ def _serialize_batch(batch: ConversionBatch, conversions_total: int | None = Non
     return payload
 
 
-def _validate_and_get_product_with_quantity(db, product_id: int | None = None, child_product_id: int | None = None):
+def _validate_and_get_product_with_quantity(db, product_id: int | None = None, child_product_id: int | None = None, warehouse_id: int | None = None):
     if product_id is not None:
         product = db.get(Product, product_id)
         if not product:
             raise ValueError("Product not found.")
-        if product.quantity is None:
-            raise ValueError("Quantity record not found for product.")
-        return product, product.quantity
+        qty = db.execute(
+            select(Quantity).where(
+                (Quantity.product_id == product_id) &
+                (Quantity.warehouse_id == warehouse_id)
+            )
+        ).scalar_one_or_none()
+        if qty is None:
+            raise ValueError("Quantity record not found for product in this warehouse.")
+        return product, qty
 
     if child_product_id is not None:
         child = db.get(ChildProduct, child_product_id)
         if not child:
             raise ValueError("Child product not found.")
-        if child.quantity is None:
-            raise ValueError("Quantity record not found for child product.")
-        return child, child.quantity
+        qty = db.execute(
+            select(Quantity).where(
+                (Quantity.product_id == child.parent_product_id) &
+                (Quantity.warehouse_id == warehouse_id)
+            )
+        ).scalar_one_or_none()
+        if qty is None:
+            raise ValueError("Quantity record not found for child product in this warehouse.")
+        return child, qty
 
     raise ValueError("product_id or child_product_id is required.")
 
 
 def _get_quantity_record_from_transaction(txn: Transaction):
-    if txn.child_product:
-        return txn.child_product.quantity
-    if txn.product:
-        return txn.product.quantity
-    return None
+    """Delegate to Transaction._get_quantity_record() which is warehouse-aware."""
+    return txn._get_quantity_record()
 
 
 def _validate_conversion_payload(payload: dict):
@@ -178,13 +188,13 @@ def _validate_conversion_payload(payload: dict):
     return validated_decreases, increase_product_id, increase_child_product_id, increase_qty
 
 
-def _create_conversion(db, batch: ConversionBatch, payload: dict) -> Conversion:
+def _create_conversion(db, batch: ConversionBatch, payload: dict, warehouse_id: int) -> Conversion:
     decreases, increase_product_id, increase_child_product_id, increase_qty = _validate_conversion_payload(payload)
 
     decrease_products = []
     for dec in decreases:
         product, quantity = _validate_and_get_product_with_quantity(
-            db, dec.get("product_id"), dec.get("child_product_id")
+            db, dec.get("product_id"), dec.get("child_product_id"), warehouse_id=warehouse_id
         )
         if quantity.on_hand < dec["quantity"]:
             raise InsufficientStockError(
@@ -195,7 +205,7 @@ def _create_conversion(db, batch: ConversionBatch, payload: dict) -> Conversion:
         decrease_products.append((product, quantity, dec["quantity"]))
 
     increase_product, increase_quantity = _validate_and_get_product_with_quantity(
-        db, increase_product_id, increase_child_product_id
+        db, increase_product_id, increase_child_product_id, warehouse_id=warehouse_id
     )
 
     timestamp = datetime.now(timezone.utc)
@@ -206,6 +216,7 @@ def _create_conversion(db, batch: ConversionBatch, payload: dict) -> Conversion:
         consume_txn = Transaction(
             product_id=product.id if isinstance(product, Product) else None,
             child_product_id=product.id if isinstance(product, ChildProduct) else None,
+            warehouse_id=warehouse_id,
             quantity_delta=-decrease_qty,
             reason=TransactionReason.ADJUSTMENT.value,
             note=note,
@@ -221,6 +232,7 @@ def _create_conversion(db, batch: ConversionBatch, payload: dict) -> Conversion:
     produce_txn = Transaction(
         product_id=increase_product.id if isinstance(increase_product, Product) else None,
         child_product_id=increase_product.id if isinstance(increase_product, ChildProduct) else None,
+        warehouse_id=warehouse_id,
         quantity_delta=increase_qty,
         reason=TransactionReason.ADJUSTMENT.value,
         note=note,
@@ -281,7 +293,7 @@ def create_conversion_batch():
     db.flush()
 
     try:
-        conversions = [_create_conversion(db, batch, payload) for payload in conversions_payload]
+        conversions = [_create_conversion(db, batch, payload, warehouse_id=g.active_warehouse_id) for payload in conversions_payload]
         db.commit()
     except InsufficientStockError as e:
         db.rollback()
@@ -433,7 +445,7 @@ def add_conversion_to_batch(batch_id: int):
 
     payload = request.get_json() or {}
     try:
-        conversion = _create_conversion(db, batch, payload)
+        conversion = _create_conversion(db, batch, payload, warehouse_id=g.active_warehouse_id)
         db.commit()
     except InsufficientStockError as e:
         db.rollback()
