@@ -2,8 +2,8 @@ from enum import Enum
 from typing import List, Optional
 from datetime import datetime, timezone
 
-from sqlalchemy.orm import Mapped, mapped_column, relationship, foreign
-from sqlalchemy import ForeignKey, String, Integer, BigInteger, Boolean, Float, Index, Sequence, func, text, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship, foreign, object_session
+from sqlalchemy import ForeignKey, String, Integer, BigInteger, Boolean, Float, Index, Sequence, func, text, Text, UniqueConstraint, select as sa_select
 from sqlalchemy.inspection import inspect
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -71,6 +71,7 @@ class TransactionReason(str, Enum):
     ADJUSTMENT = "adjustment"
     ROLLBACK = "rollback"
     ALLOCATION = "allocation"
+    TRANSFER = "transfer"
 
 
 class ConversionState(str, Enum):
@@ -348,13 +349,18 @@ class Product(Base, SerializerMixin):
         uselist=False,
     )
 
-    quantity: Mapped[Optional["Quantity"]] = relationship(
+    quantities: Mapped[List["Quantity"]] = relationship(
         "Quantity",
         back_populates="product",
-        uselist=False,
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+
+    @property
+    def quantity(self) -> Optional["Quantity"]:
+        """Returns the first quantity record for backward compatibility.
+        For warehouse-aware queries, filter quantities by warehouse_id explicitly."""
+        return self.quantities[0] if self.quantities else None
 
     transactions: Mapped[List["Transaction"]] = relationship(
         "Transaction",
@@ -433,8 +439,33 @@ class ChildProduct(Base, SerializerMixin):
 
     @property
     def quantity(self) -> Optional["Quantity"]:
-        """Returns the parent product's quantity"""
-        return self.parent_product.quantity if self.parent_product else None
+        """Returns the first quantity record of the parent product (for backward compatibility)."""
+        if self.parent_product and self.parent_product.quantities:
+            return self.parent_product.quantities[0]
+        return None
+
+
+# =====================================================
+# 🔹 Warehouse
+# =====================================================
+
+class Warehouse(Base, SerializerMixin):
+    __tablename__ = "warehouses"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    address: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    quantities: Mapped[List["Quantity"]] = relationship(
+        "Quantity", back_populates="warehouse"
+    )
+    orders: Mapped[List["Order"]] = relationship(
+        "Order", back_populates="warehouse"
+    )
+    transactions: Mapped[List["Transaction"]] = relationship(
+        "Transaction", back_populates="warehouse"
+    )
 
 
 # =====================================================
@@ -446,13 +477,19 @@ class Quantity(Base, SerializerMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    warehouse_id: Mapped[int] = mapped_column(ForeignKey("warehouses.id"), nullable=False)
 
     on_hand: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     reserved: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     ordered: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     location: Mapped[int] = mapped_column()
 
-    product: Mapped["Product"] = relationship(back_populates="quantity", passive_deletes=True)
+    product: Mapped["Product"] = relationship(back_populates="quantities", passive_deletes=True)
+    warehouse: Mapped["Warehouse"] = relationship(back_populates="quantities")
+
+    __table_args__ = (
+        UniqueConstraint("product_id", "warehouse_id", name="uq_quantity_product_warehouse"),
+    )
 
     @hybrid_property
     def available(self):
@@ -500,6 +537,7 @@ class Order(Base, SerializerMixin):
 
     supplier_id: Mapped[Optional[int]] = mapped_column(ForeignKey("suppliers.id"))
     customer_id: Mapped[Optional[int]] = mapped_column(ForeignKey("customers.id"))
+    warehouse_id: Mapped[int] = mapped_column(ForeignKey("warehouses.id"), nullable=False, server_default="1")
 
     status: Mapped[str] = mapped_column(String, default=OrderStatus.PENDING.value, nullable=False)
     description: Mapped[Optional[str]] = mapped_column()
@@ -511,6 +549,7 @@ class Order(Base, SerializerMixin):
 
     supplier: Mapped[Optional["Supplier"]] = relationship("Supplier", back_populates="orders")
     customer: Mapped[Optional["Customer"]] = relationship("Customer", back_populates="orders")
+    warehouse: Mapped["Warehouse"] = relationship("Warehouse", back_populates="orders")
 
     items: Mapped[List["OrderItem"]] = relationship(
         "OrderItem",
@@ -639,6 +678,7 @@ class Transaction(Base, SerializerMixin):
     child_product_id: Mapped[Optional[int]] = mapped_column(ForeignKey("child_products.id", ondelete="RESTRICT"), nullable=True)
     order_id: Mapped[Optional[int]] = mapped_column(ForeignKey("orders.id", ondelete="SET NULL"))
     order_item_id: Mapped[Optional[int]] = mapped_column(ForeignKey("order_items.id", ondelete="SET NULL"))
+    warehouse_id: Mapped[int] = mapped_column(ForeignKey("warehouses.id"), nullable=False, server_default="1")
 
     quantity_delta: Mapped[int] = mapped_column(nullable=False)
     state: Mapped[str] = mapped_column(String, default=TransactionState.PENDING.value, nullable=False)
@@ -652,18 +692,35 @@ class Transaction(Base, SerializerMixin):
     order_item: Mapped[Optional["OrderItem"]] = relationship("OrderItem", back_populates="transactions", passive_deletes=True)
     product: Mapped[Optional["Product"]] = relationship("Product", back_populates="transactions", passive_deletes=True)
     child_product: Mapped[Optional["ChildProduct"]] = relationship("ChildProduct", back_populates="transactions", passive_deletes=True)
+    warehouse: Mapped["Warehouse"] = relationship("Warehouse", back_populates="transactions")
 
     # ================================
     #  Inventory Logic
     # ================================
 
     def _get_quantity_record(self) -> Optional["Quantity"]:
-        """Helper to get the appropriate quantity record (parent's for child products)"""
-        if self.child_product:
-            return self.child_product.quantity
-        elif self.product:
-            return self.product.quantity
-        return None
+        """Get the Quantity record for this transaction's product and warehouse."""
+        db = object_session(self)
+        if db is None:
+            return None
+
+        product_id = self.product_id
+        if product_id is None and self.child_product_id is not None:
+            cp = self.child_product
+            if cp is None:
+                cp = db.get(ChildProduct, self.child_product_id)
+            if cp:
+                product_id = cp.parent_product_id
+
+        if product_id is None or self.warehouse_id is None:
+            return None
+
+        return db.execute(
+            sa_select(Quantity).where(
+                (Quantity.product_id == product_id) &
+                (Quantity.warehouse_id == self.warehouse_id)
+            )
+        ).scalar_one_or_none()
 
     def commit(self, db=None):
         if self.state != TransactionState.PENDING.value:
@@ -726,6 +783,7 @@ class Transaction(Base, SerializerMixin):
             child_product_id=self.child_product_id,
             order_id=self.order_id,
             order_item_id=self.order_item_id,
+            warehouse_id=self.warehouse_id,
             quantity_delta=reversed_delta,
             reason=TransactionReason.ROLLBACK.value,
             state=TransactionState.COMMITTED.value,

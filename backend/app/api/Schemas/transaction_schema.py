@@ -7,6 +7,7 @@ class TransactionSchema(Schema):
     child_product_id = fields.Int(allow_none=True, load_default=None)
     order_id = fields.Int(load_default=None)
     order_item_id = fields.Int(load_default=None)
+    warehouse_id = fields.Int(dump_only=True)
     quantity_delta = fields.Int(required=True)  # signed integer (+in, -out)
 
     reason = fields.Str(

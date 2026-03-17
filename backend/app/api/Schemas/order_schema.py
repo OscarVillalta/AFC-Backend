@@ -15,6 +15,7 @@ class OrderSchema(Schema):
 
     customer_id = fields.Int(allow_none=True)
     supplier_id = fields.Int(allow_none=True)
+    warehouse_id = fields.Int(dump_only=True)
 
     description = fields.Str(allow_none=True)
     eta = fields.DateTime(allow_none=True)

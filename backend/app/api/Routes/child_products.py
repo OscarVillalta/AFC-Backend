@@ -40,7 +40,7 @@ def get_child_product(id):
             selectinload(ChildProduct.stock_item).selectinload(StockItem.supplier),
             selectinload(ChildProduct.parent_product).selectinload(Product.air_filter).selectinload(AirFilter.supplier),
             selectinload(ChildProduct.parent_product).selectinload(Product.stock_item).selectinload(StockItem.supplier),
-            selectinload(ChildProduct.parent_product).selectinload(Product.quantity)
+            selectinload(ChildProduct.parent_product).selectinload(Product.quantities)
         )
     ).scalars().first()
     

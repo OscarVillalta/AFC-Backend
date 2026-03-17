@@ -2,7 +2,7 @@ from flask import Blueprint, g, jsonify, request
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.api.Schemas.order_item_schema import OrderItemSchema
-from database.models import OrderItem, Order, Product, ChildProduct, Transaction, TransactionState, OrderType, OrderItemType
+from database.models import OrderItem, Order, Product, ChildProduct, Transaction, TransactionState, OrderType, OrderItemType, Quantity
 from marshmallow import ValidationError
 from typing import Tuple, Any
 
@@ -266,6 +266,7 @@ def allocate_order_item(item_id):
         child_product_id=item.child_product_id,
         order_id=order.id,
         order_item_id=item.id,
+        warehouse_id=order.warehouse_id,
         quantity_delta=qty_delta,
         reason=reason,
         state="pending",
@@ -352,20 +353,27 @@ def allocate_remaining_order_items(item_id):
         child_product_id=item.child_product_id,
         order_id=order.id,
         order_item_id=item.id,
+        warehouse_id=order.warehouse_id,
         quantity_delta= qty_to_allocate * sign,
         reason=reason,
         state="pending",
         note=note or None
     )
 
-    # Get the quantity record - works for both Product and ChildProduct
-    if item.product:
-        qty_record = item.product.quantity
-    elif item.child_product:
-        qty_record = item.child_product.quantity
-    else:
-        return jsonify({"error": "Order item has no product or child product"}), 400
-    
+    # Get the quantity record scoped to the order's warehouse
+    product_id_for_qty = item.product_id
+    if product_id_for_qty is None and item.child_product:
+        product_id_for_qty = item.child_product.parent_product_id
+
+    qty_record = None
+    if product_id_for_qty:
+        qty_record = db.execute(
+            select(Quantity).where(
+                (Quantity.product_id == product_id_for_qty) &
+                (Quantity.warehouse_id == order.warehouse_id)
+            )
+        ).scalar_one_or_none()
+
     if not qty_record:
         return jsonify({"error": "Quantity record not found"}), 404
     
@@ -587,15 +595,14 @@ def create_order_item_transaction(order_item_id):
     product = item.product
     child_product = item.child_product
 
-    # Get the quantity record - works for both Product and ChildProduct
-    if product:
-        qty = product.quantity
-    elif child_product:
-        qty = child_product.quantity
-    else:
-        return jsonify({
-            "error": "Product or child product missing"
-        }), 400
+    # Get the quantity record scoped to the order's warehouse
+    product_id_for_qty = product.id if product else (child_product.parent_product_id if child_product else None)
+    qty = db.execute(
+        select(Quantity).where(
+            (Quantity.product_id == product_id_for_qty) &
+            (Quantity.warehouse_id == order.warehouse_id)
+        )
+    ).scalar_one_or_none() if product_id_for_qty else None
 
     if not qty:
         return jsonify({
@@ -617,6 +624,7 @@ def create_order_item_transaction(order_item_id):
         child_product_id=child_product.id if child_product else None,
         order_id=order.id,
         order_item_id=item.id,
+        warehouse_id=order.warehouse_id,
         quantity_delta=quantity,
         reason=reason,
         note=note,
