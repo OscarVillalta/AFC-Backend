@@ -66,12 +66,13 @@ def create_media():
 
     # 3️⃣ Create Quantity records for every warehouse
     warehouses = db.execute(select(Warehouse)).scalars().all()
-    quantity_ids = []
+    quantities = []
     for wh in warehouses:
         qty = Quantity(product_id=product.id, warehouse_id=wh.id, on_hand=0, reserved=0, ordered=0, location=0)
         db.add(qty)
-        db.flush()
-        quantity_ids.append(qty.id)
+        quantities.append(qty)
+    db.flush()
+    quantity_ids = [qty.id for qty in quantities]
     db.commit()
 
     return jsonify({
