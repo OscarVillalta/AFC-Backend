@@ -1,7 +1,7 @@
 from flask import g, jsonify, request, Blueprint
 from sqlalchemy import select, and_, or_
 from marshmallow import ValidationError
-from database.models import StockItem, StockItemCategory, Supplier, Product, Quantity, ChildProduct
+from database.models import StockItem, StockItemCategory, Supplier, Product, Quantity, ChildProduct, Warehouse
 from app.api.Schemas.stock_item_schema import StockItemSchema
 from app.api.Schemas.stock_item_category_schema import StockItemCategorySchema
 
@@ -89,15 +89,21 @@ def create_stock_item():
     db.add(new_product)
     db.flush()
 
-    qty = Quantity(product_id=new_product.id, on_hand=0, reserved=0, ordered=0, location=0)
-    db.add(qty)
+    # Create Quantity records for every warehouse
+    warehouses = db.execute(select(Warehouse)).scalars().all()
+    quantity_ids = []
+    for wh in warehouses:
+        qty = Quantity(product_id=new_product.id, warehouse_id=wh.id, on_hand=0, reserved=0, ordered=0, location=0)
+        db.add(qty)
+        db.flush()
+        quantity_ids.append(qty.id)
     db.commit()
 
     return jsonify({
         "message": "Stock item created successfully.",
         "stock_item": stock_item_schema.dump(stock_item),
         "product_id": new_product.id,
-        "quantity_id": qty.id
+        "quantity_ids": quantity_ids
     }), 201
 
 

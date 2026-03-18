@@ -1,6 +1,6 @@
 from flask import g, jsonify, request, Blueprint
 from sqlalchemy import func, select, and_, or_
-from database.models import AirFilter, AirFilterCategory, Supplier, Product, ProductCategory, Quantity, ChildProduct
+from database.models import AirFilter, AirFilterCategory, Supplier, Product, ProductCategory, Quantity, ChildProduct, Warehouse
 from marshmallow import ValidationError
 from app.api.Schemas.air_filters_schema import AirFilterSchema
 from app.api.Schemas.air_filter_category_schema import AirFilterCategorySchema
@@ -63,16 +63,21 @@ def create_air_filter():
     db.add(product)
     db.flush()
 
-    # 3️⃣ Create Quantity record
-    qty = Quantity(product_id=product.id, on_hand=0, reserved=0, ordered=0, location=0)
-    db.add(qty)
+    # 3️⃣ Create Quantity records for every warehouse
+    warehouses = db.execute(select(Warehouse)).scalars().all()
+    quantity_ids = []
+    for wh in warehouses:
+        qty = Quantity(product_id=product.id, warehouse_id=wh.id, on_hand=0, reserved=0, ordered=0, location=0)
+        db.add(qty)
+        db.flush()
+        quantity_ids.append(qty.id)
     db.commit()
 
     return jsonify({
         "message": "Air Filter created successfully",
         "air_filter": new_filter.to_dict(include_relationships=True),
         "product_id": product.id,
-        "quantity_id": qty.id
+        "quantity_ids": quantity_ids
     }), 201
 
 
