@@ -1,6 +1,6 @@
 from flask import g, jsonify, request, Blueprint
 from sqlalchemy import select
-from database.models import Warehouse
+from database.models import Warehouse, Product, Quantity
 from marshmallow import ValidationError
 from app.api.Schemas.warehouse_schema import WarehouseSchema
 
@@ -45,6 +45,21 @@ def create_warehouse():
 
     warehouse = Warehouse(**data)
     db.add(warehouse)
+    db.flush()
+
+    # Create an empty quantity for every existing product in the new warehouse
+    products = db.execute(select(Product)).scalars().all()
+    for product in products:
+        qty = Quantity(
+            product_id=product.id,
+            warehouse_id=warehouse.id,
+            on_hand=0,
+            reserved=0,
+            ordered=0,
+            location=0,
+        )
+        db.add(qty)
+
     db.commit()
     return jsonify(warehouse_schema.dump(warehouse)), 201
 
