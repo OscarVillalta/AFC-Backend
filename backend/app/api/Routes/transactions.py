@@ -266,6 +266,10 @@ def filter_transactions():
     query = select(Transaction)
     filters = []
 
+    # Scope to the active warehouse
+    warehouse_id = g.active_warehouse_id
+    filters.append(Transaction.warehouse_id == warehouse_id)
+
     if product_id:
         filters.append(Transaction.product_id == product_id)
     
