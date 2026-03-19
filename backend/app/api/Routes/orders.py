@@ -612,6 +612,9 @@ def search_orders():
 
     filters = []
 
+    # Scope to the active warehouse
+    filters.append(Order.warehouse_id == g.active_warehouse_id)
+
     if order_type:
         # "outgoing" is a legacy/convenience filter matching all outgoing-equivalent types
         if order_type == "outgoing":

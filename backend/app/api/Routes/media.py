@@ -190,7 +190,10 @@ def search_media():
         .join(MediaCategory, Media.category_id == MediaCategory.id)
         .outerjoin(Product, and_(Product.category_id == ProductCategory_id, Product.reference_id == Media.id))
         .outerjoin(ChildProduct, and_(ChildProduct.category_id == ProductCategory_id, ChildProduct.reference_id == Media.id))
-        .outerjoin(Quantity, or_(Quantity.product_id == Product.id, Quantity.product_id == ChildProduct.parent_product_id))
+        .outerjoin(Quantity, and_(
+            or_(Quantity.product_id == Product.id, Quantity.product_id == ChildProduct.parent_product_id),
+            Quantity.warehouse_id == g.active_warehouse_id
+        ))
         .distinct(Media.id)
     )
 
