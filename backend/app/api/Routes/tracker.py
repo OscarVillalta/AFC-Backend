@@ -85,6 +85,7 @@ def create_order_tracker(order_id: int) -> Tuple[Any, int]:
         order_id=order_id,
         current_department=current_department,
         step_index=data.get("step_index", 0),
+        warehouse_id=g.active_warehouse_id,
         updated_at=datetime.now(timezone.utc),
     )
     db.add(tracker)
@@ -283,6 +284,7 @@ def get_packing_slips() -> Tuple[Any, int]:
         .outerjoin(Supplier, Order.supplier_id == Supplier.id)
         .outerjoin(OrderTracker, OrderTracker.order_id == Order.id)
         .where(Order.type.in_(TRACKER_TYPES))
+        .where(Order.warehouse_id == g.active_warehouse_id)
     )
 
     if search:
@@ -341,6 +343,7 @@ def get_packing_slips() -> Tuple[Any, int]:
         .outerjoin(Supplier, Order.supplier_id == Supplier.id)
         .outerjoin(OrderTracker, OrderTracker.order_id == Order.id)
         .where(Order.type.in_(TRACKER_TYPES))
+        .where(Order.warehouse_id == g.active_warehouse_id)
     )
     if _search_filter is not None:
         counts_query = counts_query.where(_search_filter)

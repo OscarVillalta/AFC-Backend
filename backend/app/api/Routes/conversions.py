@@ -50,6 +50,7 @@ def _serialize_conversion(conversion: Conversion) -> dict:
     return {
         "id": conversion.id,
         "batch_id": conversion.batch_id,
+        "warehouse_id": conversion.warehouse_id,
         "note": conversion.note,
         "created_at": conversion.created_at.isoformat(),
         "state": _derive_state(conversion),
@@ -75,6 +76,7 @@ def _serialize_batch(batch: ConversionBatch, conversions_total: int | None = Non
     payload = {
         "id": batch.id,
         "order_id": batch.order_id,
+        "warehouse_id": batch.warehouse_id,
         "note": batch.note,
         "created_by": batch.created_by,
         "created_at": batch.created_at.isoformat(),
@@ -256,6 +258,7 @@ def _create_conversion(db, batch: ConversionBatch, payload: dict, warehouse_id: 
 
     conversion = Conversion(
         batch_id=batch.id,
+        warehouse_id=warehouse_id,
         increase_txn_id=produce_txn.id,
         created_at=timestamp,
         state=ConversionState.COMPLETED.value,
@@ -286,6 +289,7 @@ def create_conversion_batch():
 
     batch = ConversionBatch(
         order_id=order_id,
+        warehouse_id=g.active_warehouse_id,
         note=data.get("note"),
         created_by=data.get("created_by"),
     )
@@ -347,6 +351,9 @@ def search_conversion_batches():
     query_str = request.args.get("q")
     date_from = request.args.get("date_from")
     date_to = request.args.get("date_to")
+
+    # Scope to the active warehouse
+    filters.append(ConversionBatch.warehouse_id == g.active_warehouse_id)
 
     if order_id:
         filters.append(ConversionBatch.order_id == order_id)
@@ -443,9 +450,12 @@ def add_conversion_to_batch(batch_id: int):
     if not batch:
         return jsonify({"error": "Conversion batch not found"}), 404
 
+    if batch.warehouse_id != g.active_warehouse_id:
+        return jsonify({"error": "Conversion batch belongs to a different warehouse."}), 403
+
     payload = request.get_json() or {}
     try:
-        conversion = _create_conversion(db, batch, payload, warehouse_id=g.active_warehouse_id)
+        conversion = _create_conversion(db, batch, payload, warehouse_id=batch.warehouse_id)
         db.commit()
     except InsufficientStockError as e:
         db.rollback()
@@ -648,6 +658,9 @@ def search_conversions():
     batch_id = request.args.get("batch_id", type=int)
     order_id = request.args.get("order_id", type=int)
     product_id = request.args.get("product_id", type=int)
+
+    # Scope to the active warehouse
+    filters.append(Conversion.warehouse_id == g.active_warehouse_id)
 
     if batch_id:
         filters.append(Conversion.batch_id == batch_id)

@@ -329,6 +329,7 @@ def create_order():
         # Auto-create tracker for outgoing orders starting at SALES
         tracker = OrderTracker(
             order_id=order.id,
+            warehouse_id=g.active_warehouse_id,
             current_department=Department.SALES.value,
             step_index=0,
             updated_at=datetime.now(timezone.utc),
@@ -1039,6 +1040,7 @@ def create_order_from_qb():
         type=final_order_type,
         customer_id=customer.id if customer else None,
         supplier_id=supplier.id if supplier else None,
+        warehouse_id=g.active_warehouse_id,
         external_order_number=reference_number,
         description=metadata.get("memo", f"QB {entity_type.replace('_', ' ').title()} #{reference_number}"),
         status=OrderStatus.PENDING.value,
@@ -1151,7 +1153,7 @@ def create_order_from_qb():
                     db.add(product)
                     db.flush()
 
-                    quantity = Quantity(product_id=product.id, on_hand=0, reserved=0, ordered=0, location=0)
+                    quantity = Quantity(product_id=product.id, warehouse_id=g.active_warehouse_id, on_hand=0, reserved=0, ordered=0, location=0)
                     db.add(quantity)
                     db.flush()
 
@@ -1197,6 +1199,7 @@ def create_order_from_qb():
         if not is_purchase_order:
             tracker = OrderTracker(
                 order_id=order.id,
+                warehouse_id=g.active_warehouse_id,
                 current_department=Department.SALES.value,
                 step_index=0,
                 updated_at=datetime.now(timezone.utc),

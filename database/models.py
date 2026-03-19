@@ -466,6 +466,15 @@ class Warehouse(Base, SerializerMixin):
     transactions: Mapped[List["Transaction"]] = relationship(
         "Transaction", back_populates="warehouse"
     )
+    order_trackers: Mapped[List["OrderTracker"]] = relationship(
+        "OrderTracker", back_populates="warehouse"
+    )
+    conversion_batches: Mapped[List["ConversionBatch"]] = relationship(
+        "ConversionBatch", back_populates="warehouse"
+    )
+    conversions: Mapped[List["Conversion"]] = relationship(
+        "Conversion", back_populates="warehouse"
+    )
 
 
 # =====================================================
@@ -839,12 +848,14 @@ class ConversionBatch(Base, SerializerMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     order_id: Mapped[Optional[int]] = mapped_column(ForeignKey("orders.id"), nullable=True)
+    warehouse_id: Mapped[int] = mapped_column(ForeignKey("warehouses.id"), nullable=False, server_default="1")
     created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
     created_by: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     note: Mapped[Optional[str]] = mapped_column(nullable=True)
     external_ref: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     order: Mapped[Optional["Order"]] = relationship("Order")
+    warehouse: Mapped["Warehouse"] = relationship("Warehouse", back_populates="conversion_batches")
     conversions: Mapped[List["Conversion"]] = relationship("Conversion", back_populates="batch")
 
 
@@ -853,12 +864,14 @@ class Conversion(Base, SerializerMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     batch_id: Mapped[Optional[int]] = mapped_column(ForeignKey("conversion_batches.id", ondelete="SET NULL"), nullable=True)
+    warehouse_id: Mapped[int] = mapped_column(ForeignKey("warehouses.id"), nullable=False, server_default="1")
     increase_txn_id: Mapped[int] = mapped_column(ForeignKey("transactions.id"), unique=True, nullable=False)
     state: Mapped[str] = mapped_column(String, default=ConversionState.COMPLETED.value, nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
     note: Mapped[Optional[str]] = mapped_column(nullable=True)
 
     batch: Mapped[Optional["ConversionBatch"]] = relationship("ConversionBatch", back_populates="conversions")
+    warehouse: Mapped["Warehouse"] = relationship("Warehouse", back_populates="conversions")
     increase_txn: Mapped["Transaction"] = relationship("Transaction", foreign_keys=[increase_txn_id])
     decreases: Mapped[List["ConversionDecrease"]] = relationship(
         "ConversionDecrease", back_populates="conversion", cascade="all, delete-orphan"
@@ -887,12 +900,14 @@ class OrderTracker(Base, SerializerMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, unique=True)
+    warehouse_id: Mapped[int] = mapped_column(ForeignKey("warehouses.id"), nullable=False, server_default="1")
     current_department: Mapped[str] = mapped_column(String, nullable=False)
     step_index: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_backordered: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
     updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     order: Mapped["Order"] = relationship("Order", back_populates="tracker")
+    warehouse: Mapped["Warehouse"] = relationship("Warehouse", back_populates="order_trackers")
 
 
 class OrderHistory(Base, SerializerMixin):
