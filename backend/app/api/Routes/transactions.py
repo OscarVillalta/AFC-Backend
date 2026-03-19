@@ -165,6 +165,11 @@ def get_transaction_summary():
 
     filters = []
 
+    #warehouse scope
+    warehouse_id = g.active_warehouse_id
+    print("Active warehouse ID:", warehouse_id)
+    filters.append(Transaction.warehouse_id == warehouse_id)
+
     if product_name:
         AirFilter_subquery = select(AirFilter.id).where(
             AirFilter.part_number.ilike(f"%{product_name}%")
