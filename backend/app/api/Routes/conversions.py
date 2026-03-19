@@ -450,6 +450,9 @@ def add_conversion_to_batch(batch_id: int):
     if not batch:
         return jsonify({"error": "Conversion batch not found"}), 404
 
+    if batch.warehouse_id != g.active_warehouse_id:
+        return jsonify({"error": "Conversion batch belongs to a different warehouse."}), 403
+
     payload = request.get_json() or {}
     try:
         conversion = _create_conversion(db, batch, payload, warehouse_id=batch.warehouse_id)
