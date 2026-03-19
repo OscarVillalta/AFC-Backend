@@ -197,7 +197,10 @@ def search_air_filters():
         .join(AirFilterCategory, AirFilter.category_id == AirFilterCategory.id)
         .outerjoin(Product, and_(Product.category_id == 1, Product.reference_id == AirFilter.id))
         .outerjoin(ChildProduct, and_(ChildProduct.category_id == 1, ChildProduct.reference_id == AirFilter.id))
-        .outerjoin(Quantity, or_(Quantity.product_id == Product.id, Quantity.product_id == ChildProduct.parent_product_id))
+        .outerjoin(Quantity, and_(
+            or_(Quantity.product_id == Product.id, Quantity.product_id == ChildProduct.parent_product_id),
+            Quantity.warehouse_id == g.active_warehouse_id
+        ))
         .distinct(AirFilter.id)
     )
 

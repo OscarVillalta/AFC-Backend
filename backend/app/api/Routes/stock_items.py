@@ -213,7 +213,10 @@ def search_stock_items():
         .join(StockItemCategory, StockItem.category_id == StockItemCategory.id)
         .outerjoin(Product, and_(Product.reference_id == StockItem.id, Product.category_id == product_category))
         .outerjoin(ChildProduct, and_(ChildProduct.reference_id == StockItem.id, ChildProduct.category_id == product_category))
-        .outerjoin(Quantity, or_(Quantity.product_id == Product.id, Quantity.product_id == ChildProduct.parent_product_id))
+        .outerjoin(Quantity, and_(
+            or_(Quantity.product_id == Product.id, Quantity.product_id == ChildProduct.parent_product_id),
+            Quantity.warehouse_id == g.active_warehouse_id
+        ))
         .distinct(StockItem.id)
     )
 

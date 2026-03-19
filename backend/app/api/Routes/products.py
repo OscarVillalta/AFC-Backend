@@ -15,13 +15,10 @@ product_list_schema = ProductSchema(many=True)
 @product_bp.route("/products", methods=["GET"])
 def get_products():
     db = g.db
-    warehouse_id = g.active_warehouse_id
 
     # Use selectinload to minimize round-trips
-    # Filter products to those with a quantity record in the active warehouse
     results = db.execute(
         select(Product)
-        .join(Quantity, (Quantity.product_id == Product.id) & (Quantity.warehouse_id == warehouse_id))
         .options(
             selectinload(Product.category),
             selectinload(Product.quantities),
@@ -33,9 +30,7 @@ def get_products():
     response = []
     for p in results:
         category = p.category.name if p.category else "Unknown"
-        # Use the quantity record for the active warehouse
-        warehouse_qty = next((q for q in p.quantities if q.warehouse_id == warehouse_id), None)
-        quantity = warehouse_qty.to_dict() if warehouse_qty else {}
+        quantity = p.quantity.to_dict() if p.quantity else {}
 
         # --- Determine which subtable applies ---
         if p.air_filter:
