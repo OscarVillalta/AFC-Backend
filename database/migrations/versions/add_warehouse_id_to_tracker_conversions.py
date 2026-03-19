@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'add_warehouse_id_to_tracker_conversions'
+revision = 'add_warehouse_id'
 down_revision = 'add_warehouse_support'
 branch_labels = None
 depends_on = None

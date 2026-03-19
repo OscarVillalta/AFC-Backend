@@ -114,6 +114,7 @@ def get_transaction_on_hand(txn_id):
     """
     db = g.db
     txn = db.get(Transaction, txn_id)
+    warehouse_id = g.active_warehouse_id
     if not txn:
         return jsonify({"error": "Transaction not found"}), 404
 
@@ -134,6 +135,7 @@ def get_transaction_on_hand(txn_id):
         .where(
             product_filter,
             or_(Transaction.state == "committed", Transaction.state == "rolled_back"),
+            Transaction.warehouse_id == warehouse_id,
             Transaction.ledger_sequence.isnot(None),
             Transaction.ledger_sequence <= txn.ledger_sequence,
         )
@@ -729,6 +731,8 @@ def get_pending_projection(product_id):
     """
     db = g.db
 
+    warehouse_id = g.active_warehouse_id
+
     product = db.get(Product, product_id)
     if not product:
         return jsonify({"error": "Product not found"}), 404
@@ -754,6 +758,7 @@ def get_pending_projection(product_id):
         .outerjoin(Order, Transaction.order_id == Order.id)
         .where(
             Transaction.state == TransactionState.PENDING.value,
+            Transaction.warehouse_id == warehouse_id,
             product_filter,
         )
     )
@@ -793,13 +798,17 @@ def _get_transaction_ledger(db, product_id=None, child_product_id=None):
     end_date = request.args.get("end_date", type=str)
     include_pending = request.args.get("include_pending", "false").lower() == "true"
 
+    warehouse_id = g.active_warehouse_id
+
     # --- Build filters
+    filters = [Transaction.warehouse_id == warehouse_id]
+    
     if product_id:
-        filters = [Transaction.product_id == product_id]
+        filters.append(Transaction.product_id == product_id)
         balance_filter_product_id = product_id
         balance_filter_child_product_id = None
     else:
-        filters = [Transaction.child_product_id == child_product_id]
+        filters.append(Transaction.child_product_id == child_product_id)
         balance_filter_product_id = None
         balance_filter_child_product_id = child_product_id
     

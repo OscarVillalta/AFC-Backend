@@ -1,7 +1,7 @@
 from pprint import pp
 from flask import g, jsonify, request, Blueprint
 from sqlalchemy import select, and_, or_
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, with_loader_criteria
 from database.models import (
     Product, ProductCategory, AirFilter, StockItem, Media,
     Quantity, Supplier, ChildProduct,
@@ -63,10 +63,13 @@ def get_products():
 def get_product(id):
     db = g.db
 
+    warehouse_id = g.active_warehouse_id
+
     product = db.execute(
         select(Product)
         .where(Product.id == id)
         .options(
+            with_loader_criteria(Quantity, Quantity.warehouse_id == warehouse_id),
             selectinload(Product.category),
             selectinload(Product.quantities),
             selectinload(Product.air_filter).selectinload(AirFilter.supplier),
@@ -75,7 +78,7 @@ def get_product(id):
             selectinload(Product.child_products).selectinload(ChildProduct.stock_item).selectinload(StockItem.supplier)
         )
     ).scalars().first()
-
+            
     if not product:
         return jsonify({"error": "Product not found"}), 404
 
