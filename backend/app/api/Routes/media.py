@@ -158,6 +158,11 @@ def search_media():
     unit_of_measure = request.args.get("unit_of_measure")
     category = request.args.get("category")
     location = request.args.get("location", type=int)
+    min_on_hand = request.args.get("min_on_hand", type=int)
+    min_reserved = request.args.get("min_reserved", type=int)
+    min_available = request.args.get("min_available", type=int)
+    min_ordered = request.args.get("min_ordered", type=int)
+    min_backordered = request.args.get("min_backordered", type=int)
 
     # Pagination
     page = request.args.get("page", default=1, type=int)
@@ -216,6 +221,16 @@ def search_media():
         filters.append(MediaCategory.name.ilike(f"%{category}%"))
     if location is not None:
         filters.append(Quantity.location == location)
+    if min_on_hand is not None:
+        filters.append(Quantity.on_hand >= min_on_hand)
+    if min_reserved is not None:
+        filters.append(Quantity.reserved >= min_reserved)
+    if min_available is not None:
+        filters.append(Quantity.available >= min_available)
+    if min_ordered is not None:
+        filters.append(Quantity.ordered >= min_ordered)
+    if min_backordered is not None:
+        filters.append(Quantity.backordered >= min_backordered)
 
     if filters:
         query = query.where(and_(*filters))
