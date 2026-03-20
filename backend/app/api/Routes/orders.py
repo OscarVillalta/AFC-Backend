@@ -159,6 +159,7 @@ def get_order(order_id: int) -> Tuple[Any, int]:
             ),
             "is_paid": order.is_paid,
             "is_invoiced": order.is_invoiced,
+            "warehouse_id": order.warehouse_id,
         }), 200
         
     except ResourceNotFoundError as e:
