@@ -1,17 +1,20 @@
 from flask import g, jsonify, request, Blueprint
 from sqlalchemy import select
-from database.models import Quantity, Product
+from database.models import Quantity, Product, Warehouse
 from marshmallow import ValidationError
 from app.api.Schemas.quantity_schema import QuantitySchema
 
 quantity_bp = Blueprint("quantities", __name__)
 quantity_schema = QuantitySchema()
 
-# --- GET all quantities ---
+# --- GET all quantities (filtered by active warehouse) ---
 @quantity_bp.route("/quantities", methods=["GET"])
 def get_quantities():
     db = g.db
-    results = db.execute(select(Quantity)).scalars().all()
+    warehouse_id = g.active_warehouse_id
+    results = db.execute(
+        select(Quantity).where(Quantity.warehouse_id == warehouse_id)
+    ).scalars().all()
     return jsonify([qty.to_dict() for qty in results]), 200
 
 
@@ -29,12 +32,13 @@ def get_quantity(id):
 @quantity_bp.route("/quantities", methods=["POST"])
 def create_quantity():
     """
-    Create a new quantity record for a Product.
+    Create a new quantity record for a Product in the active warehouse.
     
     Note: Child products do not have their own quantity records.
     They share the parent product's quantity via the ChildProduct.quantity property.
     """
     db = g.db
+    warehouse_id = g.active_warehouse_id
     try:
         data = quantity_schema.load(request.get_json())
     except ValidationError as err:
@@ -47,16 +51,27 @@ def create_quantity():
     if not product_exists:
         return jsonify({"error": "Product does not exist"}), 400
 
-    # Ensure product doesn't already have a quantity
+    # Check warehouse exists
+    warehouse_exists = db.execute(
+        select(Warehouse.id).where(Warehouse.id == warehouse_id)
+    ).scalar_one_or_none()
+    if not warehouse_exists:
+        return jsonify({"error": f"Warehouse {warehouse_id} does not exist"}), 400
+
+    # Ensure product doesn't already have a quantity for this warehouse
     existing_qty = db.execute(
-        select(Quantity).where(Quantity.product_id == data["product_id"])
+        select(Quantity).where(
+            (Quantity.product_id == data["product_id"]) &
+            (Quantity.warehouse_id == warehouse_id)
+        )
     ).scalars().first()
     if existing_qty:
         return jsonify({
-            "error": f"Quantity already exists for product_id {data['product_id']}"
+            "error": f"Quantity already exists for product_id {data['product_id']} in warehouse {warehouse_id}"
         }), 400
 
     new_qty = Quantity.from_dict(data)
+    new_qty.warehouse_id = warehouse_id
     db.add(new_qty)
     db.commit()
     return jsonify(quantity_schema.dump(new_qty)), 201

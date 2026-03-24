@@ -1,6 +1,6 @@
 from flask import g, jsonify, request, Blueprint
 from sqlalchemy import func, select, and_, or_
-from database.models import AirFilter, AirFilterCategory, Supplier, Product, ProductCategory, Quantity, ChildProduct
+from database.models import AirFilter, AirFilterCategory, Supplier, Product, ProductCategory, Quantity, ChildProduct, Warehouse
 from marshmallow import ValidationError
 from app.api.Schemas.air_filters_schema import AirFilterSchema
 from app.api.Schemas.air_filter_category_schema import AirFilterCategorySchema
@@ -63,16 +63,22 @@ def create_air_filter():
     db.add(product)
     db.flush()
 
-    # 3️⃣ Create Quantity record
-    qty = Quantity(product_id=product.id, on_hand=0, reserved=0, ordered=0, location=0)
-    db.add(qty)
+    # 3️⃣ Create Quantity records for every warehouse
+    warehouses = db.execute(select(Warehouse)).scalars().all()
+    quantities = []
+    for wh in warehouses:
+        qty = Quantity(product_id=product.id, warehouse_id=wh.id, on_hand=0, reserved=0, ordered=0, location=0)
+        db.add(qty)
+        quantities.append(qty)
+    db.flush()
+    quantity_ids = [qty.id for qty in quantities]
     db.commit()
 
     return jsonify({
         "message": "Air Filter created successfully",
         "air_filter": new_filter.to_dict(include_relationships=True),
         "product_id": product.id,
-        "quantity_id": qty.id
+        "quantity_ids": quantity_ids
     }), 201
 
 
@@ -152,6 +158,11 @@ def search_air_filters():
     depth = request.args.get("depth", type=int)
     category = request.args.get("category")
     location = request.args.get("location", type=int)
+    min_on_hand = request.args.get("min_on_hand", type=int)
+    min_reserved = request.args.get("min_reserved", type=int)
+    min_available = request.args.get("min_available", type=int)
+    min_ordered = request.args.get("min_ordered", type=int)
+    min_backordered = request.args.get("min_backordered", type=int)
 
     # Pagination
     page = request.args.get("page", default=1, type=int)
@@ -191,7 +202,10 @@ def search_air_filters():
         .join(AirFilterCategory, AirFilter.category_id == AirFilterCategory.id)
         .outerjoin(Product, and_(Product.category_id == 1, Product.reference_id == AirFilter.id))
         .outerjoin(ChildProduct, and_(ChildProduct.category_id == 1, ChildProduct.reference_id == AirFilter.id))
-        .outerjoin(Quantity, or_(Quantity.product_id == Product.id, Quantity.product_id == ChildProduct.parent_product_id))
+        .outerjoin(Quantity, and_(
+            or_(Quantity.product_id == Product.id, Quantity.product_id == ChildProduct.parent_product_id),
+            Quantity.warehouse_id == g.active_warehouse_id
+        ))
         .distinct(AirFilter.id)
     )
 
@@ -216,6 +230,16 @@ def search_air_filters():
         filters.append(AirFilterCategory.name.ilike(f"%{category}%"))
     if location is not None:
         filters.append(Quantity.location == location)
+    if min_on_hand is not None:
+        filters.append(Quantity.on_hand >= min_on_hand)
+    if min_reserved is not None:
+        filters.append(Quantity.reserved >= min_reserved)
+    if min_available is not None:
+        filters.append(Quantity.available >= min_available)
+    if min_ordered is not None:
+        filters.append(Quantity.ordered >= min_ordered)
+    if min_backordered is not None:
+        filters.append(Quantity.backordered >= min_backordered)
 
     if filters:
         query = query.where(and_(*filters))

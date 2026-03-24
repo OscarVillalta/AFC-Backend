@@ -1,7 +1,7 @@
 from flask import Blueprint, g, jsonify, request
 from sqlalchemy import select, func, or_, case, and_
 from sqlalchemy.exc import IntegrityError, DatabaseError
-from database.models import Order, OrderTracker, OrderHistory, OrderTrackerStage, Department, OutgoingOrderType, Customer, OrderType, OUTGOING_TYPES
+from database.models import Order, OrderTracker, OrderHistory, OrderTrackerStage, Department, OutgoingOrderType, Customer, Supplier, OrderType, OUTGOING_TYPES
 from datetime import datetime, timezone
 from typing import Tuple, Any
 
@@ -9,6 +9,18 @@ from app.api.error_handling import (
     handle_database_error,
     safe_commit,
     ResourceNotFoundError,
+)
+
+# All order types that participate in the packing-slip tracker
+# (outgoing types + incoming / purchase orders)
+TRACKER_TYPES = OUTGOING_TYPES | {OrderType.INCOMING.value}
+
+# SQLAlchemy CASE expression: total stages expected for each order type
+# Must mirror the frontend step-path definitions (INSTALLATION_STEPS, WILL_CALL_STEPS, PURCHASE_ORDER_STEPS)
+_total_steps_expr = case(
+    (Order.type == OrderType.INSTALLATION.value, 6),
+    (Order.type.in_([OrderType.WILL_CALL.value, OrderType.DELIVERY.value, OrderType.SHIPMENT.value]), 4),
+    else_=3,  # incoming / purchase order (and legacy "outgoing")
 )
 
 tracker_bp = Blueprint("tracker", __name__)
@@ -73,6 +85,7 @@ def create_order_tracker(order_id: int) -> Tuple[Any, int]:
         order_id=order_id,
         current_department=current_department,
         step_index=data.get("step_index", 0),
+        warehouse_id=g.active_warehouse_id,
         updated_at=datetime.now(timezone.utc),
     )
     db.add(tracker)
@@ -86,7 +99,7 @@ def create_order_tracker(order_id: int) -> Tuple[Any, int]:
 
 @tracker_bp.route("/orders/<int:order_id>/tracker", methods=["PATCH"])
 def update_order_tracker(order_id: int) -> Tuple[Any, int]:
-    """Advance the tracker to a new department/step."""
+    """Advance the tracker to a new department/step or set backordered flag."""
     db = g.db
     data = request.get_json() or {}
 
@@ -110,6 +123,12 @@ def update_order_tracker(order_id: int) -> Tuple[Any, int]:
 
     if "step_index" in data:
         tracker.step_index = data["step_index"]
+
+    if "is_backordered" in data:
+        is_backordered = data["is_backordered"]
+        if not isinstance(is_backordered, bool):
+            return jsonify({"error": "is_backordered must be a boolean."}), 400
+        tracker.is_backordered = is_backordered
 
     tracker.updated_at = datetime.now(timezone.utc)
 
@@ -207,6 +226,14 @@ def toggle_tracker_stage(order_id: int, stage_index: int) -> Tuple[Any, int]:
         stage.completed_by = completed_by if is_completed else None
         stage.completed_at = datetime.now(timezone.utc) if is_completed else None
 
+    # Clear the backordered flag whenever a stage is toggled
+    tracker = db.execute(
+        select(OrderTracker).where(OrderTracker.order_id == order_id)
+    ).scalar_one_or_none()
+    if tracker and tracker.is_backordered:
+        tracker.is_backordered = False
+        tracker.updated_at = datetime.now(timezone.utc)
+
     error = safe_commit(db)
     if error:
         return handle_database_error(error)
@@ -216,24 +243,48 @@ def toggle_tracker_stage(order_id: int, stage_index: int) -> Tuple[Any, int]:
 
 @tracker_bp.route("/packing-slips", methods=["GET"])
 def get_packing_slips() -> Tuple[Any, int]:
-    """Return all outgoing orders with their tracker and history info for the packing slip tracker page."""
+    """Return all tracker-eligible orders (outgoing + purchase/incoming) with their tracker and history info."""
     db = g.db
 
     page = request.args.get("page", default=1, type=int)
     limit = request.args.get("limit", default=25, type=int)
     search = request.args.get("search", "").strip()
-    tracker_status = request.args.get("tracker_status", "").strip()  # "Not Started"|"In Progress"|"Completed"
+    tracker_status = request.args.get("tracker_status", "").strip()  # "Not Started"|"In Progress"|"Completed"|"Backordered"
+    order_type = request.args.get("order_type", "").strip()
     offset = (page - 1) * limit
 
-    # Number of steps defined on the frontend; last index = len(DEPT_STEPS) - 1
-    LAST_STEP_IDX = len([d for d in Department]) - 1  # 4 (SALES=0 … ACCOUNTING=4)
+    # Correlated sub-query: count of completed stages for each order row
+    _completed_stages_subq = (
+        select(func.count(OrderTrackerStage.id))
+        .where(
+            OrderTrackerStage.order_id == Order.id,
+            OrderTrackerStage.is_completed == True,  # noqa: E712
+        )
+        .correlate(Order)
+        .scalar_subquery()
+    )
 
-    # Base query: outgoing orders joined with customer and tracker
+    # Status conditions (mirror the frontend toPackingSlipRow logic)
+    _backordered_cond = OrderTracker.is_backordered == True  # noqa: E712
+    _not_started_cond = and_(OrderTracker.id.is_(None), _completed_stages_subq == 0)
+    _completed_cond = and_(
+        _completed_stages_subq >= _total_steps_expr,
+        or_(OrderTracker.id.is_(None), OrderTracker.is_backordered == False),  # noqa: E712
+    )
+    _in_progress_cond = and_(
+        or_(OrderTracker.id.is_not(None), _completed_stages_subq > 0),
+        _completed_stages_subq < _total_steps_expr,
+        or_(OrderTracker.id.is_(None), OrderTracker.is_backordered == False),  # noqa: E712
+    )
+
+    # Base query: all tracker-eligible orders joined with customer, supplier and tracker
     base_query = (
         select(Order)
         .outerjoin(Customer, Order.customer_id == Customer.id)
+        .outerjoin(Supplier, Order.supplier_id == Supplier.id)
         .outerjoin(OrderTracker, OrderTracker.order_id == Order.id)
-        .where(Order.type.in_(OUTGOING_TYPES))
+        .where(Order.type.in_(TRACKER_TYPES))
+        .where(Order.warehouse_id == g.active_warehouse_id)
     )
 
     if search:
@@ -242,28 +293,27 @@ def get_packing_slips() -> Tuple[Any, int]:
                 Order.order_number.ilike(f"%{search}%"),
                 Order.external_order_number.ilike(f"%{search}%"),
                 Customer.name.ilike(f"%{search}%"),
+                Supplier.name.ilike(f"%{search}%"),
             )
         )
 
-    # Tracker status filter
-    if tracker_status == "Not Started":
-        base_query = base_query.where(OrderTracker.id == None)  # noqa: E711
-    elif tracker_status == "In Progress":
-        base_query = base_query.where(
-            OrderTracker.id != None,  # noqa: E711
-            OrderTracker.step_index < LAST_STEP_IDX,
-        )
-    elif tracker_status == "Completed":
-        base_query = base_query.where(
-            OrderTracker.id != None,  # noqa: E711
-            OrderTracker.step_index >= LAST_STEP_IDX,
-        )
+    if order_type:
+        base_query = base_query.where(Order.type == order_type)
 
-    # Efficient total count using the filtered query
+    # Tracker status filter using stage-completion counts
+    if tracker_status == "Not Started":
+        base_query = base_query.where(_not_started_cond)
+    elif tracker_status == "In Progress":
+        base_query = base_query.where(_in_progress_cond)
+    elif tracker_status == "Completed":
+        base_query = base_query.where(_completed_cond)
+    elif tracker_status == "Backordered":
+        base_query = base_query.where(_backordered_cond)
+
+    # Efficient total count using the filtered query as a subquery
+    subq = base_query.subquery()
     total = db.execute(
-        select(func.count(Order.id)).select_from(
-            base_query.subquery()
-        )
+        select(func.count()).select_from(subq)
     ).scalar()
 
     orders = db.execute(
@@ -271,30 +321,40 @@ def get_packing_slips() -> Tuple[Any, int]:
     ).scalars().all()
 
     # Per-status counts for the tab badges (based on search, ignoring tracker_status)
+    _search_filter = (
+        or_(
+            Order.order_number.ilike(f"%{search}%"),
+            Order.external_order_number.ilike(f"%{search}%"),
+            Customer.name.ilike(f"%{search}%"),
+            Supplier.name.ilike(f"%{search}%"),
+        )
+        if search
+        else None
+    )
     counts_query = (
         select(
-            func.count(case((OrderTracker.id == None, 1))).label("not_started"),  # noqa: E711
-            func.count(case((and_(OrderTracker.id != None, OrderTracker.step_index < LAST_STEP_IDX), 1))).label("in_progress"),  # noqa: E711
-            func.count(case((and_(OrderTracker.id != None, OrderTracker.step_index >= LAST_STEP_IDX), 1))).label("completed"),  # noqa: E711
+            func.count(case((_backordered_cond, 1))).label("backordered"),
+            func.count(case((_not_started_cond, 1))).label("not_started"),
+            func.count(case((_in_progress_cond, 1))).label("in_progress"),
+            func.count(case((_completed_cond, 1))).label("completed"),
         )
         .select_from(Order)
         .outerjoin(Customer, Order.customer_id == Customer.id)
+        .outerjoin(Supplier, Order.supplier_id == Supplier.id)
         .outerjoin(OrderTracker, OrderTracker.order_id == Order.id)
-        .where(Order.type.in_(OUTGOING_TYPES))
+        .where(Order.type.in_(TRACKER_TYPES))
+        .where(Order.warehouse_id == g.active_warehouse_id)
     )
-    if search:
-        counts_query = counts_query.where(
-            or_(
-                Order.order_number.ilike(f"%{search}%"),
-                Order.external_order_number.ilike(f"%{search}%"),
-                Customer.name.ilike(f"%{search}%"),
-            )
-        )
+    if _search_filter is not None:
+        counts_query = counts_query.where(_search_filter)
+    if order_type:
+        counts_query = counts_query.where(Order.type == order_type)
     counts_row = db.execute(counts_query).one()
     status_counts = {
         "Not Started": counts_row.not_started or 0,
         "In Progress": counts_row.in_progress or 0,
         "Completed": counts_row.completed or 0,
+        "Backordered": counts_row.backordered or 0,
     }
 
     results = []
@@ -310,6 +370,7 @@ def get_packing_slips() -> Tuple[Any, int]:
             "status": order.status,
             "description": order.description,
             "customer_name": order.customer.name if order.customer else None,
+            "supplier_name": order.supplier.name if order.supplier else None,
             "created_at": order.created_at.isoformat() if order.created_at else None,
             "completed_at": order.completed_at.isoformat() if order.completed_at else None,
             "eta": order.eta.strftime("%Y-%m-%d") if order.eta else None,

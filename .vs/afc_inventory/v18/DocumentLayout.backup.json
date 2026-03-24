@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "C:\\Users\\AFCadmin2\\Desktop\\afc_inventory\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{65B5664A-C88A-92C2-16CC-1A1D07936BBE}|qb_bridge\\AFCQbAgent\\AFCQbAgent.csproj|c:\\users\\afcadmin2\\desktop\\afc_inventory\\qb_bridge\\afcqbagent\\afcqbagent.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|",
+      "RelativeMoniker": "D:0:0:{65B5664A-C88A-92C2-16CC-1A1D07936BBE}|qb_bridge\\AFCQbAgent\\AFCQbAgent.csproj|solutionrelative:qb_bridge\\afcqbagent\\afcqbagent.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{65B5664A-C88A-92C2-16CC-1A1D07936BBE}|qb_bridge\\AFCQbAgent\\AFCQbAgent.csproj|c:\\users\\afcadmin2\\desktop\\afc_inventory\\qb_bridge\\afcqbagent\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{65B5664A-C88A-92C2-16CC-1A1D07936BBE}|qb_bridge\\AFCQbAgent\\AFCQbAgent.csproj|solutionrelative:qb_bridge\\afcqbagent\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
@@ -23,12 +27,24 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "AFCQbAgent",
+              "DocumentMoniker": "C:\\Users\\AFCadmin2\\Desktop\\afc_inventory\\qb_bridge\\AFCQbAgent\\AFCQbAgent.csproj",
+              "RelativeDocumentMoniker": "qb_bridge\\AFCQbAgent\\AFCQbAgent.csproj",
+              "ToolTip": "C:\\Users\\AFCadmin2\\Desktop\\afc_inventory\\qb_bridge\\AFCQbAgent\\AFCQbAgent.csproj",
+              "RelativeToolTip": "qb_bridge\\AFCQbAgent\\AFCQbAgent.csproj",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-03-10T19:32:14.736Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Users\\AFCadmin2\\Desktop\\afc_inventory\\qb_bridge\\AFCQbAgent\\Program.cs",
               "RelativeDocumentMoniker": "qb_bridge\\AFCQbAgent\\Program.cs",
               "ToolTip": "C:\\Users\\AFCadmin2\\Desktop\\afc_inventory\\qb_bridge\\AFCQbAgent\\Program.cs",
               "RelativeToolTip": "qb_bridge\\AFCQbAgent\\Program.cs",
-              "ViewState": "AgIAAIcAAAAAAAAAAAAAAG8AAAAWAAAAAAAAAA==",
+              "ViewState": "AgIAAHsAAAAAAAAAAAAAAIkAAAAPAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-27T16:04:03.001Z",
               "EditorCaption": ""

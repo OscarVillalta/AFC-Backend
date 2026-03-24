@@ -8,6 +8,7 @@ from database.models import Order, OrderItem, Product, AirFilter, StockItem, Sto
 from marshmallow import ValidationError
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, List, Tuple
+import re
 import requests
 
 from app.config import Config
@@ -80,12 +81,15 @@ def get_orders() -> Tuple[Any, int]:
         
         if search:
             query = query.where(Order.order_number.ilike(f"%{search}%"))
+
+        # Scope to the active warehouse
+        query = query.where(Order.warehouse_id == g.active_warehouse_id)
         
         query = query.order_by(Order.created_at.desc()).offset(offset).limit(limit)
         results = db.execute(query).scalars().all()
         
         total = db.execute(
-            select(func.count()).select_from(Order)
+            select(func.count()).select_from(Order).where(Order.warehouse_id == g.active_warehouse_id)
         ).scalar()
         
         return jsonify({
@@ -153,6 +157,9 @@ def get_order(order_id: int) -> Tuple[Any, int]:
                 order.eta.strftime(Config.DATE_FORMAT)
                 if order.eta else None
             ),
+            "is_paid": order.is_paid,
+            "is_invoiced": order.is_invoiced,
+            "warehouse_id": order.warehouse_id,
         }), 200
         
     except ResourceNotFoundError as e:
@@ -199,11 +206,14 @@ def get_order_items(order_id):
             reserved = None
             available = None
             quantity_pending = 0
+            is_media = False
         else:
             product = item.product
 
             if product and product.category.name == "Air Filters":
                 part_number = product.air_filter.part_number
+            elif product and product.media is not None:
+                part_number = product.media.part_number
             elif product:
                 part_number = f"Product #{product.id}"
             else:
@@ -214,6 +224,7 @@ def get_order_items(order_id):
             reserved = qty_record.reserved if qty_record else None
             available = qty_record.available if qty_record else None
             quantity_pending = pending_by_item.get(item.id, 0)
+            is_media = product is not None and product.media is not None
 
         items.append({
             "id": item.id,
@@ -230,6 +241,7 @@ def get_order_items(order_id):
             "on_hand": on_hand,
             "reserved": reserved,
             "available": available,
+            "is_media": is_media,
         })
 
     return jsonify(items), 200
@@ -295,6 +307,9 @@ def create_order():
 
     order = Order.from_dict(data)
 
+    # Assign active warehouse to the order
+    order.warehouse_id = g.active_warehouse_id
+
     # ===============================
     # Generate AFC order number
     # ===============================
@@ -315,6 +330,7 @@ def create_order():
         # Auto-create tracker for outgoing orders starting at SALES
         tracker = OrderTracker(
             order_id=order.id,
+            warehouse_id=g.active_warehouse_id,
             current_department=Department.SALES.value,
             step_index=0,
             updated_at=datetime.now(timezone.utc),
@@ -598,6 +614,9 @@ def search_orders():
 
     filters = []
 
+    # Scope to the active warehouse
+    filters.append(Order.warehouse_id == g.active_warehouse_id)
+
     if order_type:
         # "outgoing" is a legacy/convenience filter matching all outgoing-equivalent types
         if order_type == "outgoing":
@@ -768,18 +787,26 @@ def allocate_all(order_id):
             product_id=item.product_id,
             order_id=order.id,
             order_item_id=item.id,
+            warehouse_id=order.warehouse_id,
             quantity_delta=qty_delta,
             reason="allocation",
             state=TransactionState.PENDING.value,
         )
 
-        qty = item.product.quantity
+        # Use the order's warehouse quantity for the pending effect
+        qty = db.execute(
+            select(Quantity).where(
+                (Quantity.product_id == item.product_id) &
+                (Quantity.warehouse_id == order.warehouse_id)
+            )
+        ).scalar_one_or_none() if item.product_id else None
 
         # Apply pending effect
-        if qty_delta < 0:
-            qty.reserved += remaining
-        else:
-            qty.ordered += remaining
+        if qty is not None:
+            if qty_delta < 0:
+                qty.reserved += remaining
+            else:
+                qty.ordered += remaining
 
         db.add(txn)
         created.append(txn)
@@ -1014,6 +1041,7 @@ def create_order_from_qb():
         type=final_order_type,
         customer_id=customer.id if customer else None,
         supplier_id=supplier.id if supplier else None,
+        warehouse_id=g.active_warehouse_id,
         external_order_number=reference_number,
         description=metadata.get("memo", f"QB {entity_type.replace('_', ' ').title()} #{reference_number}"),
         status=OrderStatus.PENDING.value,
@@ -1040,7 +1068,11 @@ def create_order_from_qb():
                 separator_type = OrderItemType.UNIT_SEPARATOR.value
                 if description:
                     desc_lower = description.lower()
-                    if "building" in desc_lower or "bldg" in desc_lower or "•" in description:
+                    replaced, count = re.subn(r'(?:&#149;?|\x95)', '•', description)
+                    if count:
+                        separator_type = OrderItemType.SECTION_SEPARATOR.value
+                        description = replaced
+                    elif "building" in desc_lower or "bldg" in desc_lower or "•" in description:
                         separator_type = OrderItemType.SECTION_SEPARATOR.value
 
                 # Create separator item
@@ -1122,7 +1154,7 @@ def create_order_from_qb():
                     db.add(product)
                     db.flush()
 
-                    quantity = Quantity(product_id=product.id, on_hand=0, reserved=0, ordered=0, location=0)
+                    quantity = Quantity(product_id=product.id, warehouse_id=g.active_warehouse_id, on_hand=0, reserved=0, ordered=0, location=0)
                     db.add(quantity)
                     db.flush()
 
@@ -1138,11 +1170,19 @@ def create_order_from_qb():
                 if quantity < 0:
                     quantity = 0
                 
+                # Determine order item type: detect media cut by comparing descriptions
+                item_type = OrderItemType.PRODUCT_ITEM.value
+                if product.media is not None:
+                    media_default_desc = (product.media.description or "").strip()
+                    qb_desc = (qb_line.get("description") or "").strip()
+                    if qb_desc.lower() != media_default_desc.lower():
+                        item_type = OrderItemType.MEDIA_CUT.value
+
                 # Create order item
                 order_item = OrderItem(
                     order_id=order.id,
                     product_id=product.id,
-                    type=OrderItemType.PRODUCT_ITEM.value,
+                    type=item_type,
                     quantity_ordered=int(quantity),
                     quantity_fulfilled=0,
                     note=qb_line.get("description"),
@@ -1160,6 +1200,7 @@ def create_order_from_qb():
         if not is_purchase_order:
             tracker = OrderTracker(
                 order_id=order.id,
+                warehouse_id=g.active_warehouse_id,
                 current_department=Department.SALES.value,
                 step_index=0,
                 updated_at=datetime.now(timezone.utc),

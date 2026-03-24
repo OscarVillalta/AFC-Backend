@@ -1,8 +1,11 @@
 from pprint import pp
-from flask import g, jsonify, Blueprint
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-from database.models import Product, ProductCategory, AirFilter, StockItem, Quantity, Supplier, ChildProduct
+from flask import g, jsonify, request, Blueprint
+from sqlalchemy import select, and_, or_
+from sqlalchemy.orm import selectinload, with_loader_criteria
+from database.models import (
+    Product, ProductCategory, AirFilter, StockItem, Media,
+    Quantity, Supplier, ChildProduct,
+)
 from app.api.Schemas.product_schema import ProductSchema
 
 product_bp = Blueprint("products", __name__)
@@ -21,7 +24,7 @@ def get_products():
         select(Product)
         .options(
             selectinload(Product.category),
-            selectinload(Product.quantity),
+            selectinload(Product.quantities),
             selectinload(Product.air_filter).selectinload(AirFilter.supplier),
             selectinload(Product.stock_item).selectinload(StockItem.supplier)
         )
@@ -60,19 +63,22 @@ def get_products():
 def get_product(id):
     db = g.db
 
+    warehouse_id = g.active_warehouse_id
+
     product = db.execute(
         select(Product)
         .where(Product.id == id)
         .options(
+            with_loader_criteria(Quantity, Quantity.warehouse_id == warehouse_id),
             selectinload(Product.category),
-            selectinload(Product.quantity),
+            selectinload(Product.quantities),
             selectinload(Product.air_filter).selectinload(AirFilter.supplier),
             selectinload(Product.stock_item).selectinload(StockItem.supplier),
             selectinload(Product.child_products).selectinload(ChildProduct.air_filter).selectinload(AirFilter.supplier),
             selectinload(Product.child_products).selectinload(ChildProduct.stock_item).selectinload(StockItem.supplier)
         )
     ).scalars().first()
-
+            
     if not product:
         return jsonify({"error": "Product not found"}), 404
 
@@ -157,7 +163,7 @@ def get_products_names():
         select(Product)
         .options(
             selectinload(Product.category),
-            selectinload(Product.quantity),
+            selectinload(Product.quantities),
             selectinload(Product.air_filter).selectinload(AirFilter.supplier),
             selectinload(Product.stock_item).selectinload(StockItem.supplier)
         )
@@ -182,3 +188,122 @@ def get_products_names():
         })
 
     return jsonify(response), 200
+
+
+# =====================================================
+# 🔎 Search Products
+# =====================================================
+@product_bp.route("/products/search", methods=["GET"])
+def search_products():
+    from sqlalchemy import func
+
+    db = g.db
+
+    # --- Query parameters ---
+    category = request.args.get("category")
+    name = request.args.get("name")
+    supplier = request.args.get("supplier")
+    location = request.args.get("location", type=int)
+    is_active = request.args.get("is_active")
+
+    # Pagination
+    page = request.args.get("page", default=1, type=int)
+    limit = request.args.get("limit", default=25, type=int)
+    offset = (page - 1) * limit
+
+    # --- Aliased supplier tables for each subtable join ---
+    supplier_air = Supplier.__table__.alias("supplier_air")
+    supplier_stock = Supplier.__table__.alias("supplier_stock")
+    supplier_media = Supplier.__table__.alias("supplier_media")
+
+    # --- Base Query ---
+    query = (
+        select(
+            Product.id,
+            Product.reference_id,
+            Product.is_active,
+            ProductCategory.name.label("category"),
+
+            AirFilter.part_number.label("air_filter_part_number"),
+            StockItem.name.label("stock_item_name"),
+            Media.part_number.label("media_part_number"),
+
+            func.coalesce(
+                AirFilter.part_number,
+                StockItem.name,
+                Media.part_number,
+            ).label("name"),
+
+            func.coalesce(
+                supplier_air.c.name,
+                supplier_stock.c.name,
+                supplier_media.c.name,
+            ).label("supplier_name"),
+
+            Quantity.on_hand,
+            Quantity.reserved,
+            Quantity.ordered,
+            Quantity.location,
+            Quantity.available,
+            Quantity.backordered,
+        )
+        .join(ProductCategory, Product.category_id == ProductCategory.id)
+        .outerjoin(AirFilter, and_(Product.category_id == 1, Product.reference_id == AirFilter.id))
+        .outerjoin(supplier_air, AirFilter.supplier_id == supplier_air.c.id)
+        .outerjoin(StockItem, and_(Product.category_id == 3, Product.reference_id == StockItem.id))
+        .outerjoin(supplier_stock, StockItem.supplier_id == supplier_stock.c.id)
+        .outerjoin(Media, and_(Product.category_id == 4, Product.reference_id == Media.id))
+        .outerjoin(supplier_media, Media.supplier_id == supplier_media.c.id)
+        .outerjoin(Quantity, and_(
+            Quantity.product_id == Product.id,
+            Quantity.warehouse_id == g.active_warehouse_id,
+        ))
+        .distinct(Product.id)
+    )
+
+    # --- Dynamic Filters ---
+    filters = []
+
+    if category:
+        filters.append(ProductCategory.name.ilike(f"%{category}%"))
+    if name:
+        filters.append(
+            or_(
+                AirFilter.part_number.ilike(f"%{name}%"),
+                StockItem.name.ilike(f"%{name}%"),
+                Media.part_number.ilike(f"%{name}%"),
+            )
+        )
+    if supplier:
+        filters.append(
+            or_(
+                supplier_air.c.name.ilike(f"%{supplier}%"),
+                supplier_stock.c.name.ilike(f"%{supplier}%"),
+                supplier_media.c.name.ilike(f"%{supplier}%"),
+            )
+        )
+    if location is not None:
+        filters.append(Quantity.location == location)
+    if is_active is not None:
+        filters.append(Product.is_active == (is_active.lower() in ("true", "1", "yes")))
+
+    if filters:
+        query = query.where(and_(*filters))
+
+    # --- Total Count ---
+    total = len(db.execute(query).mappings().all())
+
+    # --- Pagination ---
+    query = query.limit(limit).offset(offset)
+
+    # --- Execute ---
+    results = db.execute(query).mappings().all()
+    results = [dict(row) for row in results]
+
+    return jsonify({
+        "page": page,
+        "limit": limit,
+        "count": len(results),
+        "total": total,
+        "results": results,
+    }), 200

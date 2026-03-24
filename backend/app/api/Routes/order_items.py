@@ -2,7 +2,7 @@ from flask import Blueprint, g, jsonify, request
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.api.Schemas.order_item_schema import OrderItemSchema
-from database.models import OrderItem, Order, Product, ChildProduct, Transaction, TransactionState, OrderType, OrderItemType
+from database.models import OrderItem, Order, Product, ChildProduct, Transaction, TransactionState, OrderType, OrderItemType, Quantity
 from marshmallow import ValidationError
 from typing import Tuple, Any
 
@@ -194,12 +194,16 @@ def update_order_item(item_id):
         valid_types = [t.value for t in OrderItemType]
         if new_type not in valid_types:
             return jsonify({"error": f"Invalid type. Must be one of: {valid_types}"}), 400
-        # Only allow toggling between separator types
+        # Allow toggling between separator types
         separator_types = [OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value]
+        # Allow toggling between product item types (Product_Item <-> Media_Cut)
+        product_item_types = [OrderItemType.PRODUCT_ITEM.value, OrderItemType.MEDIA_CUT.value]
         if item.type in separator_types and new_type in separator_types:
             item.type = new_type
+        elif item.type in product_item_types and new_type in product_item_types:
+            item.type = new_type
         else:
-            return jsonify({"error": "Type change is only allowed between separator types"}), 400
+            return jsonify({"error": "Type change is only allowed between separator types or between Product_Item and Media_Cut"}), 400
 
     db.commit()
     return jsonify({
@@ -262,6 +266,7 @@ def allocate_order_item(item_id):
         child_product_id=item.child_product_id,
         order_id=order.id,
         order_item_id=item.id,
+        warehouse_id=order.warehouse_id,
         quantity_delta=qty_delta,
         reason=reason,
         state="pending",
@@ -289,10 +294,36 @@ def allocate_remaining_order_items(item_id):
     if not order:
         return jsonify({"error": "Order not associated"}), 400
     
-    sign = 1 if order.type == "incoming" else -1
-    reason = "receive" if order.type == "incoming" else "shipment"
     body = request.get_json(silent=True) or {}
     note = body.get("note")
+
+    qty_to_fulfill = item.quantity_ordered - item.quantity_fulfilled
+
+    if qty_to_fulfill < 0:
+        return jsonify({
+            "error": "There is more fulfilled than ordered already.",
+            "ordered": item.quantity_ordered,
+            "fulfilled_so_far": item.quantity_fulfilled,
+        }), 400
+
+    if qty_to_fulfill == 0:
+        return jsonify({
+            "message": "Order item is already fully fulfilled.",
+        }), 203
+
+    # 🔹 MEDIA_CUT bypass: skip inventory transaction, directly mark as fulfilled
+    if item.type == OrderItemType.MEDIA_CUT.value:
+        item.quantity_fulfilled += qty_to_fulfill
+        item.quantity_fulfilled = max(0, min(item.quantity_fulfilled, item.quantity_ordered))
+        order.update_status()
+        db.commit()
+        return jsonify({
+            "message": f"Fulfilled {qty_to_fulfill} unit(s) for media cut order item {item_id} (no stock deduction).",
+            "order_status": order.status
+        }), 200
+
+    sign = 1 if order.type == "incoming" else -1
+    reason = "receive" if order.type == "incoming" else "shipment"
     
     existing_qty = db.scalar(
         select(func.coalesce(func.sum(Transaction.quantity_delta), 0))
@@ -322,20 +353,27 @@ def allocate_remaining_order_items(item_id):
         child_product_id=item.child_product_id,
         order_id=order.id,
         order_item_id=item.id,
+        warehouse_id=order.warehouse_id,
         quantity_delta= qty_to_allocate * sign,
         reason=reason,
         state="pending",
         note=note or None
     )
 
-    # Get the quantity record - works for both Product and ChildProduct
-    if item.product:
-        qty_record = item.product.quantity
-    elif item.child_product:
-        qty_record = item.child_product.quantity
-    else:
-        return jsonify({"error": "Order item has no product or child product"}), 400
-    
+    # Get the quantity record scoped to the order's warehouse
+    product_id_for_qty = item.product_id
+    if product_id_for_qty is None and item.child_product:
+        product_id_for_qty = item.child_product.parent_product_id
+
+    qty_record = None
+    if product_id_for_qty:
+        qty_record = db.execute(
+            select(Quantity).where(
+                (Quantity.product_id == product_id_for_qty) &
+                (Quantity.warehouse_id == order.warehouse_id)
+            )
+        ).scalar_one_or_none()
+
     if not qty_record:
         return jsonify({"error": "Quantity record not found"}), 404
     
@@ -455,9 +493,17 @@ def commit_all_order_item_txns(item_id):
         committed = 0
 
         for txn in pending_txns:
+            if txn.quantity_delta < 0:  # outgoing
+
+                # Get quantity from the appropriate source
+                qty_record = txn._get_quantity_record()
+                qty = abs(txn.quantity_delta)
+
+                if qty > qty_record.on_hand:
+                    return jsonify({ "error": f"Not enough inventory. On hand: {qty_record.on_hand}, required: {qty}"}), 409
             
-            txn.commit(db)
-            committed += 1
+                txn.commit(db)
+                committed += 1
 
         order.update_status()
         db.commit()
@@ -549,15 +595,14 @@ def create_order_item_transaction(order_item_id):
     product = item.product
     child_product = item.child_product
 
-    # Get the quantity record - works for both Product and ChildProduct
-    if product:
-        qty = product.quantity
-    elif child_product:
-        qty = child_product.quantity
-    else:
-        return jsonify({
-            "error": "Product or child product missing"
-        }), 400
+    # Get the quantity record scoped to the order's warehouse
+    product_id_for_qty = product.id if product else (child_product.parent_product_id if child_product else None)
+    qty = db.execute(
+        select(Quantity).where(
+            (Quantity.product_id == product_id_for_qty) &
+            (Quantity.warehouse_id == order.warehouse_id)
+        )
+    ).scalar_one_or_none() if product_id_for_qty else None
 
     if not qty:
         return jsonify({
@@ -579,6 +624,7 @@ def create_order_item_transaction(order_item_id):
         child_product_id=child_product.id if child_product else None,
         order_id=order.id,
         order_item_id=item.id,
+        warehouse_id=order.warehouse_id,
         quantity_delta=quantity,
         reason=reason,
         note=note,

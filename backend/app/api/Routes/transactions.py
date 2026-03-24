@@ -40,25 +40,36 @@ def validate_product_or_child_product_exclusive(data):
     return None
 
 
-def _get_entity_and_quantity(db, product_id=None, child_product_id=None):
+def _get_entity_and_quantity(db, product_id=None, child_product_id=None, warehouse_id=None):
     """
-    Helper to fetch a product/child_product and its quantity record.
+    Helper to fetch a product/child_product and its quantity record for the given warehouse.
     """
     if product_id:
         product = db.get(Product, product_id)
         if not product:
             return None, None, {"error": "Product not found"}, 404
-        if not product.quantity:
-            return None, None, {"error": "Quantity record not found for product"}, 404
-        return product, product.quantity, None, None
+        qty = db.execute(
+            select(Quantity).where(
+                (Quantity.product_id == product_id) &
+                (Quantity.warehouse_id == warehouse_id)
+            )
+        ).scalar_one_or_none()
+        if not qty:
+            return None, None, {"error": "Quantity record not found for product in this warehouse"}, 404
+        return product, qty, None, None
 
     if child_product_id:
         child_product = db.get(ChildProduct, child_product_id)
         if not child_product:
             return None, None, {"error": "Child product not found"}, 404
-        qty = child_product.quantity
+        qty = db.execute(
+            select(Quantity).where(
+                (Quantity.product_id == child_product.parent_product_id) &
+                (Quantity.warehouse_id == warehouse_id)
+            )
+        ).scalar_one_or_none()
         if not qty:
-            return None, None, {"error": "Parent product's quantity record not found"}, 404
+            return None, None, {"error": "Parent product's quantity record not found in this warehouse"}, 404
         return child_product, qty, None, None
 
     return None, None, {"error": "Either product_id or child_product_id is required"}, 400
@@ -103,6 +114,7 @@ def get_transaction_on_hand(txn_id):
     """
     db = g.db
     txn = db.get(Transaction, txn_id)
+    warehouse_id = g.active_warehouse_id
     if not txn:
         return jsonify({"error": "Transaction not found"}), 404
 
@@ -122,7 +134,8 @@ def get_transaction_on_hand(txn_id):
         select(func.coalesce(func.sum(Transaction.quantity_delta), 0))
         .where(
             product_filter,
-            Transaction.state == "committed",
+            or_(Transaction.state == "committed", Transaction.state == "rolled_back"),
+            Transaction.warehouse_id == warehouse_id,
             Transaction.ledger_sequence.isnot(None),
             Transaction.ledger_sequence <= txn.ledger_sequence,
         )
@@ -153,6 +166,11 @@ def get_transaction_summary():
     after_date = request.args.get("after_date", type=str)
 
     filters = []
+
+    #warehouse scope
+    warehouse_id = g.active_warehouse_id
+    print("Active warehouse ID:", warehouse_id)
+    filters.append(Transaction.warehouse_id == warehouse_id)
 
     if product_name:
         AirFilter_subquery = select(AirFilter.id).where(
@@ -255,6 +273,10 @@ def filter_transactions():
     query = select(Transaction)
     filters = []
 
+    # Scope to the active warehouse
+    warehouse_id = g.active_warehouse_id
+    filters.append(Transaction.warehouse_id == warehouse_id)
+
     if product_id:
         filters.append(Transaction.product_id == product_id)
     
@@ -355,17 +377,30 @@ def create_transaction():
     product = None
     child_product = None
     qty_record = None
+    warehouse_id = g.active_warehouse_id
     
     if "product_id" in data and data["product_id"] is not None:
         product = db.get(Product, data["product_id"])
-        if not product or not product.quantity:
+        if not product:
             return jsonify({"error": "Product or quantity record not found"}), 404
-        qty_record = product.quantity
+        qty_record = db.execute(
+            select(Quantity).where(
+                (Quantity.product_id == data["product_id"]) &
+                (Quantity.warehouse_id == warehouse_id)
+            )
+        ).scalar_one_or_none()
+        if not qty_record:
+            return jsonify({"error": "Product or quantity record not found"}), 404
     else:
         child_product = db.get(ChildProduct, data["child_product_id"])
         if not child_product:
             return jsonify({"error": "Child product not found"}), 404
-        qty_record = child_product.quantity
+        qty_record = db.execute(
+            select(Quantity).where(
+                (Quantity.product_id == child_product.parent_product_id) &
+                (Quantity.warehouse_id == warehouse_id)
+            )
+        ).scalar_one_or_none()
         if not qty_record:
             return jsonify({"error": "Parent product's quantity record not found"}), 404
 
@@ -404,6 +439,7 @@ def create_transaction():
         child_product_id=child_product.id if child_product else None,
         order_id=order.id if order else None,
         order_item_id=order_item.id if order_item else None,
+        warehouse_id=warehouse_id,
         quantity_delta=qty_delta,
         reason=data["reason"],
         note=data.get("note"),
@@ -476,6 +512,7 @@ def produce_product():
         db,
         product_id=data.get("source_product_id"),
         child_product_id=data.get("source_child_product_id"),
+        warehouse_id=g.active_warehouse_id,
     )
     if err:
         return jsonify(err), status
@@ -484,6 +521,7 @@ def produce_product():
         db,
         product_id=data.get("target_product_id"),
         child_product_id=data.get("target_child_product_id"),
+        warehouse_id=g.active_warehouse_id,
     )
     if err:
         return jsonify(err), status
@@ -522,6 +560,7 @@ def produce_product():
         consume_txn = Transaction(
             product_id=source_entity.id if isinstance(source_entity, Product) else None,
             child_product_id=source_entity.id if isinstance(source_entity, ChildProduct) else None,
+            warehouse_id=g.active_warehouse_id,
             quantity_delta=-source_qty,
             reason=reason,
             note=note,
@@ -533,6 +572,7 @@ def produce_product():
         produce_txn = Transaction(
             product_id=target_entity.id if isinstance(target_entity, Product) else None,
             child_product_id=target_entity.id if isinstance(target_entity, ChildProduct) else None,
+            warehouse_id=g.active_warehouse_id,
             quantity_delta=target_qty,
             reason=reason,
             note=note,
@@ -691,6 +731,8 @@ def get_pending_projection(product_id):
     """
     db = g.db
 
+    warehouse_id = g.active_warehouse_id
+
     product = db.get(Product, product_id)
     if not product:
         return jsonify({"error": "Product not found"}), 404
@@ -716,6 +758,7 @@ def get_pending_projection(product_id):
         .outerjoin(Order, Transaction.order_id == Order.id)
         .where(
             Transaction.state == TransactionState.PENDING.value,
+            Transaction.warehouse_id == warehouse_id,
             product_filter,
         )
     )
@@ -755,13 +798,17 @@ def _get_transaction_ledger(db, product_id=None, child_product_id=None):
     end_date = request.args.get("end_date", type=str)
     include_pending = request.args.get("include_pending", "false").lower() == "true"
 
+    warehouse_id = g.active_warehouse_id
+
     # --- Build filters
+    filters = [Transaction.warehouse_id == warehouse_id]
+    
     if product_id:
-        filters = [Transaction.product_id == product_id]
+        filters.append(Transaction.product_id == product_id)
         balance_filter_product_id = product_id
         balance_filter_child_product_id = None
     else:
-        filters = [Transaction.child_product_id == child_product_id]
+        filters.append(Transaction.child_product_id == child_product_id)
         balance_filter_product_id = None
         balance_filter_child_product_id = child_product_id
     
@@ -774,7 +821,7 @@ def _get_transaction_ledger(db, product_id=None, child_product_id=None):
         return {"error": "Invalid date format. Use ISO format (YYYY-MM-DD)."}, 400
     
     if not include_pending:
-        filters.append(Transaction.state == "committed")
+        filters.append(Transaction.state.in_(["committed", "rolled_back"]))
 
     # --- Define running balance (chronological)
     running_balance = func.sum(Transaction.quantity_delta).over(
@@ -810,7 +857,9 @@ def _get_transaction_ledger(db, product_id=None, child_product_id=None):
     ).scalar()
 
     # Build final balance query based on product type
-    balance_query = select(func.sum(Transaction.quantity_delta)).where(Transaction.state == "committed")
+    balance_query = select(func.sum(Transaction.quantity_delta)).where(
+        Transaction.state.in_(["committed", "rolled_back"])
+    )
     if balance_filter_product_id:
         balance_query = balance_query.where(Transaction.product_id == balance_filter_product_id)
     else:

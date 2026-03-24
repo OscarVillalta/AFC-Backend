@@ -1,7 +1,7 @@
 from flask import g, jsonify, request, Blueprint
 from sqlalchemy import select, and_, or_
 from marshmallow import ValidationError
-from database.models import StockItem, StockItemCategory, Supplier, Product, Quantity, ChildProduct
+from database.models import StockItem, StockItemCategory, Supplier, Product, Quantity, ChildProduct, Warehouse
 from app.api.Schemas.stock_item_schema import StockItemSchema
 from app.api.Schemas.stock_item_category_schema import StockItemCategorySchema
 
@@ -89,15 +89,22 @@ def create_stock_item():
     db.add(new_product)
     db.flush()
 
-    qty = Quantity(product_id=new_product.id, on_hand=0, reserved=0, ordered=0, location=0)
-    db.add(qty)
+    # Create Quantity records for every warehouse
+    warehouses = db.execute(select(Warehouse)).scalars().all()
+    quantities = []
+    for wh in warehouses:
+        qty = Quantity(product_id=new_product.id, warehouse_id=wh.id, on_hand=0, reserved=0, ordered=0, location=0)
+        db.add(qty)
+        quantities.append(qty)
+    db.flush()
+    quantity_ids = [qty.id for qty in quantities]
     db.commit()
 
     return jsonify({
         "message": "Stock item created successfully.",
         "stock_item": stock_item_schema.dump(stock_item),
         "product_id": new_product.id,
-        "quantity_id": qty.id
+        "quantity_ids": quantity_ids
     }), 201
 
 
@@ -177,6 +184,11 @@ def search_stock_items():
     description = request.args.get("description")
     supplier_name = request.args.get("supplier")
     category_name = request.args.get("category")
+    min_on_hand = request.args.get("min_on_hand", type=int)
+    min_reserved = request.args.get("min_reserved", type=int)
+    min_available = request.args.get("min_available", type=int)
+    min_ordered = request.args.get("min_ordered", type=int)
+    min_backordered = request.args.get("min_backordered", type=int)
 
     # Pagination
     page = request.args.get("page", default=1, type=int)
@@ -206,7 +218,10 @@ def search_stock_items():
         .join(StockItemCategory, StockItem.category_id == StockItemCategory.id)
         .outerjoin(Product, and_(Product.reference_id == StockItem.id, Product.category_id == product_category))
         .outerjoin(ChildProduct, and_(ChildProduct.reference_id == StockItem.id, ChildProduct.category_id == product_category))
-        .outerjoin(Quantity, or_(Quantity.product_id == Product.id, Quantity.product_id == ChildProduct.parent_product_id))
+        .outerjoin(Quantity, and_(
+            or_(Quantity.product_id == Product.id, Quantity.product_id == ChildProduct.parent_product_id),
+            Quantity.warehouse_id == g.active_warehouse_id
+        ))
         .distinct(StockItem.id)
     )
 
@@ -221,6 +236,16 @@ def search_stock_items():
         filters.append(Supplier.name.ilike(f"%{supplier_name}%"))
     if category_name:
         filters.append(StockItemCategory.name.ilike(f"%{category_name}%"))
+    if min_on_hand is not None:
+        filters.append(Quantity.on_hand >= min_on_hand)
+    if min_reserved is not None:
+        filters.append(Quantity.reserved >= min_reserved)
+    if min_available is not None:
+        filters.append(Quantity.available >= min_available)
+    if min_ordered is not None:
+        filters.append(Quantity.ordered >= min_ordered)
+    if min_backordered is not None:
+        filters.append(Quantity.backordered >= min_backordered)
 
     if filters:
         query = query.where(and_(*filters))
