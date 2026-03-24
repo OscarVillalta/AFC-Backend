@@ -26,7 +26,8 @@ def get_products():
             selectinload(Product.category),
             selectinload(Product.quantities),
             selectinload(Product.air_filter).selectinload(AirFilter.supplier),
-            selectinload(Product.stock_item).selectinload(StockItem.supplier)
+            selectinload(Product.stock_item).selectinload(StockItem.supplier),
+            selectinload(Product.media).selectinload(Media.supplier)
         )
     ).scalars().all()
 
@@ -42,6 +43,9 @@ def get_products():
         elif p.stock_item:
             details = p.stock_item.to_dict()
             details["supplier_name"] = p.stock_item.supplier.name if p.stock_item.supplier else None
+        elif p.media:
+            details = p.media.to_dict()
+            details["supplier_name"] = p.media.supplier.name if p.media.supplier else None
         else:
             details = {}
 
@@ -74,6 +78,7 @@ def get_product(id):
             selectinload(Product.quantities),
             selectinload(Product.air_filter).selectinload(AirFilter.supplier),
             selectinload(Product.stock_item).selectinload(StockItem.supplier),
+            selectinload(Product.media).selectinload(Media.supplier),
             selectinload(Product.child_products).selectinload(ChildProduct.air_filter).selectinload(AirFilter.supplier),
             selectinload(Product.child_products).selectinload(ChildProduct.stock_item).selectinload(StockItem.supplier)
         )
@@ -96,6 +101,9 @@ def get_product(id):
     elif product.stock_item:
         details = product.stock_item.to_dict()
         details["supplier_name"] = product.stock_item.supplier.name if product.stock_item.supplier else None
+    elif product.media:
+        details = product.media.to_dict()
+        details["supplier_name"] = product.media.supplier.name if product.media.supplier else None
     else:
         details = {}
 

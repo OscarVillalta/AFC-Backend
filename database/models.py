@@ -598,7 +598,7 @@ class Order(Base, SerializerMixin):
             return
 
         # Filter out separator items for status calculation
-        non_separator_items = [item for item in self.items if item.type not in (OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value)]
+        non_separator_items = [item for item in self.items if item.type not in (OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value, OrderItemType.MEDIA_CUT.value)]
         
         if not non_separator_items:
             self.status = OrderStatus.PENDING.value
