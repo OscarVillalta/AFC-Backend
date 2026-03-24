@@ -173,7 +173,8 @@ def get_products_names():
             selectinload(Product.category),
             selectinload(Product.quantities),
             selectinload(Product.air_filter).selectinload(AirFilter.supplier),
-            selectinload(Product.stock_item).selectinload(StockItem.supplier)
+            selectinload(Product.stock_item).selectinload(StockItem.supplier),
+            selectinload(Product.media).selectinload(Media.supplier)
         )
     ).scalars().all()
 
@@ -186,6 +187,8 @@ def get_products_names():
             details = p.air_filter.to_dict()["part_number"]
         elif p.category.name == "Stock Items":
             details = p.stock_item.to_dict()["name"]
+        elif p.category.name == "Media":
+            details = p.media.to_dict()["part_number"] if p.media else None
         else:
             details = None
 
