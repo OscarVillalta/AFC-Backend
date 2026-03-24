@@ -184,6 +184,11 @@ def search_stock_items():
     description = request.args.get("description")
     supplier_name = request.args.get("supplier")
     category_name = request.args.get("category")
+    min_on_hand = request.args.get("min_on_hand", type=int)
+    min_reserved = request.args.get("min_reserved", type=int)
+    min_available = request.args.get("min_available", type=int)
+    min_ordered = request.args.get("min_ordered", type=int)
+    min_backordered = request.args.get("min_backordered", type=int)
 
     # Pagination
     page = request.args.get("page", default=1, type=int)
@@ -231,6 +236,16 @@ def search_stock_items():
         filters.append(Supplier.name.ilike(f"%{supplier_name}%"))
     if category_name:
         filters.append(StockItemCategory.name.ilike(f"%{category_name}%"))
+    if min_on_hand is not None:
+        filters.append(Quantity.on_hand >= min_on_hand)
+    if min_reserved is not None:
+        filters.append(Quantity.reserved >= min_reserved)
+    if min_available is not None:
+        filters.append(Quantity.available >= min_available)
+    if min_ordered is not None:
+        filters.append(Quantity.ordered >= min_ordered)
+    if min_backordered is not None:
+        filters.append(Quantity.backordered >= min_backordered)
 
     if filters:
         query = query.where(and_(*filters))
