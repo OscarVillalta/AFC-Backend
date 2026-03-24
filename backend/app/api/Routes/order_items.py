@@ -111,12 +111,18 @@ def create_order_item() -> Tuple[Any, int]:
                     raise ResourceNotFoundError("Product", data["product_id"])
                 product_id = product.id
                 child_product_id = None
+                # Auto-detect media products and set type to Media_Cut
+                if product.category and product.category.name == "Media":
+                    item_type = OrderItemType.MEDIA_CUT.value
             else:
                 child_product = db.get(ChildProduct, data["child_product_id"])
                 if not child_product:
                     raise ResourceNotFoundError("ChildProduct", data["child_product_id"])
                 product_id = None
                 child_product_id = child_product.id
+                # Auto-detect media child products and set type to Media_Cut
+                if child_product.category and child_product.category.name == "Media":
+                    item_type = OrderItemType.MEDIA_CUT.value
             
             quantity_ordered = validate_positive_integer(
                 data["quantity_ordered"], 
