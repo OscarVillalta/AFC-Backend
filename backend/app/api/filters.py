@@ -16,9 +16,9 @@ def _parse_stock_param(name):
     * ``<name>_compare`` – one of ``eq``, ``lte``, ``gte`` (default ``lte``)
     """
     value = request.args.get(name, type=int)
-    compare = request.args.get(f"{name}_compare", default="lte").lower()
+    compare = request.args.get(f"{name}_compare", default="gte").lower()
     if compare not in VALID_COMPARE_MODES:
-        compare = "lte"
+        compare = "gte"
     return value, compare
 
 
@@ -33,7 +33,7 @@ def stock_level_filter(quantity_field, value, compare):
     """
     if compare == "eq":
         return quantity_field == value
-    elif compare == "gte":
-        return quantity_field >= value
-    else:  # default: lte
+    elif compare == "lte":
         return quantity_field <= value
+    else:  # default: gte
+        return quantity_field >= value
