@@ -1,5 +1,6 @@
 flask==3.0.0
 flask-sqlalchemy==3.0.3
+flask-jwt-extended
 psycopg[binary]==3.2.12
 python-dotenv==1.0.1
 gunicorn==22.0.0
@@ -11,5 +12,6 @@ flask-cors
 requests
 defusedxml
 psycopg2
+werkzeug
 
 
