@@ -1,9 +1,11 @@
 from flask import g, jsonify, request, Blueprint
+from flask_jwt_extended import jwt_required
 from sqlalchemy import func, select, and_, or_
-from database.models import Media, MediaCategory, Supplier, Product, ProductCategory, Quantity, ChildProduct, Warehouse, OrderItem
+from database.models import Media, MediaCategory, Supplier, Product, ProductCategory, Quantity, ChildProduct, Warehouse, OrderItem, UserRole
 from marshmallow import ValidationError
 from app.api.Schemas.media_schema import MediaSchema, MediaCategorySchema
 from app.api.filters import _parse_stock_param, stock_level_filter
+from app.api.tokens import role_required
 
 media_bp = Blueprint("media", __name__)
 media_schema = MediaSchema()
@@ -14,6 +16,7 @@ ProductCategory_id = 4
 
 # --- GET all Media ---
 @media_bp.route("/media", methods=["GET"])
+@jwt_required()
 def get_media():
     db = g.db
     results = db.execute(select(Media)).scalars().all()
@@ -22,6 +25,7 @@ def get_media():
 
 # --- GET media categories (id + name) ---
 @media_bp.route("/media_categories", methods=["GET"])
+@jwt_required()
 def get_media_categories():
     db = g.db
     categories = db.execute(select(MediaCategory)).scalars().all()
@@ -30,6 +34,7 @@ def get_media_categories():
 
 # --- GET single Media item ---
 @media_bp.route("/media/<int:id>", methods=["GET"])
+@jwt_required()
 def get_media_item(id):
     db = g.db
     item = db.get(Media, id)
@@ -40,6 +45,7 @@ def get_media_item(id):
 
 # --- POST new Media item ---
 @media_bp.route("/media", methods=["POST"])
+@role_required(UserRole.ADMIN.value)
 def create_media():
     db = g.db
     try:
@@ -86,6 +92,7 @@ def create_media():
 
 # --- PATCH (partial update) ---
 @media_bp.route("/media/<int:id>", methods=["PATCH"])
+@role_required(UserRole.ADMIN.value)
 def update_media(id):
     db = g.db
     item = db.get(Media, id)
@@ -106,6 +113,7 @@ def update_media(id):
 
 # --- PUT (full replacement) ---
 @media_bp.route("/media/<int:id>", methods=["PUT"])
+@role_required(UserRole.ADMIN.value)
 def replace_media(id):
     db = g.db
     item = db.get(Media, id)
@@ -126,6 +134,7 @@ def replace_media(id):
 
 # --- DELETE ---
 @media_bp.route("/media/<int:id>", methods=["DELETE"])
+@role_required(UserRole.ADMIN.value)
 def delete_media(id):
     db = g.db
     item = db.get(Media, id)
@@ -147,6 +156,7 @@ def delete_media(id):
 # 🔎 Search Media
 # =====================================================
 @media_bp.route("/media/search", methods=["GET"])
+@jwt_required()
 def search_media():
     db = g.db
 

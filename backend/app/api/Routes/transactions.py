@@ -1,4 +1,5 @@
 from flask import abort, g, jsonify, request, Blueprint
+from flask_jwt_extended import get_jwt
 from sqlalchemy import select, func, or_, text
 from database.models import (
     Quantity,
@@ -6,6 +7,7 @@ from database.models import (
     Product,
     ChildProduct,
     TransactionState,
+    TransactionReason,
     OrderType,
     Order,
     OrderItem,
@@ -14,9 +16,11 @@ from database.models import (
     ConversionBatch,
     ConversionDecrease,
     ConversionState,
+    UserRole,
 )
 from datetime import datetime, timezone
 from app.api.Schemas.transaction_schema import TransactionSchema
+from app.api.tokens import role_required
 
 class InventoryConflictError(Exception):
     pass
@@ -359,6 +363,7 @@ def filter_transactions():
 
 
 @transaction_bp.route("/transactions", methods=["POST"])
+@role_required(UserRole.ADMIN.value, UserRole.WAREHOUSE.value, UserRole.SALES.value)
 def create_transaction():
     db = g.db
     data = request.get_json() or {}
@@ -372,6 +377,14 @@ def create_transaction():
     for field in required_fields:
         if field not in data:
             return jsonify({"error": f"{field} is required"}), 400
+
+    # Fulfillments are restricted to ADMIN and WAREHOUSE roles
+    reason = data.get("reason", "")
+    if reason != TransactionReason.ALLOCATION.value:
+        claims = get_jwt()
+        user_role = claims.get("role")
+        if user_role not in (UserRole.ADMIN.value, UserRole.WAREHOUSE.value):
+            return jsonify({"error": "Forbidden: only Admin and Warehouse roles can execute fulfillments"}), 403
 
     # Get the product or child_product and its quantity
     product = None
@@ -480,6 +493,7 @@ def create_transaction():
 
 
 @transaction_bp.route("/transactions/produce", methods=["POST"])
+@role_required(UserRole.ADMIN.value, UserRole.WAREHOUSE.value)
 def produce_product():
     """
     Atomically decrease inventory from a source product and increase another.
@@ -692,6 +706,7 @@ def cancel_transaction(txn_id):
 
 
 @transaction_bp.route("/transactions/<int:txn_id>/rollback", methods=["PATCH"])
+@role_required(UserRole.ADMIN.value)
 def rollback_transaction(txn_id):
     db = g.db
     txn = db.get(Transaction, txn_id)

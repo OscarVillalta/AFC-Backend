@@ -1,10 +1,12 @@
 from flask import g, jsonify, request, Blueprint
+from flask_jwt_extended import jwt_required
 from sqlalchemy import select, and_, or_
 from marshmallow import ValidationError
-from database.models import StockItem, StockItemCategory, Supplier, Product, Quantity, ChildProduct, Warehouse, OrderItem
+from database.models import StockItem, StockItemCategory, Supplier, Product, Quantity, ChildProduct, Warehouse, OrderItem, UserRole
 from app.api.Schemas.stock_item_schema import StockItemSchema
 from app.api.Schemas.stock_item_category_schema import StockItemCategorySchema
 from app.api.filters import _parse_stock_param, stock_level_filter
+from app.api.tokens import role_required
 
 stock_item_bp = Blueprint("stock_items", __name__)
 stock_item_schema = StockItemSchema()
@@ -17,6 +19,7 @@ product_category = 3
 # 🔹 GET all stock item categories
 # =====================================================
 @stock_item_bp.route("/stock_item_categories", methods=["GET"])
+@jwt_required()
 def get_stock_item_categories():
     db = g.db
     categories = db.execute(select(StockItemCategory)).scalars().all()
@@ -27,6 +30,7 @@ def get_stock_item_categories():
 # 🔹 GET all stock items
 # =====================================================
 @stock_item_bp.route("/stock_items", methods=["GET"])
+@jwt_required()
 def get_stock_items():
     db = g.db
     results = db.execute(select(StockItem)).scalars().all()
@@ -37,6 +41,7 @@ def get_stock_items():
 # 🔹 GET single stock item
 # =====================================================
 @stock_item_bp.route("/stock_items/<int:id>", methods=["GET"])
+@jwt_required()
 def get_stock_item(id):
     db = g.db
     item = db.execute(select(StockItem).where(StockItem.id == id)).scalars().first()
@@ -49,6 +54,7 @@ def get_stock_item(id):
 # 🔹 POST new stock item
 # =====================================================
 @stock_item_bp.route("/stock_items", methods=["POST"])
+@role_required(UserRole.ADMIN.value)
 def create_stock_item():
     db = g.db
 
@@ -113,6 +119,7 @@ def create_stock_item():
 # 🔹 PATCH (partial update)
 # =====================================================
 @stock_item_bp.route("/stock_items/<int:id>", methods=["PATCH"])
+@role_required(UserRole.ADMIN.value)
 def update_stock_item(id):
     db = g.db
     item = db.execute(select(StockItem).where(StockItem.id == id)).scalars().first()
@@ -143,6 +150,7 @@ def update_stock_item(id):
 # 🔹 DELETE
 # =====================================================
 @stock_item_bp.route("/stock_items/<int:id>", methods=["DELETE"])
+@role_required(UserRole.ADMIN.value)
 def delete_stock_item(id):
     db = g.db
     item = db.execute(select(StockItem).where(StockItem.id == id)).scalars().first()
@@ -177,6 +185,7 @@ def delete_stock_item(id):
 # 🔹 SEARCH stock items (with filters & pagination)
 # =====================================================
 @stock_item_bp.route("/stock_items/search", methods=["GET"])
+@jwt_required()
 def search_stock_items():
     db = g.db
 
