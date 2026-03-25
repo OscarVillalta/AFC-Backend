@@ -1,6 +1,6 @@
 from flask import g, jsonify, request, Blueprint
 from sqlalchemy import func, select, and_, or_
-from database.models import AirFilter, AirFilterCategory, Supplier, Product, ProductCategory, Quantity, ChildProduct, Warehouse
+from database.models import AirFilter, AirFilterCategory, Supplier, Product, ProductCategory, Quantity, ChildProduct, Warehouse, OrderItem
 from marshmallow import ValidationError
 from app.api.Schemas.air_filters_schema import AirFilterSchema
 from app.api.Schemas.air_filter_category_schema import AirFilterCategorySchema
@@ -164,6 +164,7 @@ def search_air_filters():
     available, available_cmp = _parse_stock_param("available")
     ordered, ordered_cmp = _parse_stock_param("ordered")
     back_ordered, back_ordered_cmp = _parse_stock_param("back_ordered")
+    has_orders = request.args.get("has_orders", "").lower() == "true"
 
     # Pagination
     page = request.args.get("page", default=1, type=int)
@@ -241,6 +242,14 @@ def search_air_filters():
         filters.append(stock_level_filter(Quantity.ordered, ordered, ordered_cmp))
     if back_ordered is not None:
         filters.append(stock_level_filter(Quantity.backordered, back_ordered, back_ordered_cmp))
+    if has_orders:
+        order_item_exists = select(OrderItem.id).where(
+            or_(
+                OrderItem.product_id == Product.id,
+                OrderItem.child_product_id == ChildProduct.id,
+            )
+        ).correlate(Product, ChildProduct).exists()
+        filters.append(order_item_exists)
 
     if filters:
         query = query.where(and_(*filters))

@@ -1,7 +1,7 @@
 from flask import g, jsonify, request, Blueprint
 from sqlalchemy import select, and_, or_
 from marshmallow import ValidationError
-from database.models import StockItem, StockItemCategory, Supplier, Product, Quantity, ChildProduct, Warehouse
+from database.models import StockItem, StockItemCategory, Supplier, Product, Quantity, ChildProduct, Warehouse, OrderItem
 from app.api.Schemas.stock_item_schema import StockItemSchema
 from app.api.Schemas.stock_item_category_schema import StockItemCategorySchema
 from app.api.filters import _parse_stock_param, stock_level_filter
@@ -190,6 +190,7 @@ def search_stock_items():
     available, available_cmp = _parse_stock_param("available")
     ordered, ordered_cmp = _parse_stock_param("ordered")
     back_ordered, back_ordered_cmp = _parse_stock_param("back_ordered")
+    has_orders = request.args.get("has_orders", "").lower() == "true"
 
     # Pagination
     page = request.args.get("page", default=1, type=int)
@@ -247,6 +248,14 @@ def search_stock_items():
         filters.append(stock_level_filter(Quantity.ordered, ordered, ordered_cmp))
     if back_ordered is not None:
         filters.append(stock_level_filter(Quantity.backordered, back_ordered, back_ordered_cmp))
+    if has_orders:
+        order_item_exists = select(OrderItem.id).where(
+            or_(
+                OrderItem.product_id == Product.id,
+                OrderItem.child_product_id == ChildProduct.id,
+            )
+        ).correlate(Product, ChildProduct).exists()
+        filters.append(order_item_exists)
 
     if filters:
         query = query.where(and_(*filters))
