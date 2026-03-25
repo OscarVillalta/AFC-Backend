@@ -1,12 +1,14 @@
 from pprint import pp
 from flask import g, jsonify, request, Blueprint
+from flask_jwt_extended import jwt_required
 from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import selectinload, with_loader_criteria
 from database.models import (
     Product, ProductCategory, AirFilter, StockItem, Media,
-    Quantity, Supplier, ChildProduct,
+    Quantity, Supplier, ChildProduct, UserRole,
 )
 from app.api.Schemas.product_schema import ProductSchema
+from app.api.tokens import role_required
 
 product_bp = Blueprint("products", __name__)
 product_schema = ProductSchema()
@@ -16,6 +18,7 @@ product_list_schema = ProductSchema(many=True)
 # 🔹 GET all products (joined data: Air + Misc + Quantity)
 # =====================================================
 @product_bp.route("/products", methods=["GET"])
+@jwt_required()
 def get_products():
     db = g.db
 
@@ -64,6 +67,7 @@ def get_products():
 # 🔹 GET single product (joined)
 # =====================================================
 @product_bp.route("/products/<int:id>", methods=["GET"])
+@jwt_required()
 def get_product(id):
     db = g.db
 
@@ -139,6 +143,7 @@ def get_product(id):
 
 
 @product_bp.route("/products/<int:id>/archive", methods=["PATCH"])
+@role_required(UserRole.ADMIN.value)
 def archive_product(id):
     db = g.db
     product = db.get(Product, id)
@@ -156,6 +161,7 @@ def archive_product(id):
     return jsonify({"message": "Product archived successfully"}), 200
 
 @product_bp.route("/products/<int:id>", methods=["DELETE"])
+@role_required(UserRole.ADMIN.value)
 def delete_product(id):
     return jsonify({"error": "Products cannot be deleted. Archive instead."}), 409
 
@@ -163,6 +169,7 @@ def delete_product(id):
 # 🔹 GET all product names (for searches and such)
 # =====================================================
 @product_bp.route("/products/names", methods=["GET"])
+@jwt_required()
 def get_products_names():
     db = g.db
 
@@ -205,6 +212,7 @@ def get_products_names():
 # 🔎 Search Products
 # =====================================================
 @product_bp.route("/products/search", methods=["GET"])
+@jwt_required()
 def search_products():
     from sqlalchemy import func
 
