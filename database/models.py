@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, foreign, object_
 from sqlalchemy import ForeignKey, String, Integer, BigInteger, Boolean, Float, Index, Sequence, func, text, Text, UniqueConstraint, select as sa_select
 from sqlalchemy.inspection import inspect
 from sqlalchemy.ext.hybrid import hybrid_property
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from database import Base
 
@@ -93,6 +94,13 @@ class Department(str, Enum):
     DELIVERY_DEPT = "DELIVERY_DEPT"
     SERVICE = "SERVICE"
     ACCOUNTING = "ACCOUNTING"
+
+
+class UserRole(str, Enum):
+    ADMIN = "Admin"
+    WAREHOUSE = "Warehouse"
+    SALES = "Sales"
+    SERVICE = "Service"
 
 
 # =====================================================
@@ -598,7 +606,7 @@ class Order(Base, SerializerMixin):
             return
 
         # Filter out separator items for status calculation
-        non_separator_items = [item for item in self.items if item.type not in (OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value)]
+        non_separator_items = [item for item in self.items if item.type not in (OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value, OrderItemType.MEDIA_CUT.value)]
         
         if not non_separator_items:
             self.status = OrderStatus.PENDING.value
@@ -941,6 +949,26 @@ class OrderTrackerStage(Base, SerializerMixin):
     __table_args__ = (
         UniqueConstraint("order_id", "stage_index", name="uq_order_tracker_stage"),
     )
+
+
+# =====================================================
+# 🔹 User (Authentication / RBAC)
+# =====================================================
+
+class User(Base, SerializerMixin):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(String, nullable=False, default=UserRole.SALES.value)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    def set_password(self, password: str) -> None:
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.password_hash, password)
 
 
 # =====================================================

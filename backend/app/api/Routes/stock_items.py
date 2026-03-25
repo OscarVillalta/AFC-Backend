@@ -1,9 +1,10 @@
 from flask import g, jsonify, request, Blueprint
 from sqlalchemy import select, and_, or_
 from marshmallow import ValidationError
-from database.models import StockItem, StockItemCategory, Supplier, Product, Quantity, ChildProduct, Warehouse
+from database.models import StockItem, StockItemCategory, Supplier, Product, Quantity, ChildProduct, Warehouse, OrderItem
 from app.api.Schemas.stock_item_schema import StockItemSchema
 from app.api.Schemas.stock_item_category_schema import StockItemCategorySchema
+from app.api.filters import _parse_stock_param, stock_level_filter
 
 stock_item_bp = Blueprint("stock_items", __name__)
 stock_item_schema = StockItemSchema()
@@ -184,11 +185,12 @@ def search_stock_items():
     description = request.args.get("description")
     supplier_name = request.args.get("supplier")
     category_name = request.args.get("category")
-    min_on_hand = request.args.get("min_on_hand", type=int)
-    min_reserved = request.args.get("min_reserved", type=int)
-    min_available = request.args.get("min_available", type=int)
-    min_ordered = request.args.get("min_ordered", type=int)
-    min_backordered = request.args.get("min_backordered", type=int)
+    on_hand, on_hand_cmp = _parse_stock_param("on_hand")
+    reserved, reserved_cmp = _parse_stock_param("reserved")
+    available, available_cmp = _parse_stock_param("available")
+    ordered, ordered_cmp = _parse_stock_param("ordered")
+    back_ordered, back_ordered_cmp = _parse_stock_param("back_ordered")
+    has_orders = request.args.get("has_orders", "").lower() == "true"
 
     # Pagination
     page = request.args.get("page", default=1, type=int)
@@ -236,16 +238,24 @@ def search_stock_items():
         filters.append(Supplier.name.ilike(f"%{supplier_name}%"))
     if category_name:
         filters.append(StockItemCategory.name.ilike(f"%{category_name}%"))
-    if min_on_hand is not None:
-        filters.append(Quantity.on_hand >= min_on_hand)
-    if min_reserved is not None:
-        filters.append(Quantity.reserved >= min_reserved)
-    if min_available is not None:
-        filters.append(Quantity.available >= min_available)
-    if min_ordered is not None:
-        filters.append(Quantity.ordered >= min_ordered)
-    if min_backordered is not None:
-        filters.append(Quantity.backordered >= min_backordered)
+    if on_hand is not None:
+        filters.append(stock_level_filter(Quantity.on_hand, on_hand, on_hand_cmp))
+    if reserved is not None:
+        filters.append(stock_level_filter(Quantity.reserved, reserved, reserved_cmp))
+    if available is not None:
+        filters.append(stock_level_filter(Quantity.available, available, available_cmp))
+    if ordered is not None:
+        filters.append(stock_level_filter(Quantity.ordered, ordered, ordered_cmp))
+    if back_ordered is not None:
+        filters.append(stock_level_filter(Quantity.backordered, back_ordered, back_ordered_cmp))
+    if has_orders:
+        order_item_exists = select(OrderItem.id).where(
+            or_(
+                OrderItem.product_id == Product.id,
+                OrderItem.child_product_id == ChildProduct.id,
+            )
+        ).correlate(Product, ChildProduct).exists()
+        filters.append(order_item_exists)
 
     if filters:
         query = query.where(and_(*filters))

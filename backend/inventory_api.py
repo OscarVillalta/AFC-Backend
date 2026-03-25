@@ -1,4 +1,4 @@
-from . import startup
+import _startup
 from app import create_app
 from database import models
 app = create_app()
