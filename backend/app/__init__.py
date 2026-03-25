@@ -1,4 +1,6 @@
 from flask import Flask, g, request
+import os
+from flask_jwt_extended import JWTManager
 from database import SessionLocal
 from backend.app.api.Routes.suppliers import supplier_bp
 from backend.app.api.Routes.quantity import quantity_bp
@@ -18,6 +20,7 @@ from backend.app.api.Routes.blocked_items import blocked_item_bp
 from backend.app.api.Routes.media import media_bp
 from backend.app.api.Routes.warehouses import warehouse_bp
 from backend.app.api.Routes.transfers import transfer_bp
+from backend.app.api.Routes.auth import auth_bp
 from flask_cors import CORS
 
 # Default warehouse ID used when the X-Warehouse-Id header is absent
@@ -28,7 +31,14 @@ def create_app():
     app = Flask(__name__)
     CORS(app, resources={r"/*": {"origins": "*"}})
 
+    # JWT configuration
+    app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
+    if not app.config["JWT_SECRET_KEY"]:
+        raise RuntimeError("JWT_SECRET_KEY environment variable is not set.")
+    JWTManager(app)
+
     #BluePrints
+    app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(supplier_bp, url_prefix='/api')
     app.register_blueprint(air_filter_bp, url_prefix='/api')
     app.register_blueprint(quantity_bp, url_prefix='/api')
