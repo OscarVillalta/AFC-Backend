@@ -3,6 +3,8 @@ from flask import Blueprint, request, jsonify
 from marshmallow import ValidationError
 from app.api.Schemas.qb_schema import QBJobResultSchema, QBJobSchema
 from app.config import Config
+from app.api.tokens import role_required
+from database.models import UserRole
 
 QB_AGENT_URL = QB_AGENT_URL = os.getenv("QB_AGENT_URL", "http://127.0.0.1:5055")
 
@@ -19,6 +21,7 @@ job_result_schema = QBJobResultSchema()
 
 
 @qb_bp.post("/qb/job")
+@role_required(UserRole.ADMIN.value, UserRole.SALES.value)
 def run_qb_job():
     try:
         job = job_schema.load(request.get_json(force=True))

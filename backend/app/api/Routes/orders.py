@@ -1,9 +1,10 @@
 from flask import Blueprint, g, jsonify, request
+from flask_jwt_extended import jwt_required
 from sqlalchemy import select, func, null
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.api.Schemas.order_schema import OrderSchema
-from database.models import Customer, Supplier, OrderType, OrderStatus, OrderItemType, Transaction, TransactionState, OUTGOING_TYPES, VALID_ORDER_TYPES
+from database.models import Customer, Supplier, OrderType, OrderStatus, OrderItemType, Transaction, TransactionState, OUTGOING_TYPES, VALID_ORDER_TYPES, UserRole
 from database.models import Order, OrderItem, Product, AirFilter, StockItem, StockItemCategory, Quantity, OrderTracker, Department, BlockedItem
 from marshmallow import ValidationError
 from datetime import datetime, timedelta, timezone
@@ -12,6 +13,7 @@ import re
 import requests
 
 from app.config import Config
+from app.api.tokens import role_required
 from app.api.validation import (
     validate_positive_integer,
     validate_string,
@@ -37,6 +39,7 @@ order_list_schema = OrderSchema(many=True)
 
 # GET all orders (paginated, filterable)
 @order_bp.route("/orders", methods=["GET"])
+@jwt_required()
 def get_orders() -> Tuple[Any, int]:
     """
     Retrieve all orders with pagination and optional filters.
@@ -109,6 +112,7 @@ def get_orders() -> Tuple[Any, int]:
 
 # GET single order with items
 @order_bp.route("/orders/<int:order_id>", methods=["GET"])
+@jwt_required()
 def get_order(order_id: int) -> Tuple[Any, int]:
     """
     Retrieve a single order by ID with all its items.
@@ -172,6 +176,7 @@ def get_order(order_id: int) -> Tuple[Any, int]:
 
 # GET order items
 @order_bp.route("/orders/<int:order_id>/items", methods=["GET"])
+@jwt_required()
 def get_order_items(order_id):
     db = g.db
     order = db.get(Order, order_id)
@@ -249,6 +254,7 @@ def get_order_items(order_id):
 
 # GET serialized order items string
 @order_bp.route("/orders/<int:order_id>/serialize", methods=["GET"])
+@jwt_required()
 def serialize_order(order_id):
     db = g.db
     order = db.get(Order, order_id)
@@ -367,6 +373,7 @@ def update_order_status(order_id):
     }), 200
 
 @order_bp.route("/orders/<int:order_id>", methods=["DELETE"])
+@role_required(UserRole.ADMIN.value, UserRole.SALES.value)
 def delete_order(order_id: int):
     """
     Delete an order only if it has no transactions on any of its items.
@@ -539,6 +546,7 @@ def parse_date(date_str: str):
 # ===============================
 
 @order_bp.route("/orders/search", methods=["GET"])
+@jwt_required()
 def search_orders():
     db = g.db
 
