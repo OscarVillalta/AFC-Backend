@@ -1,6 +1,7 @@
 from flask import Blueprint, g, jsonify, request
 from sqlalchemy import select
 from marshmallow import ValidationError
+from flask_jwt_extended import get_jwt_identity
 
 from database.models import User, UserRole
 from backend.app.api.tokens import role_required
@@ -86,6 +87,9 @@ def update_user(id):
         user.email = data["email"]
 
     if "role" in data:
+        # Prevent admin from changing their own role
+        if str(user.id) == get_jwt_identity() and data["role"] != user.role:
+            return jsonify({"error": "Cannot change your own role"}), 400
         user.role = data["role"]
 
     if "password" in data:
@@ -103,6 +107,10 @@ def delete_user(id):
     user = db.get(User, id)
     if not user:
         return jsonify({"error": "User not found"}), 404
+
+    # Prevent admin from deleting themselves
+    if str(user.id) == get_jwt_identity():
+        return jsonify({"error": "Cannot delete your own account"}), 400
 
     db.delete(user)
     db.commit()
