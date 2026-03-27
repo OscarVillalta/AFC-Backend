@@ -45,7 +45,7 @@ def get_media_item(id):
 
 # --- POST new Media item ---
 @media_bp.route("/media", methods=["POST"])
-@permission_required("catalog:create", "catalog:edit", "catalog:archive")
+@permission_required("catalog:create")
 def create_media():
     db = g.db
     try:
@@ -92,7 +92,7 @@ def create_media():
 
 # --- PATCH (partial update) ---
 @media_bp.route("/media/<int:id>", methods=["PATCH"])
-@permission_required("catalog:create", "catalog:edit", "catalog:archive")
+@permission_required("catalog:edit")
 def update_media(id):
     db = g.db
     item = db.get(Media, id)
@@ -113,7 +113,7 @@ def update_media(id):
 
 # --- PUT (full replacement) ---
 @media_bp.route("/media/<int:id>", methods=["PUT"])
-@permission_required("catalog:create", "catalog:edit", "catalog:archive")
+@permission_required("catalog:edit")
 def replace_media(id):
     db = g.db
     item = db.get(Media, id)
@@ -134,7 +134,7 @@ def replace_media(id):
 
 # --- DELETE ---
 @media_bp.route("/media/<int:id>", methods=["DELETE"])
-@permission_required("catalog:create", "catalog:edit", "catalog:archive")
+@permission_required("catalog:archive")
 def delete_media(id):
     db = g.db
     item = db.get(Media, id)

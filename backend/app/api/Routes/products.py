@@ -143,7 +143,7 @@ def get_product(id):
 
 
 @product_bp.route("/products/<int:id>/archive", methods=["PATCH"])
-@permission_required("catalog:create", "catalog:edit", "catalog:archive")
+@permission_required("catalog:archive")
 def archive_product(id):
     db = g.db
     product = db.get(Product, id)
@@ -161,7 +161,7 @@ def archive_product(id):
     return jsonify({"message": "Product archived successfully"}), 200
 
 @product_bp.route("/products/<int:id>", methods=["DELETE"])
-@permission_required("catalog:create", "catalog:edit", "catalog:archive")
+@permission_required("catalog:archive")
 def delete_product(id):
     return jsonify({"error": "Products cannot be deleted. Archive instead."}), 409
 

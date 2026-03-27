@@ -373,7 +373,7 @@ def update_order_status(order_id):
     }), 200
 
 @order_bp.route("/orders/<int:order_id>", methods=["DELETE"])
-@permission_required("orders:create", "orders:edit")
+@permission_required("orders:edit")
 def delete_order(order_id: int):
     """
     Delete an order only if it has no transactions on any of its items.

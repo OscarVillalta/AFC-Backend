@@ -45,7 +45,7 @@ def get_air_filter(id):
 
 # --- POST new Air Filter ---
 @air_filter_bp.route("/air_filters", methods=["POST"])
-@permission_required("catalog:create", "catalog:edit", "catalog:archive")
+@permission_required("catalog:create")
 def create_air_filter():
     db = g.db
     try:
@@ -91,7 +91,7 @@ def create_air_filter():
 
 # --- PATCH (partial update) ---
 @air_filter_bp.route("/air_filters/<int:id>", methods=["PATCH"])
-@permission_required("catalog:create", "catalog:edit", "catalog:archive")
+@permission_required("catalog:edit")
 def update_air_filter(id):
     db = g.db
     flt = db.get(AirFilter, id)
@@ -112,7 +112,7 @@ def update_air_filter(id):
 
 # --- PUT (full replacement) ---
 @air_filter_bp.route("/air_filters/<int:id>", methods=["PUT"])
-@permission_required("catalog:create", "catalog:edit", "catalog:archive")
+@permission_required("catalog:edit")
 def replace_air_filter(id):
     db = g.db
     flt = db.get(AirFilter, id)
@@ -133,7 +133,7 @@ def replace_air_filter(id):
 
 # --- DELETE ---
 @air_filter_bp.route("/air_filters/<int:id>", methods=["DELETE"])
-@permission_required("catalog:create", "catalog:edit", "catalog:archive")
+@permission_required("catalog:archive")
 def delete_air_filter(id):
     db = g.db
     flt = db.get(AirFilter, id)

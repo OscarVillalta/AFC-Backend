@@ -54,7 +54,7 @@ def get_stock_item(id):
 # 🔹 POST new stock item
 # =====================================================
 @stock_item_bp.route("/stock_items", methods=["POST"])
-@permission_required("catalog:create", "catalog:edit", "catalog:archive")
+@permission_required("catalog:create")
 def create_stock_item():
     db = g.db
 
@@ -119,7 +119,7 @@ def create_stock_item():
 # 🔹 PATCH (partial update)
 # =====================================================
 @stock_item_bp.route("/stock_items/<int:id>", methods=["PATCH"])
-@permission_required("catalog:create", "catalog:edit", "catalog:archive")
+@permission_required("catalog:edit")
 def update_stock_item(id):
     db = g.db
     item = db.execute(select(StockItem).where(StockItem.id == id)).scalars().first()
@@ -150,7 +150,7 @@ def update_stock_item(id):
 # 🔹 DELETE
 # =====================================================
 @stock_item_bp.route("/stock_items/<int:id>", methods=["DELETE"])
-@permission_required("catalog:create", "catalog:edit", "catalog:archive")
+@permission_required("catalog:archive")
 def delete_stock_item(id):
     db = g.db
     item = db.execute(select(StockItem).where(StockItem.id == id)).scalars().first()
