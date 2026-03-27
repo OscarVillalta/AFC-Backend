@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from flask import Blueprint, jsonify, request, g, current_app
+from flask_jwt_extended import jwt_required
 from sqlalchemy import func, or_, select, text
 
 from database.models import (
@@ -14,7 +15,9 @@ from database.models import (
     Transaction,
     TransactionReason,
     TransactionState,
+    UserRole,
 )
+from app.api.tokens import role_required
 from app.api.validation import validate_pagination, ValidationError, sanitize_search_string
 
 
@@ -273,6 +276,8 @@ def _create_conversion(db, batch: ConversionBatch, payload: dict, warehouse_id: 
 
 
 @conversion_bp.route("/conversion_batches", methods=["POST"])
+@jwt_required()
+@role_required(UserRole.ADMIN.value, UserRole.LOGISTICS.value, "Sewers")
 def create_conversion_batch():
     db = g.db
     data = request.get_json() or {}
@@ -334,6 +339,7 @@ def create_conversion_batch():
 
 
 @conversion_bp.route("/conversion_batches/search", methods=["GET"])
+@jwt_required()
 def search_conversion_batches():
     db = g.db
     try:
@@ -416,6 +422,7 @@ def search_conversion_batches():
 
 
 @conversion_bp.route("/conversion_batches/<int:batch_id>", methods=["GET"])
+@jwt_required()
 def get_conversion_batch(batch_id: int):
     db = g.db
     batch = db.get(ConversionBatch, batch_id)
@@ -444,6 +451,7 @@ def get_conversion_batch(batch_id: int):
 
 
 @conversion_bp.route("/conversion_batches/<int:batch_id>/conversions", methods=["POST"])
+@jwt_required()
 def add_conversion_to_batch(batch_id: int):
     db = g.db
     batch = db.get(ConversionBatch, batch_id)
@@ -484,6 +492,8 @@ def add_conversion_to_batch(batch_id: int):
 
 
 @conversion_bp.route("/conversion_batches/<int:batch_id>", methods=["PATCH"])
+@jwt_required()
+@role_required(UserRole.ADMIN.value, UserRole.LOGISTICS.value, "Sewers")
 def update_conversion_batch(batch_id: int):
     db = g.db
     data = request.get_json() or {}
@@ -508,6 +518,8 @@ def update_conversion_batch(batch_id: int):
 
 
 @conversion_bp.route("/conversions/<int:conversion_id>/rollback", methods=["PATCH"])
+@jwt_required()
+@role_required(UserRole.ADMIN.value, UserRole.LOGISTICS.value)
 def rollback_conversion(conversion_id: int):
     db = g.db
     payload = request.get_json() or {}
@@ -578,6 +590,7 @@ def rollback_conversion(conversion_id: int):
 
 
 @conversion_bp.route("/conversion_batches/<int:batch_id>/rollback", methods=["PATCH"])
+@jwt_required()
 def rollback_conversion_batch(batch_id: int):
     db = g.db
     batch = db.get(ConversionBatch, batch_id)
@@ -643,6 +656,7 @@ def rollback_conversion_batch(batch_id: int):
 
 
 @conversion_bp.route("/conversions/search", methods=["GET"])
+@jwt_required()
 def search_conversions():
     db = g.db
     try:
