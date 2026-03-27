@@ -54,7 +54,7 @@ def create_user():
 
     user = User(
         email=data["email"],
-        role=data["role"],
+        role_id=data["role_id"],
     )
     user.set_password(data["password"])
 
@@ -86,11 +86,11 @@ def update_user(id):
             return jsonify({"error": "A user with this email already exists"}), 400
         user.email = data["email"]
 
-    if "role" in data:
+    if "role_id" in data:
         # Prevent admin from changing their own role
-        if str(user.id) == get_jwt_identity() and data["role"] != user.role:
+        if str(user.id) == get_jwt_identity() and data["role_id"] != user.role_id:
             return jsonify({"error": "Cannot change your own role"}), 400
-        user.role = data["role"]
+        user.role_id = data["role_id"]
 
     if "password" in data:
         user.set_password(data["password"])

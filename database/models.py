@@ -3,7 +3,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship, foreign, object_session
-from sqlalchemy import ForeignKey, String, Integer, BigInteger, Boolean, Float, Index, Sequence, func, text, Text, UniqueConstraint, select as sa_select
+from sqlalchemy import ForeignKey, String, Integer, BigInteger, Boolean, Float, Index, Sequence, func, text, Text, UniqueConstraint, select as sa_select, Table, Column
 from sqlalchemy.inspection import inspect
 from sqlalchemy.ext.hybrid import hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -952,8 +952,36 @@ class OrderTrackerStage(Base, SerializerMixin):
 
 
 # =====================================================
-# 🔹 User (Authentication / RBAC)
+# 🔹 RBAC: Role, Permission, User
 # =====================================================
+
+role_permissions = Table(
+    "role_permissions",
+    Base.metadata,
+    Column("role_id", Integer, ForeignKey("roles.id"), primary_key=True),
+    Column("permission_id", Integer, ForeignKey("permissions.id"), primary_key=True),
+)
+
+
+class Permission(Base, SerializerMixin):
+    __tablename__ = "permissions"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+
+class Role(Base, SerializerMixin):
+    __tablename__ = "roles"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    permissions: Mapped[List["Permission"]] = relationship(
+        "Permission", secondary=role_permissions, lazy="selectin"
+    )
+
 
 class User(Base, SerializerMixin):
     __tablename__ = "users"
@@ -961,8 +989,10 @@ class User(Base, SerializerMixin):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
-    role: Mapped[str] = mapped_column(String, nullable=False, default=UserRole.SALES.value)
+    role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("roles.id"), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    role: Mapped[Optional["Role"]] = relationship("Role", lazy="selectin")
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)

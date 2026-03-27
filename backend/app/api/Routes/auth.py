@@ -2,7 +2,7 @@ from flask import Blueprint, g, jsonify, request
 from flask_jwt_extended import create_access_token
 from sqlalchemy import select
 from werkzeug.security import check_password_hash
-from database.models import User
+from database.models import User, Role
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -36,15 +36,24 @@ def login():
     if not user.is_active:
         return jsonify({"error": "Account is deactivated"}), 403
 
+    role_name = user.role.name if user.role else None
+    permissions = (
+        [p.name for p in user.role.permissions] if user.role else []
+    )
+
     access_token = create_access_token(
         identity=str(user.id),
-        additional_claims={"role": user.role}
+        additional_claims={
+            "role": role_name,
+            "permissions": permissions,
+        }
     )
 
     return jsonify({
         "access_token": access_token,
         "email": user.email,
-        "role": user.role
+        "role": role_name,
+        "permissions": permissions,
     }), 200
 
 @auth_bp.route('/signup', methods=['POST'])
@@ -66,15 +75,19 @@ def signup():
     if email_check is not None:
         return jsonify({"error": "Email already exists"}), 409
 
-    user = User(email=email, role="Admin", is_active=True)
+    # Assign the first available role (Admin) by default
+    admin_role = db.execute(select(Role).where(Role.name == "Admin")).scalar_one_or_none()
+
+    user = User(email=email, role_id=admin_role.id if admin_role else None, is_active=True)
     user.set_password(password)
     db.add(user)
     db.commit()
 
+    role_name = user.role.name if user.role else None
 
     return jsonify({
         "User": {
             "email": user.email,
-            "role": user.role
+            "role": role_name
         }
     }), 200
