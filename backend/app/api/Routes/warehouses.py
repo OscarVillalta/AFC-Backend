@@ -1,4 +1,5 @@
 from flask import g, jsonify, request, Blueprint
+from flask_jwt_extended import jwt_required
 from sqlalchemy import select
 from database.models import Warehouse, Product, Quantity
 from marshmallow import ValidationError
@@ -11,6 +12,7 @@ warehouse_list_schema = WarehouseSchema(many=True)
 
 # --- GET all warehouses ---
 @warehouse_bp.route("/warehouses", methods=["GET"])
+@jwt_required()
 def get_warehouses():
     db = g.db
     results = db.execute(select(Warehouse)).scalars().all()
@@ -19,6 +21,7 @@ def get_warehouses():
 
 # --- GET single warehouse ---
 @warehouse_bp.route("/warehouses/<int:id>", methods=["GET"])
+@jwt_required()
 def get_warehouse(id):
     db = g.db
     warehouse = db.get(Warehouse, id)
