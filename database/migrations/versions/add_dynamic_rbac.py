@@ -51,6 +51,31 @@ def upgrade() -> None:
     op.add_column('users', sa.Column('role_id', sa.Integer(), nullable=True))
     op.create_foreign_key('fk_users_role_id', 'users', 'roles', ['role_id'], ['id'])
 
+    # --- Data migration: seed default roles and map existing users ---
+    roles_table = sa.table('roles',
+        sa.column('id', sa.Integer),
+        sa.column('name', sa.String),
+        sa.column('description', sa.String),
+    )
+    op.bulk_insert(roles_table, [
+        {'id': 1, 'name': 'Admin', 'description': 'Administrator with full access'},
+        {'id': 2, 'name': 'Warehouse', 'description': 'Warehouse staff'},
+        {'id': 3, 'name': 'Sales', 'description': 'Sales team member'},
+        {'id': 4, 'name': 'Service', 'description': 'Service team member'},
+    ])
+
+    # Map existing user role strings to role_id
+    users_table = sa.table('users',
+        sa.column('role', sa.String),
+        sa.column('role_id', sa.Integer),
+    )
+    for role_name, role_id in [('Admin', 1), ('Warehouse', 2), ('Sales', 3), ('Service', 4)]:
+        op.execute(
+            users_table.update()
+            .where(users_table.c.role == role_name)
+            .values(role_id=role_id)
+        )
+
     # Drop the old role string column
     op.drop_column('users', 'role')
 
@@ -58,6 +83,19 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Re-add the old role string column
     op.add_column('users', sa.Column('role', sa.String(), nullable=False, server_default='Sales'))
+
+    # Reverse data migration: map role_id back to role string
+    users_table = sa.table('users',
+        sa.column('role', sa.String),
+        sa.column('role_id', sa.Integer),
+    )
+    for role_name, role_id in [('Admin', 1), ('Warehouse', 2), ('Sales', 3), ('Service', 4)]:
+        op.execute(
+            users_table.update()
+            .where(users_table.c.role_id == role_id)
+            .values(role=role_name)
+        )
+
     op.drop_constraint('fk_users_role_id', 'users', type_='foreignkey')
     op.drop_column('users', 'role_id')
 

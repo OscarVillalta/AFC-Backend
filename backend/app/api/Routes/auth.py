@@ -77,8 +77,10 @@ def signup():
 
     # Assign the first available role (Admin) by default
     admin_role = db.execute(select(Role).where(Role.name == "Admin")).scalar_one_or_none()
+    if not admin_role:
+        return jsonify({"error": "Default role 'Admin' not found. Please seed roles first."}), 500
 
-    user = User(email=email, role_id=admin_role.id if admin_role else None, is_active=True)
+    user = User(email=email, role_id=admin_role.id, is_active=True)
     user.set_password(password)
     db.add(user)
     db.commit()
