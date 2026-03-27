@@ -1,5 +1,6 @@
 from flask import g, jsonify, request
 from flask import Blueprint
+from flask_jwt_extended import jwt_required
 from sqlalchemy import select
 from database.models import Supplier
 from marshmallow import ValidationError
@@ -10,6 +11,7 @@ supplier_schema = SupplierSchema()
 supplier_list_schema = SupplierSchema(many=True)
 
 @supplier_bp.route('/suppliers', methods=['GET'])
+@jwt_required()
 def get_suppliers():
     db = g.db
     try:
@@ -19,6 +21,7 @@ def get_suppliers():
         db.close()
 
 @supplier_bp.route('/suppliers/<int:id>', methods=['GET'])
+@jwt_required()
 def get_supplier(id):
     db = g.db
     try:

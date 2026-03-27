@@ -1,4 +1,5 @@
 from flask import g, jsonify, Blueprint
+from flask_jwt_extended import jwt_required
 from sqlalchemy import func, select, case
 from database.models import Product, Quantity
 
@@ -7,6 +8,7 @@ inventory_stats_bp = Blueprint("inventory_stats", __name__)
 
 
 @inventory_stats_bp.route("/inventory/stats", methods=["GET"])
+@jwt_required()
 def get_inventory_stats():
     db = g.db
     warehouse_id = g.active_warehouse_id
