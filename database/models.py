@@ -96,12 +96,6 @@ class Department(str, Enum):
     ACCOUNTING = "ACCOUNTING"
 
 
-class UserRole(str, Enum):
-    ADMIN = "Admin"
-    WAREHOUSE = "Warehouse"
-    SALES = "Sales"
-    SERVICE = "Service"
-
 
 # =====================================================
 # 🔹 Base Serializer

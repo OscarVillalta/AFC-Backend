@@ -5,10 +5,10 @@ from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import selectinload, with_loader_criteria
 from database.models import (
     Product, ProductCategory, AirFilter, StockItem, Media,
-    Quantity, Supplier, ChildProduct, UserRole,
+    Quantity, Supplier, ChildProduct,
 )
 from app.api.Schemas.product_schema import ProductSchema
-from app.api.tokens import role_required
+from app.api.tokens import permission_required
 
 product_bp = Blueprint("products", __name__)
 product_schema = ProductSchema()
@@ -143,7 +143,7 @@ def get_product(id):
 
 
 @product_bp.route("/products/<int:id>/archive", methods=["PATCH"])
-@role_required(UserRole.ADMIN.value)
+@permission_required("catalog:create", "catalog:edit", "catalog:archive")
 def archive_product(id):
     db = g.db
     product = db.get(Product, id)
@@ -161,7 +161,7 @@ def archive_product(id):
     return jsonify({"message": "Product archived successfully"}), 200
 
 @product_bp.route("/products/<int:id>", methods=["DELETE"])
-@role_required(UserRole.ADMIN.value)
+@permission_required("catalog:create", "catalog:edit", "catalog:archive")
 def delete_product(id):
     return jsonify({"error": "Products cannot be deleted. Archive instead."}), 409
 

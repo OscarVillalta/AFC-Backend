@@ -4,7 +4,7 @@ from sqlalchemy import select, func, null
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.api.Schemas.order_schema import OrderSchema
-from database.models import Customer, Supplier, OrderType, OrderStatus, OrderItemType, Transaction, TransactionState, OUTGOING_TYPES, VALID_ORDER_TYPES, UserRole
+from database.models import Customer, Supplier, OrderType, OrderStatus, OrderItemType, Transaction, TransactionState, OUTGOING_TYPES, VALID_ORDER_TYPES
 from database.models import Order, OrderItem, Product, AirFilter, StockItem, StockItemCategory, Quantity, OrderTracker, Department, BlockedItem
 from marshmallow import ValidationError
 from datetime import datetime, timedelta, timezone
@@ -13,7 +13,7 @@ import re
 import requests
 
 from app.config import Config
-from app.api.tokens import role_required
+from app.api.tokens import permission_required
 from app.api.validation import (
     validate_positive_integer,
     validate_string,
@@ -373,7 +373,7 @@ def update_order_status(order_id):
     }), 200
 
 @order_bp.route("/orders/<int:order_id>", methods=["DELETE"])
-@role_required(UserRole.ADMIN.value, UserRole.SALES.value)
+@permission_required("orders:create", "orders:edit")
 def delete_order(order_id: int):
     """
     Delete an order only if it has no transactions on any of its items.

@@ -1,11 +1,11 @@
 from flask import g, jsonify, request, Blueprint
 from flask_jwt_extended import jwt_required
 from sqlalchemy import func, select, and_, or_
-from database.models import Media, MediaCategory, Supplier, Product, ProductCategory, Quantity, ChildProduct, Warehouse, OrderItem, UserRole
+from database.models import Media, MediaCategory, Supplier, Product, ProductCategory, Quantity, ChildProduct, Warehouse, OrderItem
 from marshmallow import ValidationError
 from app.api.Schemas.media_schema import MediaSchema, MediaCategorySchema
 from app.api.filters import _parse_stock_param, stock_level_filter
-from app.api.tokens import role_required
+from app.api.tokens import permission_required
 
 media_bp = Blueprint("media", __name__)
 media_schema = MediaSchema()
@@ -45,7 +45,7 @@ def get_media_item(id):
 
 # --- POST new Media item ---
 @media_bp.route("/media", methods=["POST"])
-@role_required(UserRole.ADMIN.value)
+@permission_required("catalog:create", "catalog:edit", "catalog:archive")
 def create_media():
     db = g.db
     try:
@@ -92,7 +92,7 @@ def create_media():
 
 # --- PATCH (partial update) ---
 @media_bp.route("/media/<int:id>", methods=["PATCH"])
-@role_required(UserRole.ADMIN.value)
+@permission_required("catalog:create", "catalog:edit", "catalog:archive")
 def update_media(id):
     db = g.db
     item = db.get(Media, id)
@@ -113,7 +113,7 @@ def update_media(id):
 
 # --- PUT (full replacement) ---
 @media_bp.route("/media/<int:id>", methods=["PUT"])
-@role_required(UserRole.ADMIN.value)
+@permission_required("catalog:create", "catalog:edit", "catalog:archive")
 def replace_media(id):
     db = g.db
     item = db.get(Media, id)
@@ -134,7 +134,7 @@ def replace_media(id):
 
 # --- DELETE ---
 @media_bp.route("/media/<int:id>", methods=["DELETE"])
-@role_required(UserRole.ADMIN.value)
+@permission_required("catalog:create", "catalog:edit", "catalog:archive")
 def delete_media(id):
     db = g.db
     item = db.get(Media, id)
