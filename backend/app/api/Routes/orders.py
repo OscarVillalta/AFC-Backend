@@ -303,6 +303,8 @@ def serialize_order(order_id):
 
 # Create new order
 @order_bp.route("/orders", methods=["POST"])
+@jwt_required()
+@role_required(UserRole.ADMIN.value, UserRole.SALES.value, UserRole.LOGISTICS.value)
 def create_order():
     db = g.db
 
@@ -358,6 +360,7 @@ def create_order():
 
 # PATCH: Force update status (recalculate)
 @order_bp.route("/orders/<int:order_id>/status", methods=["PATCH"])
+@jwt_required()
 def update_order_status(order_id):
     db = g.db
     order = db.get(Order, order_id)
@@ -408,6 +411,7 @@ def delete_order(order_id: int):
 
 
 @order_bp.route("/orders/<int:order_id>", methods=["PATCH"])
+@jwt_required()
 def patch_order(order_id):
     db = g.db
     order = db.get(Order, order_id)
@@ -755,6 +759,7 @@ def search_orders():
 # ===============================
 
 @order_bp.route("/orders/<int:order_id>/allocate-all", methods=["POST"])
+@jwt_required()
 def allocate_all(order_id):
     db = g.db
 
@@ -873,6 +878,8 @@ def get_or_create_qb_supplier(db):
 
 
 @order_bp.route("/orders/from-qb", methods=["POST"])
+@jwt_required()
+@role_required(UserRole.ADMIN.value, UserRole.SALES.value, UserRole.LOGISTICS.value)
 def create_order_from_qb():
     """
     Create a new order from QuickBooks data.
