@@ -1,7 +1,8 @@
 from flask import Blueprint, g, jsonify, request
+from flask_jwt_extended import jwt_required, get_jwt
 from sqlalchemy import select, func, or_, case, and_
 from sqlalchemy.exc import IntegrityError, DatabaseError
-from database.models import Order, OrderTracker, OrderHistory, OrderTrackerStage, Department, OutgoingOrderType, Customer, Supplier, OrderType, OUTGOING_TYPES
+from database.models import Order, OrderTracker, OrderHistory, OrderTrackerStage, Department, OutgoingOrderType, Customer, Supplier, OrderType, OUTGOING_TYPES, UserRole
 from datetime import datetime, timezone
 from typing import Tuple, Any
 
@@ -15,6 +16,13 @@ from app.api.error_handling import (
 # (outgoing types + incoming / purchase orders)
 TRACKER_TYPES = OUTGOING_TYPES | {OrderType.INCOMING.value}
 
+# Maps each non-admin UserRole to the Departments they are allowed to update.
+ROLE_DEPARTMENT_MAP = {
+    UserRole.SALES.value: [Department.SALES.value],
+    UserRole.WAREHOUSE.value: [Department.LOGISTICS.value, Department.DELIVERY_DEPT.value],
+    UserRole.SERVICE.value: [Department.SERVICE.value],
+}
+
 # SQLAlchemy CASE expression: total stages expected for each order type
 # Must mirror the frontend step-path definitions (INSTALLATION_STEPS, WILL_CALL_STEPS, PURCHASE_ORDER_STEPS)
 _total_steps_expr = case(
@@ -27,6 +35,7 @@ tracker_bp = Blueprint("tracker", __name__)
 
 
 @tracker_bp.route("/orders/<int:order_id>/tracker", methods=["GET"])
+@jwt_required()
 def get_order_tracker(order_id: int) -> Tuple[Any, int]:
     """Return the current tracking state and full history for an order."""
     db = g.db
@@ -60,6 +69,7 @@ def get_order_tracker(order_id: int) -> Tuple[Any, int]:
 
 
 @tracker_bp.route("/orders/<int:order_id>/tracker", methods=["POST"])
+@jwt_required()
 def create_order_tracker(order_id: int) -> Tuple[Any, int]:
     """Initialize tracking for an order (sets current_department and step_index)."""
     db = g.db
@@ -98,10 +108,17 @@ def create_order_tracker(order_id: int) -> Tuple[Any, int]:
 
 
 @tracker_bp.route("/orders/<int:order_id>/tracker", methods=["PATCH"])
+@jwt_required()
 def update_order_tracker(order_id: int) -> Tuple[Any, int]:
     """Advance the tracker to a new department/step or set backordered flag."""
     db = g.db
     data = request.get_json() or {}
+
+    user_role = get_jwt().get("role")
+    if user_role != UserRole.ADMIN.value:
+        target_department = data.get("current_department")
+        if target_department and target_department not in ROLE_DEPARTMENT_MAP.get(user_role, []):
+            return jsonify({"error": "Forbidden: Your role does not have permission to update steps for this department."}), 403
 
     order = db.get(Order, order_id)
     if not order:
@@ -140,10 +157,19 @@ def update_order_tracker(order_id: int) -> Tuple[Any, int]:
 
 
 @tracker_bp.route("/orders/<int:order_id>/history", methods=["POST"])
+@jwt_required()
 def add_order_history(order_id: int) -> Tuple[Any, int]:
     """Append a history entry (department transition + action) for an order."""
     db = g.db
     data = request.get_json() or {}
+
+    user_role = get_jwt().get("role")
+    if user_role != UserRole.ADMIN.value:
+        allowed = ROLE_DEPARTMENT_MAP.get(user_role, [])
+        to_dept = data.get("to_department")
+        from_dept = data.get("from_department")
+        if (to_dept and to_dept not in allowed) or (from_dept and from_dept not in allowed):
+            return jsonify({"error": "Forbidden: Your role does not have permission to update steps for this department."}), 403
 
     order = db.get(Order, order_id)
     if not order:
@@ -190,10 +216,17 @@ def add_order_history(order_id: int) -> Tuple[Any, int]:
 
 
 @tracker_bp.route("/orders/<int:order_id>/tracker/stages/<int:stage_index>", methods=["PATCH"])
+@jwt_required()
 def toggle_tracker_stage(order_id: int, stage_index: int) -> Tuple[Any, int]:
     """Toggle the completion state of a specific tracker stage for an order."""
     db = g.db
     data = request.get_json() or {}
+
+    user_role = get_jwt().get("role")
+    if user_role != UserRole.ADMIN.value:
+        target_department = data.get("department")
+        if target_department and target_department not in ROLE_DEPARTMENT_MAP.get(user_role, []):
+            return jsonify({"error": "Forbidden: Your role does not have permission to update steps for this department."}), 403
 
     order = db.get(Order, order_id)
     if not order:
@@ -242,6 +275,7 @@ def toggle_tracker_stage(order_id: int, stage_index: int) -> Tuple[Any, int]:
 
 
 @tracker_bp.route("/packing-slips", methods=["GET"])
+@jwt_required()
 def get_packing_slips() -> Tuple[Any, int]:
     """Return all tracker-eligible orders (outgoing + purchase/incoming) with their tracker and history info."""
     db = g.db
