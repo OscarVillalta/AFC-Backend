@@ -22,6 +22,7 @@ from backend.app.api.Routes.warehouses import warehouse_bp
 from backend.app.api.Routes.transfers import transfer_bp
 from backend.app.api.Routes.auth import auth_bp
 from backend.app.api.Routes.users import user_bp
+from backend.app.api.Routes.roles import role_bp
 from flask_cors import CORS
 
 # Default warehouse ID used when the X-Warehouse-Id header is absent
@@ -59,6 +60,7 @@ def create_app():
     app.register_blueprint(warehouse_bp, url_prefix="/api")
     app.register_blueprint(transfer_bp, url_prefix="/api")
     app.register_blueprint(user_bp, url_prefix="/api")
+    app.register_blueprint(role_bp, url_prefix="/api")
 
 
     #Db_session wrappers
