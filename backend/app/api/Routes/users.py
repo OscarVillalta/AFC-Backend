@@ -3,20 +3,18 @@ from sqlalchemy import select
 from marshmallow import ValidationError
 from flask_jwt_extended import get_jwt_identity
 
-from database.models import User, UserRole
-from backend.app.api.tokens import role_required
+from database.models import User
+from backend.app.api.tokens import permission_required
 from backend.app.api.Schemas.user_schema import UserSchema
 
 user_bp = Blueprint("users", __name__)
 user_schema = UserSchema()
 user_list_schema = UserSchema(many=True)
 
-ADMIN = UserRole.ADMIN.value
-
 
 # --- GET all users ---
 @user_bp.route("/users", methods=["GET"])
-@role_required(ADMIN)
+@permission_required("users:manage", "roles:manage")
 def get_users():
     db = g.db
     results = db.execute(select(User)).scalars().all()
@@ -25,7 +23,7 @@ def get_users():
 
 # --- GET single user ---
 @user_bp.route("/users/<int:id>", methods=["GET"])
-@role_required(ADMIN)
+@permission_required("users:manage", "roles:manage")
 def get_user(id):
     db = g.db
     user = db.get(User, id)
@@ -36,7 +34,7 @@ def get_user(id):
 
 # --- POST create user ---
 @user_bp.route("/users", methods=["POST"])
-@role_required(ADMIN)
+@permission_required("users:manage", "roles:manage")
 def create_user():
     db = g.db
 
@@ -65,7 +63,7 @@ def create_user():
 
 # --- PATCH update user ---
 @user_bp.route("/users/<int:id>", methods=["PATCH"])
-@role_required(ADMIN)
+@permission_required("users:manage", "roles:manage")
 def update_user(id):
     db = g.db
     user = db.get(User, id)
@@ -101,7 +99,7 @@ def update_user(id):
 
 # --- DELETE user ---
 @user_bp.route("/users/<int:id>", methods=["DELETE"])
-@role_required(ADMIN)
+@permission_required("users:manage", "roles:manage")
 def delete_user(id):
     db = g.db
     user = db.get(User, id)

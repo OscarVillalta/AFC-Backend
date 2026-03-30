@@ -1,12 +1,12 @@
 from flask import g, jsonify, request, Blueprint
 from flask_jwt_extended import jwt_required
 from sqlalchemy import func, select, and_, or_
-from database.models import AirFilter, AirFilterCategory, Supplier, Product, ProductCategory, Quantity, ChildProduct, Warehouse, OrderItem, UserRole
+from database.models import AirFilter, AirFilterCategory, Supplier, Product, ProductCategory, Quantity, ChildProduct, Warehouse, OrderItem
 from marshmallow import ValidationError
 from app.api.Schemas.air_filters_schema import AirFilterSchema
 from app.api.Schemas.air_filter_category_schema import AirFilterCategorySchema
 from app.api.filters import _parse_stock_param, stock_level_filter
-from app.api.tokens import role_required
+from app.api.tokens import permission_required
 
 air_filter_bp = Blueprint("air_filters", __name__)
 air_filter_schema = AirFilterSchema()
@@ -45,7 +45,7 @@ def get_air_filter(id):
 
 # --- POST new Air Filter ---
 @air_filter_bp.route("/air_filters", methods=["POST"])
-@role_required(UserRole.ADMIN.value)
+@permission_required("catalog:create")
 def create_air_filter():
     db = g.db
     try:
@@ -91,7 +91,7 @@ def create_air_filter():
 
 # --- PATCH (partial update) ---
 @air_filter_bp.route("/air_filters/<int:id>", methods=["PATCH"])
-@role_required(UserRole.ADMIN.value)
+@permission_required("catalog:edit")
 def update_air_filter(id):
     db = g.db
     flt = db.get(AirFilter, id)
@@ -112,7 +112,7 @@ def update_air_filter(id):
 
 # --- PUT (full replacement) ---
 @air_filter_bp.route("/air_filters/<int:id>", methods=["PUT"])
-@role_required(UserRole.ADMIN.value)
+@permission_required("catalog:edit")
 def replace_air_filter(id):
     db = g.db
     flt = db.get(AirFilter, id)
@@ -133,7 +133,7 @@ def replace_air_filter(id):
 
 # --- DELETE ---
 @air_filter_bp.route("/air_filters/<int:id>", methods=["DELETE"])
-@role_required(UserRole.ADMIN.value)
+@permission_required("catalog:archive")
 def delete_air_filter(id):
     db = g.db
     flt = db.get(AirFilter, id)

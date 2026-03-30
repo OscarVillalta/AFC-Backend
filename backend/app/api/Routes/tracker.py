@@ -2,7 +2,7 @@ from flask import Blueprint, g, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt
 from sqlalchemy import select, func, or_, case, and_
 from sqlalchemy.exc import IntegrityError, DatabaseError
-from database.models import Order, OrderTracker, OrderHistory, OrderTrackerStage, Department, OutgoingOrderType, Customer, Supplier, OrderType, OUTGOING_TYPES, UserRole
+from database.models import Order, OrderTracker, OrderHistory, OrderTrackerStage, Department, OutgoingOrderType, Customer, Supplier, OrderType, OUTGOING_TYPES
 from datetime import datetime, timezone
 from typing import Tuple, Any
 
@@ -16,11 +16,11 @@ from app.api.error_handling import (
 # (outgoing types + incoming / purchase orders)
 TRACKER_TYPES = OUTGOING_TYPES | {OrderType.INCOMING.value}
 
-# Maps each non-admin UserRole to the Departments they are allowed to update.
+# Maps each non-admin role to the Departments they are allowed to update.
 ROLE_DEPARTMENT_MAP = {
-    UserRole.SALES.value: [Department.SALES.value],
-    UserRole.WAREHOUSE.value: [Department.LOGISTICS.value, Department.DELIVERY_DEPT.value],
-    UserRole.SERVICE.value: [Department.SERVICE.value],
+    "Sales": [Department.SALES.value],
+    "Warehouse": [Department.LOGISTICS.value, Department.DELIVERY_DEPT.value],
+    "Service": [Department.SERVICE.value],
 }
 
 # SQLAlchemy CASE expression: total stages expected for each order type
@@ -115,7 +115,7 @@ def update_order_tracker(order_id: int) -> Tuple[Any, int]:
     data = request.get_json() or {}
 
     user_role = get_jwt().get("role")
-    if user_role != UserRole.ADMIN.value:
+    if user_role != "Admin":
         target_department = data.get("current_department")
         if target_department and target_department not in ROLE_DEPARTMENT_MAP.get(user_role, []):
             return jsonify({"error": "Forbidden: Your role does not have permission to update steps for this department."}), 403
@@ -164,7 +164,7 @@ def add_order_history(order_id: int) -> Tuple[Any, int]:
     data = request.get_json() or {}
 
     user_role = get_jwt().get("role")
-    if user_role != UserRole.ADMIN.value:
+    if user_role != "Admin":
         allowed = ROLE_DEPARTMENT_MAP.get(user_role, [])
         to_dept = data.get("to_department")
         from_dept = data.get("from_department")
@@ -223,7 +223,7 @@ def toggle_tracker_stage(order_id: int, stage_index: int) -> Tuple[Any, int]:
     data = request.get_json() or {}
 
     user_role = get_jwt().get("role")
-    if user_role != UserRole.ADMIN.value:
+    if user_role != "Admin":
         target_department = data.get("department")
         if target_department and target_department not in ROLE_DEPARTMENT_MAP.get(user_role, []):
             return jsonify({"error": "Forbidden: Your role does not have permission to update steps for this department."}), 403

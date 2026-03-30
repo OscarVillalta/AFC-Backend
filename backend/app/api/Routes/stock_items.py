@@ -2,11 +2,11 @@ from flask import g, jsonify, request, Blueprint
 from flask_jwt_extended import jwt_required
 from sqlalchemy import select, and_, or_
 from marshmallow import ValidationError
-from database.models import StockItem, StockItemCategory, Supplier, Product, Quantity, ChildProduct, Warehouse, OrderItem, UserRole
+from database.models import StockItem, StockItemCategory, Supplier, Product, Quantity, ChildProduct, Warehouse, OrderItem
 from app.api.Schemas.stock_item_schema import StockItemSchema
 from app.api.Schemas.stock_item_category_schema import StockItemCategorySchema
 from app.api.filters import _parse_stock_param, stock_level_filter
-from app.api.tokens import role_required
+from app.api.tokens import permission_required
 
 stock_item_bp = Blueprint("stock_items", __name__)
 stock_item_schema = StockItemSchema()
@@ -54,7 +54,7 @@ def get_stock_item(id):
 # 🔹 POST new stock item
 # =====================================================
 @stock_item_bp.route("/stock_items", methods=["POST"])
-@role_required(UserRole.ADMIN.value)
+@permission_required("catalog:create")
 def create_stock_item():
     db = g.db
 
@@ -119,7 +119,7 @@ def create_stock_item():
 # 🔹 PATCH (partial update)
 # =====================================================
 @stock_item_bp.route("/stock_items/<int:id>", methods=["PATCH"])
-@role_required(UserRole.ADMIN.value)
+@permission_required("catalog:edit")
 def update_stock_item(id):
     db = g.db
     item = db.execute(select(StockItem).where(StockItem.id == id)).scalars().first()
@@ -150,7 +150,7 @@ def update_stock_item(id):
 # 🔹 DELETE
 # =====================================================
 @stock_item_bp.route("/stock_items/<int:id>", methods=["DELETE"])
-@role_required(UserRole.ADMIN.value)
+@permission_required("catalog:archive")
 def delete_stock_item(id):
     db = g.db
     item = db.execute(select(StockItem).where(StockItem.id == id)).scalars().first()
