@@ -16,11 +16,12 @@ from app.api.error_handling import (
 # (outgoing types + incoming / purchase orders)
 TRACKER_TYPES = OUTGOING_TYPES | {OrderType.INCOMING.value}
 
-# Maps each non-admin role to the Departments they are allowed to update.
-ROLE_DEPARTMENT_MAP = {
-    "Sales": [Department.SALES.value],
-    "Warehouse": [Department.LOGISTICS.value, Department.DELIVERY_DEPT.value],
-    "Service": [Department.SERVICE.value],
+# Maps each Department value to the permission required to update it.
+DEPARTMENT_PERMISSION_MAP = {
+    Department.SALES.value: "tracker:update_sales",
+    Department.SERVICE.value: "tracker:update_service",
+    Department.LOGISTICS.value: "tracker:update_logistics",
+    Department.DELIVERY_DEPT.value: "tracker:update_delivery",
 }
 
 # SQLAlchemy CASE expression: total stages expected for each order type
@@ -30,6 +31,14 @@ _total_steps_expr = case(
     (Order.type.in_([OrderType.WILL_CALL.value, OrderType.DELIVERY.value, OrderType.SHIPMENT.value]), 4),
     else_=3,  # incoming / purchase order (and legacy "outgoing")
 )
+
+def _check_department_permission(user_permissions, department):
+    """Return an error response if the user lacks permission for the given department, or None if allowed."""
+    required_perm = DEPARTMENT_PERMISSION_MAP.get(department)
+    if required_perm and required_perm not in user_permissions:
+        return jsonify({"error": "Forbidden: You do not have permission to update this department."}), 403
+    return None
+
 
 tracker_bp = Blueprint("tracker", __name__)
 
@@ -110,15 +119,26 @@ def create_order_tracker(order_id: int) -> Tuple[Any, int]:
 @tracker_bp.route("/orders/<int:order_id>/tracker", methods=["PATCH"])
 @jwt_required()
 def update_order_tracker(order_id: int) -> Tuple[Any, int]:
-    """Advance the tracker to a new department/step or set backordered flag."""
+    """Advance the tracker to a new department/step, set backordered flag, or mark invoiced/paid."""
     db = g.db
     data = request.get_json() or {}
 
-    user_role = get_jwt().get("role")
-    if user_role != "Admin":
-        target_department = data.get("current_department")
-        if target_department and target_department not in ROLE_DEPARTMENT_MAP.get(user_role, []):
-            return jsonify({"error": "Forbidden: Your role does not have permission to update steps for this department."}), 403
+    user_permissions = get_jwt().get("permissions", [])
+
+    # Permission check for department updates
+    target_department = data.get("current_department")
+    if target_department:
+        denied = _check_department_permission(user_permissions, target_department)
+        if denied:
+            return denied
+
+    # Permission check for marking as invoiced
+    if "is_invoiced" in data and "orders:mark_invoiced" not in user_permissions:
+        return jsonify({"error": "Forbidden: You do not have permission to mark orders as invoiced."}), 403
+
+    # Permission check for marking as paid
+    if "is_paid" in data and "orders:mark_paid" not in user_permissions:
+        return jsonify({"error": "Forbidden: You do not have permission to mark orders as paid."}), 403
 
     order = db.get(Order, order_id)
     if not order:
@@ -147,6 +167,18 @@ def update_order_tracker(order_id: int) -> Tuple[Any, int]:
             return jsonify({"error": "is_backordered must be a boolean."}), 400
         tracker.is_backordered = is_backordered
 
+    if "is_invoiced" in data:
+        is_invoiced = data["is_invoiced"]
+        if not isinstance(is_invoiced, bool):
+            return jsonify({"error": "is_invoiced must be a boolean."}), 400
+        order.is_invoiced = is_invoiced
+
+    if "is_paid" in data:
+        is_paid = data["is_paid"]
+        if not isinstance(is_paid, bool):
+            return jsonify({"error": "is_paid must be a boolean."}), 400
+        order.is_paid = is_paid
+
     tracker.updated_at = datetime.now(timezone.utc)
 
     error = safe_commit(db)
@@ -163,13 +195,17 @@ def add_order_history(order_id: int) -> Tuple[Any, int]:
     db = g.db
     data = request.get_json() or {}
 
-    user_role = get_jwt().get("role")
-    if user_role != "Admin":
-        allowed = ROLE_DEPARTMENT_MAP.get(user_role, [])
-        to_dept = data.get("to_department")
-        from_dept = data.get("from_department")
-        if (to_dept and to_dept not in allowed) or (from_dept and from_dept not in allowed):
-            return jsonify({"error": "Forbidden: Your role does not have permission to update steps for this department."}), 403
+    user_permissions = get_jwt().get("permissions", [])
+    to_dept = data.get("to_department")
+    from_dept = data.get("from_department")
+    if to_dept:
+        denied = _check_department_permission(user_permissions, to_dept)
+        if denied:
+            return denied
+    if from_dept:
+        denied = _check_department_permission(user_permissions, from_dept)
+        if denied:
+            return denied
 
     order = db.get(Order, order_id)
     if not order:
@@ -222,11 +258,12 @@ def toggle_tracker_stage(order_id: int, stage_index: int) -> Tuple[Any, int]:
     db = g.db
     data = request.get_json() or {}
 
-    user_role = get_jwt().get("role")
-    if user_role != "Admin":
-        target_department = data.get("department")
-        if target_department and target_department not in ROLE_DEPARTMENT_MAP.get(user_role, []):
-            return jsonify({"error": "Forbidden: Your role does not have permission to update steps for this department."}), 403
+    user_permissions = get_jwt().get("permissions", [])
+    target_department = data.get("department")
+    if target_department:
+        denied = _check_department_permission(user_permissions, target_department)
+        if denied:
+            return denied
 
     order = db.get(Order, order_id)
     if not order:
