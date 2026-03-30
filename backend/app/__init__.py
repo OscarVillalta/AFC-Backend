@@ -1,4 +1,5 @@
 from flask import Flask, g, request
+from datetime import timedelta
 import os
 from flask_jwt_extended import JWTManager
 from database import SessionLocal
@@ -35,8 +36,10 @@ def create_app():
 
     # JWT configuration
     app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=5)
     if not app.config["JWT_SECRET_KEY"]:
         raise RuntimeError("JWT_SECRET_KEY environment variable is not set.")
+    
     JWTManager(app)
 
     #BluePrints
