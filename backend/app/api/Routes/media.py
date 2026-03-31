@@ -169,11 +169,13 @@ def search_media():
     unit_of_measure = request.args.get("unit_of_measure")
     category = request.args.get("category")
     location = request.args.get("location", type=int)
+    status = request.args.get("status")
     on_hand, on_hand_cmp = _parse_stock_param("on_hand")
     reserved, reserved_cmp = _parse_stock_param("reserved")
     available, available_cmp = _parse_stock_param("available")
     ordered, ordered_cmp = _parse_stock_param("ordered")
     back_ordered, back_ordered_cmp = _parse_stock_param("back_ordered")
+    min_backordered = request.args.get("backordered", type=int)
     has_orders = request.args.get("has_orders", "").lower() == "true"
 
     # Pagination
@@ -243,6 +245,8 @@ def search_media():
         filters.append(stock_level_filter(Quantity.ordered, ordered, ordered_cmp))
     if back_ordered is not None:
         filters.append(stock_level_filter(Quantity.backordered, back_ordered, back_ordered_cmp))
+    if min_backordered is not None:
+        filters.append(Quantity.backordered >= min_backordered)
     if has_orders:
         order_item_exists = select(OrderItem.id).where(
             or_(
@@ -251,6 +255,14 @@ def search_media():
             )
         ).correlate(Product, ChildProduct).exists()
         filters.append(order_item_exists)
+
+    # --- Status filter ---
+    if status == "low_stock":
+        filters.append(Quantity.available <= 10)
+    elif status == "backordered":
+        filters.append(Quantity.backordered > 0)
+    elif status == "has_orders":
+        filters.append(Quantity.ordered > 0)
 
     if filters:
         query = query.where(and_(*filters))
