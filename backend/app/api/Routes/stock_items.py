@@ -14,6 +14,7 @@ stock_item_list_schema = StockItemSchema(many=True)
 stock_item_category_schema = StockItemCategorySchema(many=True)
 
 product_category = 3
+LOW_STOCK_THRESHOLD = 10
 
 # =====================================================
 # 🔹 GET all stock item categories
@@ -272,7 +273,7 @@ def search_stock_items():
 
     # --- Status filter ---
     if status == "low_stock":
-        filters.append(Quantity.available <= 10)
+        filters.append(Quantity.available <= LOW_STOCK_THRESHOLD)
     elif status == "backordered":
         filters.append(Quantity.backordered > 0)
     elif status == "has_orders":

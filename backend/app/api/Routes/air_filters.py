@@ -13,6 +13,7 @@ air_filter_schema = AirFilterSchema()
 air_filter_category_schema = AirFilterCategorySchema(many=True)
 
 ProductCategory_id = 1
+LOW_STOCK_THRESHOLD = 10
 
 # --- GET all Air Filters ---
 @air_filter_bp.route("/air_filters", methods=["GET"])
@@ -267,7 +268,7 @@ def search_air_filters():
 
     # --- Status filter ---
     if status == "low_stock":
-        filters.append(Quantity.available <= 10)
+        filters.append(Quantity.available <= LOW_STOCK_THRESHOLD)
     elif status == "backordered":
         filters.append(Quantity.backordered > 0)
     elif status == "has_orders":

@@ -12,6 +12,7 @@ media_schema = MediaSchema()
 media_category_schema = MediaCategorySchema(many=True)
 
 ProductCategory_id = 4
+LOW_STOCK_THRESHOLD = 10
 
 
 # --- GET all Media ---
@@ -258,7 +259,7 @@ def search_media():
 
     # --- Status filter ---
     if status == "low_stock":
-        filters.append(Quantity.available <= 10)
+        filters.append(Quantity.available <= LOW_STOCK_THRESHOLD)
     elif status == "backordered":
         filters.append(Quantity.backordered > 0)
     elif status == "has_orders":
