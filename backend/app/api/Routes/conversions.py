@@ -351,6 +351,8 @@ def search_conversion_batches():
     query_str = request.args.get("q")
     date_from = request.args.get("date_from")
     date_to = request.args.get("date_to")
+    search = request.args.get("search", "").strip().lower()
+    status = request.args.get("status", "all")
 
     # Scope to the active warehouse
     filters.append(ConversionBatch.warehouse_id == g.active_warehouse_id)
@@ -362,6 +364,29 @@ def search_conversion_batches():
     if query_str:
         safe_query = sanitize_search_string(query_str)
         filters.append(ConversionBatch.note.ilike(f"%{safe_query}%"))
+
+    # Status-based filters
+    if status == "has_order":
+        filters.append(ConversionBatch.order_id.isnot(None))
+    elif status == "reversed":
+        filters.append(
+            ConversionBatch.conversions.any(
+                Conversion.state == ConversionState.ROLLED_BACK.value
+            )
+        )
+
+    # Search by batch ID or order ID
+    if search:
+        try:
+            parsed_int = int(search)
+            filters.append(
+                or_(
+                    ConversionBatch.id == parsed_int,
+                    ConversionBatch.order_id == parsed_int,
+                )
+            )
+        except ValueError:
+            pass
 
     if date_from:
         try:
