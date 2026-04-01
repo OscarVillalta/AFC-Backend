@@ -784,7 +784,7 @@ def get_pending_projection(product_id):
     for row in rows:
         row_dict = dict(row)
         if row_dict.get("eta") is not None:
-            effective_eta = max(row_dict["eta"], datetime.date.today)
+            effective_eta = max(row_dict["eta"], datetime.date.today())
             row_dict["eta"] = effective_eta.strftime("%Y-%m-%d")
         result.append(row_dict)
 
