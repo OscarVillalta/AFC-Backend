@@ -351,7 +351,7 @@ def search_conversion_batches():
     query_str = request.args.get("q")
     date_from = request.args.get("date_from")
     date_to = request.args.get("date_to")
-    search = request.args.get("search", "").strip().lower()
+    search = request.args.get("search", "").strip()
     status = request.args.get("status", "all")
 
     # Scope to the active warehouse
