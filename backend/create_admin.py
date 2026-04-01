@@ -17,7 +17,9 @@ ALL_PERMISSIONS = [
     "inventory:view", "inventory:allocate", "inventory:fulfill", "inventory:manual_adjust",
     "transactions:rollback",
     "catalog:view", "catalog:create", "catalog:edit", "catalog:archive",
-    "tracker:view", "tracker:update_own", "tracker:update_any",
+    "tracker:view",
+    "tracker:update_sales", "tracker:update_service",
+    "tracker:update_logistics", "tracker:update_delivery",
     "conversions:view", "conversions:create", "conversions:edit", "conversions:rollback"
 ]
 
