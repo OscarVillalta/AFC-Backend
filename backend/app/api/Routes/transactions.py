@@ -1,3 +1,4 @@
+import datetime
 from flask import abort, g, jsonify, request, Blueprint
 from flask_jwt_extended import get_jwt
 from sqlalchemy import select, func, or_, text
@@ -783,7 +784,8 @@ def get_pending_projection(product_id):
     for row in rows:
         row_dict = dict(row)
         if row_dict.get("eta") is not None:
-            row_dict["eta"] = row_dict["eta"].strftime("%Y-%m-%d")
+            effective_eta = max(row_dict["eta"], datetime.date.today)
+            row_dict["eta"] = effective_eta.strftime("%Y-%m-%d")
         result.append(row_dict)
 
     return jsonify(result), 200
