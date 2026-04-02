@@ -193,7 +193,7 @@ def get_products_names():
         if p.category.name == "Air Filters":
             details = p.air_filter.to_dict()["part_number"]
         elif p.category.name == "Stock Items":
-            details = p.stock_item.to_dict()["name"]
+            details = p.stock_item.to_dict()["name"] if p.stock_item else "Unknown Stock Item"
         elif p.category.name == "Media Items":
             details = p.media.to_dict()["part_number"] if p.media else None
         else:

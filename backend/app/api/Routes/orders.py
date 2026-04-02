@@ -1242,7 +1242,6 @@ def create_order_from_qb():
         safe_commit(db, "creating order from QuickBooks")
         
     except (CustomValidationError, DuplicateResourceError, ExternalServiceError) as e:
-    # ... Rest of your exception handling stays exactly the same ...
         db.rollback()
         return jsonify(e.to_dict()), e.status_code
     except IntegrityError as e:
