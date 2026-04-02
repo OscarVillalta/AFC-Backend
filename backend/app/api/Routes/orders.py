@@ -5,7 +5,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.api.Schemas.order_schema import OrderSchema
 from database.models import Customer, Supplier, OrderType, OrderStatus, OrderItemType, Transaction, TransactionState, OUTGOING_TYPES, VALID_ORDER_TYPES
-from database.models import Order, OrderItem, Product, AirFilter, StockItem, StockItemCategory, Quantity, OrderTracker, Department, BlockedItem
+from database.models import Order, OrderItem, Product, AirFilter, StockItem, StockItemCategory, Quantity, OrderTracker, Department, BlockedItem, Media
 from marshmallow import ValidationError
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, List, Tuple
@@ -871,7 +871,6 @@ def get_or_create_qb_supplier(db):
     
     return supplier
 
-
 @order_bp.route("/orders/from-qb", methods=["POST"])
 def create_order_from_qb():
     """
@@ -1071,7 +1070,6 @@ def create_order_from_qb():
     try:
         for qb_line in line_items:
             if qb_line.get("is_separator"):
-                # Determine separator type based on description
                 description = qb_line.get("description", "")
                 separator_type = OrderItemType.UNIT_SEPARATOR.value
                 if description:
@@ -1083,7 +1081,6 @@ def create_order_from_qb():
                     elif "building" in desc_lower or "bldg" in desc_lower or "•" in description:
                         separator_type = OrderItemType.SECTION_SEPARATOR.value
 
-                # Create separator item
                 separator = OrderItem(
                     order_id=order.id,
                     product_id=None,
@@ -1094,16 +1091,29 @@ def create_order_from_qb():
                     position=position
                 )
                 db.add(separator)
+                db.flush() # Important: Get ID immediately
+                
                 created_items.append({
+                    "id": separator.id,
+                    "order_id": order.id,
+                    "product_id": None,
                     "type": separator_type,
-                    "description": description
+                    "part_number": "",
+                    "quantity_ordered": 0,
+                    "quantity_fulfilled": 0,
+                    "quantity_pending": 0,
+                    "status": "pending",
+                    "note": description,
+                    "position": position,
+                    "on_hand": None,
+                    "reserved": None,
+                    "available": None,
+                    "is_media": False,
                 })
                 position += 1
             else:
-                # Find product by name (from QB item name)
                 item_name = qb_line.get("name", "").strip()
                 
-                # Validate item name
                 if not item_name:
                     skipped_items.append({
                         "name": "(empty)",
@@ -1112,7 +1122,6 @@ def create_order_from_qb():
                     position += 1
                     continue
                 
-                # Check if item is blocked
                 blocked = db.execute(
                     select(BlockedItem).where(
                         func.lower(BlockedItem.name) == item_name.lower()
@@ -1130,7 +1139,6 @@ def create_order_from_qb():
                 product = find_product_by_name(db, item_name)
                 
                 if not product:
-                    # Item not found in air_filters or stock_items — auto-add to stock_items
                     qb_supplier = db.execute(
                         select(Supplier).where(Supplier.name == Config.QB_SUPPLIER_NAME)
                     ).scalar_one_or_none()
@@ -1156,7 +1164,7 @@ def create_order_from_qb():
                     db.flush()
 
                     product = Product(
-                        category_id=3,  # Product category ID for stock items (matches stock_items.py convention)
+                        category_id=3, 
                         reference_id=new_stock_item.id
                     )
                     db.add(product)
@@ -1172,39 +1180,55 @@ def create_order_from_qb():
                         "product_id": product.id
                     })
 
+                qty_ordered = qb_line.get("quantity", 0)
+                if qty_ordered < 0:
+                    qty_ordered = 0
                 
-                # Validate quantity
-                quantity = qb_line.get("quantity", 0)
-                if quantity < 0:
-                    quantity = 0
-                
-                # Determine order item type: detect media cut by comparing descriptions
                 item_type = OrderItemType.PRODUCT_ITEM.value
-                if product.media is not None:
+                if getattr(product, 'media', None) is not None:
                     media_default_desc = (product.media.description or "").strip()
                     qb_desc = (qb_line.get("description") or "").strip()
                     if qb_desc.lower() != media_default_desc.lower():
                         item_type = OrderItemType.MEDIA_CUT.value
 
-                # Create order item
                 order_item = OrderItem(
                     order_id=order.id,
                     product_id=product.id,
                     type=item_type,
-                    quantity_ordered=int(quantity),
+                    quantity_ordered=int(qty_ordered),
                     quantity_fulfilled=0,
                     note=qb_line.get("description"),
                     position=position
                 )
                 db.add(order_item)
+                db.flush() # Important: Get ID immediately
+                
+                # Fetch quantities for the hydrated response
+                qty_record = getattr(product, 'quantity', None)
+                on_hand = qty_record.on_hand if qty_record else None
+                reserved = qty_record.reserved if qty_record else None
+                available = qty_record.available if qty_record else None
+                is_media = getattr(product, 'media', None) is not None
+                
                 created_items.append({
-                    "type": "product",
-                    "name": item_name,
-                    "quantity": quantity
+                    "id": order_item.id,
+                    "order_id": order.id,
+                    "product_id": product.id,
+                    "type": item_type,
+                    "part_number": item_name, # Use the directly matched/created item name
+                    "quantity_ordered": int(qty_ordered),
+                    "quantity_fulfilled": 0,
+                    "quantity_pending": 0,
+                    "status": "pending",
+                    "note": qb_line.get("description"),
+                    "position": position,
+                    "on_hand": on_hand,
+                    "reserved": reserved,
+                    "available": available,
+                    "is_media": is_media,
                 })
                 position += 1
 
-        # Auto-create tracker for outgoing orders starting at SALES
         if not is_purchase_order:
             tracker = OrderTracker(
                 order_id=order.id,
@@ -1218,6 +1242,7 @@ def create_order_from_qb():
         safe_commit(db, "creating order from QuickBooks")
         
     except (CustomValidationError, DuplicateResourceError, ExternalServiceError) as e:
+    # ... Rest of your exception handling stays exactly the same ...
         db.rollback()
         return jsonify(e.to_dict()), e.status_code
     except IntegrityError as e:
@@ -1258,19 +1283,12 @@ def create_order_from_qb():
 def find_product_by_name(db, item_name: str):
     """
     Find a product or child product in the database by matching the QB item name.
-    Tries to match against air filter part numbers and stock item names.
-    
-    Args:
-        db: Database session
-        item_name: QuickBooks item name to search for
-    
-    Returns:
-        Product or ChildProduct object if found, None otherwise
+    Tries to match against air filters, media items, and stock items.
     """
     if not item_name:
         return None
     
-    # First try exact matches for air filters
+    # 1. Try exact matches for air filters
     air_filter = db.execute(
         select(AirFilter).where(
             or_(
@@ -1280,15 +1298,27 @@ def find_product_by_name(db, item_name: str):
         )
     ).first()
     
-    # Prefer returning Product over ChildProduct
     if air_filter:
         if air_filter[0].product:
             return air_filter[0].product
-        elif air_filter[0].child_product:
-            # Return the parent product for child products
+        elif getattr(air_filter[0], 'child_product', None):
             return air_filter[0].child_product.parent_product
+
+    # 2. Try Media items (Fix for Issue #1)
+    media_item = db.execute(
+        select(Media).where(
+            or_(
+                Media.part_number == item_name,
+                func.lower(Media.part_number) == item_name.lower()
+            )
+        )
+    ).first()
     
-    # Try stock items
+    if media_item:
+        if getattr(media_item[0], 'product', None):
+            return media_item[0].product
+    
+    # 3. Try stock items
     stock_item = db.execute(
         select(StockItem).where(
             or_(
@@ -1298,12 +1328,10 @@ def find_product_by_name(db, item_name: str):
         )
     ).first()
     
-    # Prefer returning Product over ChildProduct
     if stock_item:
         if stock_item[0].product:
             return stock_item[0].product
-        elif stock_item[0].child_product:
-            # Return the parent product for child products
+        elif getattr(stock_item[0], 'child_product', None):
             return stock_item[0].child_product.parent_product
     
     return None
