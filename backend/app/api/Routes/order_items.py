@@ -498,8 +498,7 @@ def commit_all_order_item_txns(item_id):
 
         committed = 0
 
-        print(order.type)
-        if order.order_type == "incoming":
+        if order.to_dict()["order_type"] == "incoming":
             for txn in pending_txns:
                 txn.commit(db)
         else:
