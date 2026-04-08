@@ -217,8 +217,10 @@ def get_order_items(order_id):
 
             if product and product.category.name == "Air Filters":
                 part_number = product.air_filter.part_number
-            elif product and product.media is not None:
-                part_number = product.media.part_number
+            elif product and product.category.name == "Stock Items":
+                part_number = product.stock_item.name
+            elif product and product.category.name == "Media Items":
+                part_number = product.media.name
             elif product:
                 part_number = f"Product #{product.id}"
             else:
