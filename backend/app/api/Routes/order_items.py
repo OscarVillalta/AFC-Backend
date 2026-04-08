@@ -498,18 +498,18 @@ def commit_all_order_item_txns(item_id):
 
         committed = 0
 
-        for txn in pending_txns:
-            if txn.quantity_delta < 0:  # outgoing
-
-                # Get quantity from the appropriate source
-                qty_record = txn._get_quantity_record()
-                qty = abs(txn.quantity_delta)
-
-                if qty > qty_record.on_hand:
-                    return jsonify({ "error": f"Not enough inventory. On hand: {qty_record.on_hand}, required: {qty}"}), 409
-            
+        if order.order_type == "incoming":
+            for txn in pending_txns:
                 txn.commit(db)
-                committed += 1
+        else:
+            qty_record = txn._get_quantity_record()
+            qty = abs(txn.quantity_delta)
+
+            if qty > qty_record.on_hand:
+                return jsonify({ "error": f"Not enough inventory. On hand: {qty_record.on_hand}, required: {qty}"}), 409
+        
+            txn.commit(db)
+            committed += 1
 
         order.update_status()
         db.commit()
