@@ -178,54 +178,70 @@ def search_air_filters():
     back_ordered, back_ordered_cmp = _parse_stock_param("back_ordered")
     min_backordered = request.args.get("backordered", type=int)
     has_orders = request.args.get("has_orders", "").lower() == "true"
+    use_current_warehouse = request.args.get("use_current_warehouse", "true").lower() == "true"
 
     # Pagination
     page = request.args.get("page", default=1, type=int)
     limit = request.args.get("limit", default=25, type=int)
     offset = (page - 1) * limit
 
+    # --- Quantity columns & join condition ---
+    qty_product_cond = or_(Quantity.product_id == Product.id, Quantity.product_id == ChildProduct.parent_product_id)
+
+    if use_current_warehouse:
+        qty_join_cond = and_(qty_product_cond, Quantity.warehouse_id == g.active_warehouse_id)
+        q_on_hand = Quantity.on_hand
+        q_reserved = Quantity.reserved
+        q_ordered = Quantity.ordered
+        q_location = Quantity.location
+        q_available = Quantity.available
+        q_backordered = Quantity.backordered
+    else:
+        qty_join_cond = qty_product_cond
+        q_on_hand = func.coalesce(func.sum(Quantity.on_hand), 0).label("on_hand")
+        q_reserved = func.coalesce(func.sum(Quantity.reserved), 0).label("reserved")
+        q_ordered = func.coalesce(func.sum(Quantity.ordered), 0).label("ordered")
+        q_location = func.min(Quantity.location).label("location")
+        q_available = func.greatest(
+            func.coalesce(func.sum(Quantity.on_hand), 0) - func.coalesce(func.sum(Quantity.reserved), 0), 0
+        ).label("available")
+        q_backordered = func.greatest(
+            func.coalesce(func.sum(Quantity.reserved), 0) - func.coalesce(func.sum(Quantity.on_hand), 0), 0
+        ).label("backordered")
+
     # --- Base Query ---
-    # Note: Using OUTER JOINs to include AirFilters even if they lack associated
-    # Product/ChildProduct/Quantity records (which shouldn't happen in normal operation,
-    # but allows for debugging orphaned records). Items without quantity data will have
-    # NULL values in those fields.
+    base_columns = [
+        AirFilter.id,
+        AirFilter.part_number,
+        AirFilter.description,
+        AirFilter.merv_rating,
+        AirFilter.height,
+        AirFilter.width,
+        AirFilter.depth,
+        Product.id.label("product_id"),
+        ChildProduct.id.label("child_product_id"),
+        ChildProduct.parent_product_id.label("parent_product_id"),
+        Supplier.name.label("supplier_name"),
+        AirFilterCategory.name.label("filter_category"),
+    ]
+
     query = (
-        select(
-            AirFilter.id,
-            AirFilter.part_number,
-            AirFilter.description,
-            AirFilter.merv_rating,
-            AirFilter.height,
-            AirFilter.width,
-            AirFilter.depth,
-            Product.id.label("product_id"),
-            ChildProduct.id.label("child_product_id"),
-            ChildProduct.parent_product_id.label("parent_product_id"),
-            Supplier.name.label("supplier_name"),
-            AirFilterCategory.name.label("filter_category"),
-
-            Quantity.on_hand,
-            Quantity.reserved,
-            Quantity.ordered,
-            Quantity.location,
-            Quantity.available,
-            Quantity.backordered,
-
-            
-        )
+        select(*base_columns, q_on_hand, q_reserved, q_ordered, q_location, q_available, q_backordered)
         .join(Supplier, AirFilter.supplier_id == Supplier.id)
         .join(AirFilterCategory, AirFilter.category_id == AirFilterCategory.id)
         .outerjoin(Product, and_(Product.category_id == 1, Product.reference_id == AirFilter.id))
         .outerjoin(ChildProduct, and_(ChildProduct.category_id == 1, ChildProduct.reference_id == AirFilter.id))
-        .outerjoin(Quantity, and_(
-            or_(Quantity.product_id == Product.id, Quantity.product_id == ChildProduct.parent_product_id),
-            Quantity.warehouse_id == g.active_warehouse_id
-        ))
-        .distinct(AirFilter.id)
+        .outerjoin(Quantity, qty_join_cond)
     )
+
+    if use_current_warehouse:
+        query = query.distinct(AirFilter.id)
+    else:
+        query = query.group_by(*base_columns)
 
     # --- Dynamic Filters ---
     filters = []
+    qty_filters = []
 
     if part_number:
         filters.append(AirFilter.part_number.ilike(f"%{part_number}%"))
@@ -244,19 +260,19 @@ def search_air_filters():
     if category:
         filters.append(AirFilterCategory.name.ilike(f"%{category}%"))
     if location is not None:
-        filters.append(Quantity.location == location)
+        qty_filters.append(q_location == location)
     if on_hand is not None:
-        filters.append(stock_level_filter(Quantity.on_hand, on_hand, on_hand_cmp))
+        qty_filters.append(stock_level_filter(q_on_hand, on_hand, on_hand_cmp))
     if reserved is not None:
-        filters.append(stock_level_filter(Quantity.reserved, reserved, reserved_cmp))
+        qty_filters.append(stock_level_filter(q_reserved, reserved, reserved_cmp))
     if available is not None:
-        filters.append(stock_level_filter(Quantity.available, available, available_cmp))
+        qty_filters.append(stock_level_filter(q_available, available, available_cmp))
     if ordered is not None:
-        filters.append(stock_level_filter(Quantity.ordered, ordered, ordered_cmp))
+        qty_filters.append(stock_level_filter(q_ordered, ordered, ordered_cmp))
     if back_ordered is not None:
-        filters.append(stock_level_filter(Quantity.backordered, back_ordered, back_ordered_cmp))
+        qty_filters.append(stock_level_filter(q_backordered, back_ordered, back_ordered_cmp))
     if min_backordered is not None:
-        filters.append(Quantity.backordered >= min_backordered)
+        qty_filters.append(q_backordered >= min_backordered)
     if has_orders:
         order_item_exists = select(OrderItem.id).where(
             or_(
@@ -268,14 +284,19 @@ def search_air_filters():
 
     # --- Status filter ---
     if status == "low_stock":
-        filters.append(Quantity.available <= LOW_STOCK_THRESHOLD)
+        qty_filters.append(q_available <= LOW_STOCK_THRESHOLD)
     elif status == "backordered":
-        filters.append(Quantity.backordered > 0)
+        qty_filters.append(q_backordered > 0)
     elif status == "has_orders":
-        filters.append(Quantity.ordered > 0)
+        qty_filters.append(q_ordered > 0)
 
     if filters:
         query = query.where(and_(*filters))
+    if qty_filters:
+        if use_current_warehouse:
+            query = query.where(and_(*qty_filters))
+        else:
+            query = query.having(and_(*qty_filters))
 
     # --- Total Count ---
     total = len(db.execute(query).mappings().all())
