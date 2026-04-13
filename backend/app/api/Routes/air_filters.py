@@ -178,7 +178,7 @@ def search_air_filters():
     back_ordered, back_ordered_cmp = _parse_stock_param("back_ordered")
     min_backordered = request.args.get("backordered", type=int)
     has_orders = request.args.get("has_orders", "").lower() == "true"
-    use_current_warehouse = request.args.get("use_current_warehouse", "true").lower() == "true"
+    use_current_warehouse = request.args.get("use_current_warehouse", "") == "current"
 
     # Pagination
     page = request.args.get("page", default=1, type=int)
