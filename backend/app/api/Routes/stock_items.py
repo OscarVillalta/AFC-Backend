@@ -210,11 +210,9 @@ def search_stock_items():
     limit = request.args.get("limit", default=25, type=int)
     offset = (page - 1) * limit
 
-    # --- Quantity columns & join condition ---
-    qty_product_cond = or_(Quantity.product_id == Product.id, Quantity.product_id == ChildProduct.parent_product_id)
-
+    # --- Quantity columns & join condition for parent products only ---
     if use_current_warehouse:
-        qty_join_cond = and_(qty_product_cond, Quantity.warehouse_id == g.active_warehouse_id)
+        qty_join_cond = and_(Quantity.product_id == Product.id, Quantity.warehouse_id == g.active_warehouse_id)
         q_on_hand = Quantity.on_hand
         q_reserved = Quantity.reserved
         q_ordered = Quantity.ordered
@@ -222,7 +220,7 @@ def search_stock_items():
         q_available = Quantity.available
         q_backordered = Quantity.backordered
     else:
-        qty_join_cond = qty_product_cond
+        qty_join_cond = Quantity.product_id == Product.id
         q_on_hand = func.coalesce(func.sum(Quantity.on_hand), 0).label("on_hand")
         q_reserved = func.coalesce(func.sum(Quantity.reserved), 0).label("reserved")
         q_ordered = func.coalesce(func.sum(Quantity.ordered), 0).label("ordered")
@@ -234,14 +232,12 @@ def search_stock_items():
             func.coalesce(func.sum(Quantity.reserved), 0) - func.coalesce(func.sum(Quantity.on_hand), 0), 0
         ).label("backordered")
 
-    # --- Base Query ---
+    # --- Base Query for Parent Products Only ---
     base_columns = [
         StockItem.id,
         StockItem.name,
         StockItem.description,
         Product.id.label("product_id"),
-        ChildProduct.id.label("child_product_id"),
-        ChildProduct.parent_product_id.label("parent_product_id"),
         Supplier.name.label("supplier_name"),
         StockItemCategory.name.label("category_name"),
     ]
@@ -250,8 +246,7 @@ def search_stock_items():
         select(*base_columns, q_on_hand, q_reserved, q_ordered, q_location, q_available, q_backordered)
         .join(Supplier, StockItem.supplier_id == Supplier.id)
         .join(StockItemCategory, StockItem.category_id == StockItemCategory.id)
-        .outerjoin(Product, and_(Product.reference_id == StockItem.id, Product.category_id == product_category))
-        .outerjoin(ChildProduct, and_(ChildProduct.reference_id == StockItem.id, ChildProduct.category_id == product_category))
+        .join(Product, and_(Product.reference_id == StockItem.id, Product.category_id == product_category))
         .outerjoin(Quantity, qty_join_cond)
     )
 
@@ -286,11 +281,8 @@ def search_stock_items():
         qty_filters.append(q_backordered >= min_backordered)
     if has_orders:
         order_item_exists = select(OrderItem.id).where(
-            or_(
-                OrderItem.product_id == Product.id,
-                OrderItem.child_product_id == ChildProduct.id,
-            )
-        ).correlate(Product, ChildProduct).exists()
+            OrderItem.product_id == Product.id
+        ).correlate(Product).exists()
         filters.append(order_item_exists)
 
     # --- Status filter ---
@@ -316,13 +308,84 @@ def search_stock_items():
     query = query.limit(limit).offset(offset)
 
     # --- Execute ---
-    results = db.execute(query).mappings().all()
-    results = [dict(row) for row in results]
+    parent_results = db.execute(query).mappings().all()
+    parent_results = [dict(row) for row in parent_results]
+
+    # --- Fetch children for each parent ---
+    parent_product_ids = [row["product_id"] for row in parent_results if row.get("product_id")]
+    
+    # Query for children with their quantities
+    if parent_product_ids:
+        qty_product_cond_child = Quantity.product_id == ChildProduct.parent_product_id
+        
+        if use_current_warehouse:
+            qty_join_cond_child = and_(qty_product_cond_child, Quantity.warehouse_id == g.active_warehouse_id)
+            c_on_hand = Quantity.on_hand
+            c_reserved = Quantity.reserved
+            c_ordered = Quantity.ordered
+            c_location = Quantity.location
+            c_available = Quantity.available
+            c_backordered = Quantity.backordered
+        else:
+            qty_join_cond_child = qty_product_cond_child
+            c_on_hand = func.coalesce(func.sum(Quantity.on_hand), 0).label("on_hand")
+            c_reserved = func.coalesce(func.sum(Quantity.reserved), 0).label("reserved")
+            c_ordered = func.coalesce(func.sum(Quantity.ordered), 0).label("ordered")
+            c_location = func.min(Quantity.location).label("location")
+            c_available = func.greatest(
+                func.coalesce(func.sum(Quantity.on_hand), 0) - func.coalesce(func.sum(Quantity.reserved), 0), 0
+            ).label("available")
+            c_backordered = func.greatest(
+                func.coalesce(func.sum(Quantity.reserved), 0) - func.coalesce(func.sum(Quantity.on_hand), 0), 0
+            ).label("backordered")
+
+        child_columns = [
+            StockItem.id,
+            StockItem.name,
+            StockItem.description,
+            ChildProduct.id.label("child_product_id"),
+            ChildProduct.parent_product_id.label("parent_product_id"),
+            Supplier.name.label("supplier_name"),
+            StockItemCategory.name.label("category_name"),
+        ]
+
+        children_query = (
+            select(*child_columns, c_on_hand, c_reserved, c_ordered, c_location, c_available, c_backordered)
+            .join(Supplier, StockItem.supplier_id == Supplier.id)
+            .join(StockItemCategory, StockItem.category_id == StockItemCategory.id)
+            .join(ChildProduct, and_(ChildProduct.reference_id == StockItem.id, ChildProduct.category_id == product_category))
+            .outerjoin(Quantity, qty_join_cond_child)
+            .where(ChildProduct.parent_product_id.in_(parent_product_ids))
+        )
+
+        if use_current_warehouse:
+            children_query = children_query.distinct(ChildProduct.id)
+        else:
+            children_query = children_query.group_by(*child_columns)
+
+        children_results = db.execute(children_query).mappings().all()
+        children_results = [dict(row) for row in children_results]
+
+        # Group children by parent_product_id
+        children_by_parent = {}
+        for child in children_results:
+            parent_id = child.pop("parent_product_id")
+            if parent_id not in children_by_parent:
+                children_by_parent[parent_id] = []
+            children_by_parent[parent_id].append(child)
+
+        # Add children to each parent
+        for parent in parent_results:
+            parent["children"] = children_by_parent.get(parent.get("product_id"), [])
+    else:
+        # No parents, so no children
+        for parent in parent_results:
+            parent["children"] = []
 
     return jsonify({
         "page": page,
         "limit": limit,
-        "count": len(results),
+        "count": len(parent_results),
         "total": total,
-        "results": results
+        "results": parent_results
     }), 200
