@@ -298,7 +298,7 @@ def search_media():
     parent_results = [dict(row) for row in parent_results]
 
     # --- Fetch children for each parent ---
-    parent_product_ids = [row["product_id"] for row in parent_results if row.get("product_id")]
+    parent_product_ids = [row["product_id"] for row in parent_results]
     
     # Query for children with their quantities
     if parent_product_ids:
@@ -365,7 +365,7 @@ def search_media():
 
         # Add children to each parent
         for parent in parent_results:
-            parent["children"] = children_by_parent.get(parent.get("product_id"), [])
+            parent["children"] = children_by_parent.get(parent["product_id"], [])
     else:
         # No parents, so no children
         for parent in parent_results:
