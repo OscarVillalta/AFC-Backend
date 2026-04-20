@@ -157,10 +157,9 @@ def get_top_items():
         all_others_query = (
             select(func.coalesce(func.sum(field_expr), 0))
             .select_from(Quantity)
-            .join(Product, Product.id == Quantity.product_id)
             .where(
                 Quantity.warehouse_id == warehouse_id,
-                Product.id.notin_(top_ids)
+                Quantity.product_id.notin_(top_ids)
             )
         )
         all_others_sum = db.scalar(all_others_query) or 0
@@ -169,7 +168,6 @@ def get_top_items():
         all_query = (
             select(func.coalesce(func.sum(field_expr), 0))
             .select_from(Quantity)
-            .join(Product, Product.id == Quantity.product_id)
             .where(Quantity.warehouse_id == warehouse_id)
         )
         all_others_sum = db.scalar(all_query) or 0
@@ -178,7 +176,6 @@ def get_top_items():
     total_query = (
         select(func.coalesce(func.sum(field_expr), 0))
         .select_from(Quantity)
-        .join(Product, Product.id == Quantity.product_id)
         .where(Quantity.warehouse_id == warehouse_id)
     )
     total_sum = db.scalar(total_query) or 0

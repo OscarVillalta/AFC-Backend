@@ -120,6 +120,10 @@ def get_net_kpis():
     # Get days parameter, default to 30
     days = request.args.get("days", default=30, type=int)
     
+    # Validate days parameter
+    if days < 1 or days > 365:
+        return jsonify({"error": "days parameter must be between 1 and 365"}), 400
+    
     # Calculate the date threshold
     date_threshold = datetime.now(timezone.utc) - timedelta(days=days)
     
