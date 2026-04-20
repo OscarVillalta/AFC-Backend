@@ -1,6 +1,7 @@
 from flask import g, jsonify, request, Blueprint
 from sqlalchemy import func, select, case, desc, or_
-from database.models import Product, Quantity, AirFilter, StockItem, ProductCategory
+from sqlalchemy.orm import selectinload
+from database.models import Product, Quantity, AirFilter, StockItem, Media, ProductCategory
 
 
 inventory_stats_bp = Blueprint("inventory_stats", __name__)
@@ -83,12 +84,10 @@ def get_top_items():
         # For on_hand, reserved, ordered - direct column access
         field_expr = getattr(Quantity, field)
     
-    # Build base query with joins to get product details
-    base_query = (
+    # Get top N product IDs and their field values
+    top_items_subquery = (
         select(
-            Product.id.label("product_id"),
-            Product.category_id,
-            Product.reference_id,
+            Quantity.product_id,
             Quantity.on_hand,
             Quantity.reserved,
             Quantity.ordered,
@@ -96,49 +95,59 @@ def get_top_items():
             func.abs(func.least(0, Quantity.on_hand - Quantity.reserved)).label("backordered"),
             field_expr.label("sort_field")
         )
-        .select_from(Quantity)
-        .join(Product, Product.id == Quantity.product_id)
         .where(Quantity.warehouse_id == warehouse_id)
         .order_by(desc("sort_field"))
-    )
+        .limit(limit)
+    ).subquery()
     
-    # Get top N items
-    top_items_query = base_query.limit(limit)
-    top_items_rows = db.execute(top_items_query).all()
+    # Fetch full products with relationships for the top items
+    top_products = db.execute(
+        select(Product)
+        .join(top_items_subquery, Product.id == top_items_subquery.c.product_id)
+        .options(
+            selectinload(Product.air_filter),
+            selectinload(Product.stock_item),
+            selectinload(Product.media)
+        )
+    ).scalars().all()
     
-    # Process top items and fetch their names from AirFilter or StockItem
-    top_items = []
+    # Create a lookup for quantity values by product_id
+    qty_lookup = {}
     top_ids = []
-    
-    for row in top_items_rows:
-        top_ids.append(row.product_id)
-        
-        # Fetch product name from AirFilter or StockItem
-        product_name = None
-        if row.category_id == 1:  # Assuming 1 is air_filter category
-            air_filter = db.execute(
-                select(AirFilter.part_number)
-                .where(AirFilter.id == row.reference_id)
-            ).scalar_one_or_none()
-            product_name = air_filter if air_filter else f"Product {row.product_id}"
-        elif row.category_id == 2:  # Assuming 2 is stock_item category
-            stock_item = db.execute(
-                select(StockItem.name)
-                .where(StockItem.id == row.reference_id)
-            ).scalar_one_or_none()
-            product_name = stock_item if stock_item else f"Product {row.product_id}"
-        else:
-            product_name = f"Product {row.product_id}"
-        
-        top_items.append({
-            "product_id": row.product_id,
-            "product_name": product_name,
+    for row in db.execute(select(top_items_subquery)).all():
+        qty_lookup[row.product_id] = {
             "on_hand": row.on_hand,
-            "available": row.available,
             "reserved": row.reserved,
             "ordered": row.ordered,
+            "available": row.available,
             "backordered": row.backordered,
-            field: getattr(row, field) if field in ["on_hand", "reserved", "ordered"] else row.available if field == "available" else row.backordered
+            "sort_field": row.sort_field
+        }
+        top_ids.append(row.product_id)
+    
+    # Build top items response
+    top_items = []
+    for product in top_products:
+        qty_data = qty_lookup.get(product.id, {})
+        
+        # Determine product name based on type
+        if product.air_filter:
+            product_name = product.air_filter.part_number
+        elif product.stock_item:
+            product_name = product.stock_item.name
+        elif product.media:
+            product_name = product.media.part_number
+        else:
+            product_name = f"Product {product.id}"
+        
+        top_items.append({
+            "product_id": product.id,
+            "product_name": product_name,
+            "on_hand": qty_data.get("on_hand", 0),
+            "available": qty_data.get("available", 0),
+            "reserved": qty_data.get("reserved", 0),
+            "ordered": qty_data.get("ordered", 0),
+            "backordered": qty_data.get("backordered", 0)
         })
     
     # Calculate "All Others" sum
