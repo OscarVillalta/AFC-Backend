@@ -928,3 +928,227 @@ def get_child_product_transaction_ledger(child_product_id):
 
     result, status = _get_transaction_ledger(db, child_product_id=child_product_id)
     return jsonify(result), status
+
+
+# =====================================================
+# 🔹 POST Bulk Projected Stock Timeline
+# =====================================================
+@transaction_bp.route("/inventory/projections/bulk", methods=["POST"])
+def get_bulk_projections():
+    """
+    Accept a JSON list of product_ids and return projected stock levels
+    based on current on_hand and pending transactions with ETAs.
+    """
+    db = g.db
+    warehouse_id = g.active_warehouse_id
+    
+    data = request.get_json()
+    if not data or "product_ids" not in data:
+        return jsonify({"error": "product_ids list is required"}), 400
+    
+    product_ids = data["product_ids"]
+    if not isinstance(product_ids, list):
+        return jsonify({"error": "product_ids must be a list"}), 400
+    
+    results = []
+    
+    for product_id in product_ids:
+        # Fetch the product and its quantity
+        product = db.get(Product, product_id)
+        if not product:
+            results.append({
+                "product_id": product_id,
+                "error": "Product not found"
+            })
+            continue
+        
+        # Get current on_hand stock
+        qty = db.execute(
+            select(Quantity).where(
+                Quantity.product_id == product_id,
+                Quantity.warehouse_id == warehouse_id
+            )
+        ).scalar_one_or_none()
+        
+        if not qty:
+            results.append({
+                "product_id": product_id,
+                "error": "Quantity record not found"
+            })
+            continue
+        
+        current_on_hand = qty.on_hand
+        
+        # Get child product IDs for this product
+        child_product_ids = db.execute(
+            select(ChildProduct.id).where(ChildProduct.parent_product_id == product_id)
+        ).scalars().all()
+        
+        # Build product filter
+        product_filter = Transaction.product_id == product_id
+        if child_product_ids:
+            product_filter = or_(product_filter, Transaction.child_product_id.in_(child_product_ids))
+        
+        # Fetch pending transactions with order ETAs
+        pending_txns = db.execute(
+            select(
+                Transaction.id,
+                Transaction.quantity_delta,
+                Transaction.created_at,
+                Order.eta
+            )
+            .outerjoin(Order, Transaction.order_id == Order.id)
+            .where(
+                Transaction.state == TransactionState.PENDING.value,
+                Transaction.warehouse_id == warehouse_id,
+                product_filter
+            )
+            .order_by(func.coalesce(Order.eta, Transaction.created_at))
+        ).all()
+        
+        # Build projection timeline
+        projections = []
+        running_stock = current_on_hand
+        
+        for txn in pending_txns:
+            running_stock += txn.quantity_delta
+            projections.append({
+                "transaction_id": txn.id,
+                "quantity_delta": txn.quantity_delta,
+                "projected_stock": running_stock,
+                "eta": txn.eta.isoformat() if txn.eta else None,
+                "created_at": txn.created_at.isoformat() if txn.created_at else None
+            })
+        
+        results.append({
+            "product_id": product_id,
+            "current_on_hand": current_on_hand,
+            "projections": projections
+        })
+    
+    return jsonify(results), 200
+
+
+# =====================================================
+# 🔹 POST Historical Daily Stock Series
+# =====================================================
+@transaction_bp.route("/inventory/history/daily", methods=["POST"])
+def get_daily_history():
+    """
+    Accept product_ids and a start_date, then calculate the closing on_hand
+    balance for each day using committed transactions. Returns daily series
+    for charting without requiring the frontend to process raw transactions.
+    """
+    db = g.db
+    warehouse_id = g.active_warehouse_id
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Request body is required"}), 400
+    
+    if "product_ids" not in data:
+        return jsonify({"error": "product_ids list is required"}), 400
+    
+    if "start_date" not in data:
+        return jsonify({"error": "start_date is required"}), 400
+    
+    product_ids = data["product_ids"]
+    start_date_str = data["start_date"]
+    
+    if not isinstance(product_ids, list):
+        return jsonify({"error": "product_ids must be a list"}), 400
+    
+    # Parse start_date
+    try:
+        start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
+    except ValueError:
+        return jsonify({"error": "Invalid start_date format. Use ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)"}), 400
+    
+    results = []
+    
+    for product_id in product_ids:
+        # Verify product exists
+        product = db.get(Product, product_id)
+        if not product:
+            results.append({
+                "product_id": product_id,
+                "error": "Product not found"
+            })
+            continue
+        
+        # Get current quantity
+        qty = db.execute(
+            select(Quantity).where(
+                Quantity.product_id == product_id,
+                Quantity.warehouse_id == warehouse_id
+            )
+        ).scalar_one_or_none()
+        
+        if not qty:
+            results.append({
+                "product_id": product_id,
+                "error": "Quantity record not found"
+            })
+            continue
+        
+        # Get child product IDs
+        child_product_ids = db.execute(
+            select(ChildProduct.id).where(ChildProduct.parent_product_id == product_id)
+        ).scalars().all()
+        
+        # Build product filter
+        product_filter = Transaction.product_id == product_id
+        if child_product_ids:
+            product_filter = or_(product_filter, Transaction.child_product_id.in_(child_product_ids))
+        
+        # Fetch all committed transactions from start_date, ordered by date
+        transactions = db.execute(
+            select(
+                func.date(Transaction.created_at).label('date'),
+                func.sum(Transaction.quantity_delta).label('daily_delta')
+            )
+            .where(
+                Transaction.state == TransactionState.COMMITTED.value,
+                Transaction.warehouse_id == warehouse_id,
+                Transaction.created_at >= start_date,
+                product_filter
+            )
+            .group_by(func.date(Transaction.created_at))
+            .order_by(func.date(Transaction.created_at))
+        ).all()
+        
+        # Calculate daily balances
+        # Start with current on_hand and work backwards from transaction deltas
+        # Or work forward from start_date
+        daily_series = []
+        
+        # Get sum of all transactions before start_date to establish opening balance
+        opening_balance = db.scalar(
+            select(func.coalesce(func.sum(Transaction.quantity_delta), 0))
+            .where(
+                Transaction.state == TransactionState.COMMITTED.value,
+                Transaction.warehouse_id == warehouse_id,
+                Transaction.created_at < start_date,
+                product_filter
+            )
+        ) or 0
+        
+        running_balance = opening_balance
+        
+        for txn_date, daily_delta in transactions:
+            running_balance += daily_delta
+            daily_series.append({
+                "date": str(txn_date),
+                "closing_balance": int(running_balance),
+                "daily_change": int(daily_delta)
+            })
+        
+        results.append({
+            "product_id": product_id,
+            "start_date": start_date_str,
+            "opening_balance": int(opening_balance),
+            "current_on_hand": qty.on_hand,
+            "daily_series": daily_series
+        })
+    
+    return jsonify(results), 200
