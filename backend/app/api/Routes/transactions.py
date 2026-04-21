@@ -982,20 +982,28 @@ def get_bulk_projections():
         if not isinstance(product_ids, list):
             return jsonify({"error": "product_ids must be a list"}), 400
         target_product_ids = product_ids
-    elif top_n is not None or bottom_n is not None:
-        # Mode 2 or 3: Top/Bottom N products
-        # First, get all products with quantities in this warehouse
+    else:
+        # Mode 2, 3, or Default: Top/Bottom N products
+        # Set default to top 5 if no parameters specified
+        if top_n is None and bottom_n is None:
+            top_n = 5
+        
+        # Get all products with quantities in this warehouse
         all_products_with_qty = db.execute(
             select(Quantity.product_id, Quantity.on_hand)
             .where(Quantity.warehouse_id == warehouse_id)
         ).all()
         
+        # Batch fetch all pending transactions for efficiency
+        product_deltas = _calculate_all_product_deltas(
+            db, [pid for pid, _ in all_products_with_qty], warehouse_id, start_date, end_date
+        )
+        
         # Calculate final projected stock for each product
         product_final_stocks = []
         for prod_id, on_hand in all_products_with_qty:
-            final_stock = _calculate_final_projected_stock(
-                db, prod_id, on_hand, warehouse_id, start_date, end_date
-            )
+            total_delta = product_deltas.get(prod_id, 0)
+            final_stock = on_hand + total_delta
             product_final_stocks.append((prod_id, final_stock))
         
         # Sort and select top or bottom N
@@ -1005,22 +1013,6 @@ def get_bulk_projections():
         else:  # bottom_n
             product_final_stocks.sort(key=lambda x: x[1])
             target_product_ids = [pid for pid, _ in product_final_stocks[:bottom_n]]
-    else:
-        # Default: Top 5 products
-        all_products_with_qty = db.execute(
-            select(Quantity.product_id, Quantity.on_hand)
-            .where(Quantity.warehouse_id == warehouse_id)
-        ).all()
-        
-        product_final_stocks = []
-        for prod_id, on_hand in all_products_with_qty:
-            final_stock = _calculate_final_projected_stock(
-                db, prod_id, on_hand, warehouse_id, start_date, end_date
-            )
-            product_final_stocks.append((prod_id, final_stock))
-        
-        product_final_stocks.sort(key=lambda x: x[1], reverse=True)
-        target_product_ids = [pid for pid, _ in product_final_stocks[:5]]
     
     # Generate projections for selected products
     results = []
@@ -1108,6 +1100,66 @@ def get_bulk_projections():
         })
     
     return jsonify(results), 200
+
+
+def _calculate_all_product_deltas(db, product_ids, warehouse_id, start_date=None, end_date=None):
+    """
+    Batch fetch all pending transactions for multiple products and calculate their total deltas.
+    More efficient than querying for each product individually.
+    Returns a dict mapping product_id to total_delta.
+    """
+    if not product_ids:
+        return {}
+    
+    # Get all child product IDs for the given products
+    child_products = db.execute(
+        select(ChildProduct.id, ChildProduct.parent_product_id)
+        .where(ChildProduct.parent_product_id.in_(product_ids))
+    ).all()
+    
+    # Create mapping of child_product_id to parent_product_id
+    child_to_parent = {child_id: parent_id for child_id, parent_id in child_products}
+    child_product_ids = list(child_to_parent.keys())
+    
+    # Build date filters
+    date_filters = [
+        Transaction.state == TransactionState.PENDING.value,
+        Transaction.warehouse_id == warehouse_id,
+        or_(
+            Transaction.product_id.in_(product_ids),
+            Transaction.child_product_id.in_(child_product_ids) if child_product_ids else False
+        )
+    ]
+    
+    if start_date:
+        date_filters.append(func.coalesce(Order.eta, Transaction.created_at) >= start_date)
+    if end_date:
+        date_filters.append(func.coalesce(Order.eta, Transaction.created_at) <= end_date)
+    
+    # Fetch all relevant transactions
+    transactions = db.execute(
+        select(
+            Transaction.product_id,
+            Transaction.child_product_id,
+            Transaction.quantity_delta
+        )
+        .outerjoin(Order, Transaction.order_id == Order.id)
+        .where(*date_filters)
+    ).all()
+    
+    # Aggregate deltas by product_id
+    product_deltas = {}
+    for txn in transactions:
+        # Determine the effective product_id (parent if it's a child product)
+        if txn.child_product_id:
+            effective_product_id = child_to_parent.get(txn.child_product_id)
+        else:
+            effective_product_id = txn.product_id
+        
+        if effective_product_id:
+            product_deltas[effective_product_id] = product_deltas.get(effective_product_id, 0) + txn.quantity_delta
+    
+    return product_deltas
 
 
 def _calculate_final_projected_stock(db, product_id, current_on_hand, warehouse_id, start_date=None, end_date=None):
