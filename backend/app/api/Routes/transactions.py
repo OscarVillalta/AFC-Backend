@@ -1,7 +1,7 @@
 import datetime
 from flask import abort, g, jsonify, request, Blueprint
 from flask_jwt_extended import get_jwt
-from sqlalchemy import select, func, or_, text, false
+from sqlalchemy import select, func, or_, text
 from database.models import (
     Quantity,
     Transaction,
