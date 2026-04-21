@@ -1,7 +1,7 @@
 import datetime
 from flask import abort, g, jsonify, request, Blueprint
 from flask_jwt_extended import get_jwt
-from sqlalchemy import select, func, or_, text
+from sqlalchemy import select, func, or_, text, false
 from database.models import (
     Quantity,
     Transaction,
@@ -961,6 +961,10 @@ def get_bulk_projections():
     start_date_str = data.get("start_date")
     end_date_str = data.get("end_date")
     
+    # Validate mutually exclusive parameters
+    if top_n is not None and bottom_n is not None:
+        return jsonify({"error": "Cannot specify both top_n and bottom_n parameters"}), 400
+    
     # Parse dates if provided
     start_date = None
     end_date = None
@@ -1125,11 +1129,18 @@ def _calculate_all_product_deltas(db, product_ids, warehouse_id, start_date=None
     date_filters = [
         Transaction.state == TransactionState.PENDING.value,
         Transaction.warehouse_id == warehouse_id,
-        or_(
-            Transaction.product_id.in_(product_ids),
-            Transaction.child_product_id.in_(child_product_ids) if child_product_ids else False
-        )
     ]
+    
+    # Add product filter
+    if child_product_ids:
+        date_filters.append(
+            or_(
+                Transaction.product_id.in_(product_ids),
+                Transaction.child_product_id.in_(child_product_ids)
+            )
+        )
+    else:
+        date_filters.append(Transaction.product_id.in_(product_ids))
     
     if start_date:
         date_filters.append(func.coalesce(Order.eta, Transaction.created_at) >= start_date)
@@ -1160,43 +1171,6 @@ def _calculate_all_product_deltas(db, product_ids, warehouse_id, start_date=None
             product_deltas[effective_product_id] = product_deltas.get(effective_product_id, 0) + txn.quantity_delta
     
     return product_deltas
-
-
-def _calculate_final_projected_stock(db, product_id, current_on_hand, warehouse_id, start_date=None, end_date=None):
-    """
-    Helper function to calculate the final projected stock for a product
-    after applying all pending transactions within the date range.
-    """
-    # Get child product IDs for this product
-    child_product_ids = db.execute(
-        select(ChildProduct.id).where(ChildProduct.parent_product_id == product_id)
-    ).scalars().all()
-    
-    # Build product filter
-    product_filter = Transaction.product_id == product_id
-    if child_product_ids:
-        product_filter = or_(product_filter, Transaction.child_product_id.in_(child_product_ids))
-    
-    # Build date filters
-    date_filters = [
-        Transaction.state == TransactionState.PENDING.value,
-        Transaction.warehouse_id == warehouse_id,
-        product_filter
-    ]
-    
-    if start_date:
-        date_filters.append(func.coalesce(Order.eta, Transaction.created_at) >= start_date)
-    if end_date:
-        date_filters.append(func.coalesce(Order.eta, Transaction.created_at) <= end_date)
-    
-    # Get sum of all pending transaction deltas
-    total_delta = db.execute(
-        select(func.sum(Transaction.quantity_delta))
-        .outerjoin(Order, Transaction.order_id == Order.id)
-        .where(*date_filters)
-    ).scalar() or 0
-    
-    return current_on_hand + total_delta
 
 
 # =====================================================
