@@ -936,23 +936,96 @@ def get_child_product_transaction_ledger(child_product_id):
 @transaction_bp.route("/inventory/projections/bulk", methods=["POST"])
 def get_bulk_projections():
     """
-    Accept a JSON list of product_ids and return projected stock levels
-    based on current on_hand and pending transactions with ETAs.
+    Return projected stock levels based on current on_hand and pending transactions with ETAs.
+    
+    Supports multiple modes:
+    1. Specific products: Pass product_ids list
+    2. Top N products: Pass top_n parameter (products with highest final projected stock)
+    3. Bottom N products: Pass bottom_n parameter (products with lowest final projected stock)
+    
+    Optional filters:
+    - start_date: Filter transactions by ETA >= start_date
+    - end_date: Filter transactions by ETA <= end_date
+    
+    Defaults to top 5 products if no parameters specified.
     """
     db = g.db
     warehouse_id = g.active_warehouse_id
     
-    data = request.get_json()
-    if not data or "product_ids" not in data:
-        return jsonify({"error": "product_ids list is required"}), 400
+    data = request.get_json() or {}
     
-    product_ids = data["product_ids"]
-    if not isinstance(product_ids, list):
-        return jsonify({"error": "product_ids must be a list"}), 400
+    # Extract parameters
+    product_ids = data.get("product_ids")
+    top_n = data.get("top_n")
+    bottom_n = data.get("bottom_n")
+    start_date_str = data.get("start_date")
+    end_date_str = data.get("end_date")
     
+    # Parse dates if provided
+    start_date = None
+    end_date = None
+    if start_date_str:
+        try:
+            start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
+        except ValueError:
+            return jsonify({"error": "Invalid start_date format. Use ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)"}), 400
+    
+    if end_date_str:
+        try:
+            end_date = datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
+        except ValueError:
+            return jsonify({"error": "Invalid end_date format. Use ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)"}), 400
+    
+    # Determine which products to process
+    if product_ids is not None:
+        # Mode 1: Specific products
+        if not isinstance(product_ids, list):
+            return jsonify({"error": "product_ids must be a list"}), 400
+        target_product_ids = product_ids
+    elif top_n is not None or bottom_n is not None:
+        # Mode 2 or 3: Top/Bottom N products
+        # First, get all products with quantities in this warehouse
+        all_products_with_qty = db.execute(
+            select(Quantity.product_id, Quantity.on_hand)
+            .where(Quantity.warehouse_id == warehouse_id)
+        ).all()
+        
+        # Calculate final projected stock for each product
+        product_final_stocks = []
+        for prod_id, on_hand in all_products_with_qty:
+            final_stock = _calculate_final_projected_stock(
+                db, prod_id, on_hand, warehouse_id, start_date, end_date
+            )
+            product_final_stocks.append((prod_id, final_stock))
+        
+        # Sort and select top or bottom N
+        if top_n is not None:
+            product_final_stocks.sort(key=lambda x: x[1], reverse=True)
+            target_product_ids = [pid for pid, _ in product_final_stocks[:top_n]]
+        else:  # bottom_n
+            product_final_stocks.sort(key=lambda x: x[1])
+            target_product_ids = [pid for pid, _ in product_final_stocks[:bottom_n]]
+    else:
+        # Default: Top 5 products
+        all_products_with_qty = db.execute(
+            select(Quantity.product_id, Quantity.on_hand)
+            .where(Quantity.warehouse_id == warehouse_id)
+        ).all()
+        
+        product_final_stocks = []
+        for prod_id, on_hand in all_products_with_qty:
+            final_stock = _calculate_final_projected_stock(
+                db, prod_id, on_hand, warehouse_id, start_date, end_date
+            )
+            product_final_stocks.append((prod_id, final_stock))
+        
+        product_final_stocks.sort(key=lambda x: x[1], reverse=True)
+        target_product_ids = [pid for pid, _ in product_final_stocks[:5]]
+    
+    # Generate projections for selected products
     results = []
     
-    for product_id in product_ids:
+    for product_id in target_product_ids:
         # Fetch the product and its quantity
         product = db.get(Product, product_id)
         if not product:
@@ -989,6 +1062,18 @@ def get_bulk_projections():
         if child_product_ids:
             product_filter = or_(product_filter, Transaction.child_product_id.in_(child_product_ids))
         
+        # Build date filters for transactions
+        date_filters = [
+            Transaction.state == TransactionState.PENDING.value,
+            Transaction.warehouse_id == warehouse_id,
+            product_filter
+        ]
+        
+        if start_date:
+            date_filters.append(func.coalesce(Order.eta, Transaction.created_at) >= start_date)
+        if end_date:
+            date_filters.append(func.coalesce(Order.eta, Transaction.created_at) <= end_date)
+        
         # Fetch pending transactions with order ETAs
         pending_txns = db.execute(
             select(
@@ -998,11 +1083,7 @@ def get_bulk_projections():
                 Order.eta
             )
             .outerjoin(Order, Transaction.order_id == Order.id)
-            .where(
-                Transaction.state == TransactionState.PENDING.value,
-                Transaction.warehouse_id == warehouse_id,
-                product_filter
-            )
+            .where(*date_filters)
             .order_by(func.coalesce(Order.eta, Transaction.created_at))
         ).all()
         
@@ -1027,6 +1108,43 @@ def get_bulk_projections():
         })
     
     return jsonify(results), 200
+
+
+def _calculate_final_projected_stock(db, product_id, current_on_hand, warehouse_id, start_date=None, end_date=None):
+    """
+    Helper function to calculate the final projected stock for a product
+    after applying all pending transactions within the date range.
+    """
+    # Get child product IDs for this product
+    child_product_ids = db.execute(
+        select(ChildProduct.id).where(ChildProduct.parent_product_id == product_id)
+    ).scalars().all()
+    
+    # Build product filter
+    product_filter = Transaction.product_id == product_id
+    if child_product_ids:
+        product_filter = or_(product_filter, Transaction.child_product_id.in_(child_product_ids))
+    
+    # Build date filters
+    date_filters = [
+        Transaction.state == TransactionState.PENDING.value,
+        Transaction.warehouse_id == warehouse_id,
+        product_filter
+    ]
+    
+    if start_date:
+        date_filters.append(func.coalesce(Order.eta, Transaction.created_at) >= start_date)
+    if end_date:
+        date_filters.append(func.coalesce(Order.eta, Transaction.created_at) <= end_date)
+    
+    # Get sum of all pending transaction deltas
+    total_delta = db.execute(
+        select(func.sum(Transaction.quantity_delta))
+        .outerjoin(Order, Transaction.order_id == Order.id)
+        .where(*date_filters)
+    ).scalar() or 0
+    
+    return current_on_hand + total_delta
 
 
 # =====================================================
