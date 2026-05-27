@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from flask import Blueprint, jsonify, request, g, current_app
 from sqlalchemy import func, or_, select, text
+from markupsafe import escape
 
 from database.models import (
     Conversion,
@@ -16,6 +17,7 @@ from database.models import (
     TransactionState,
 )
 from app.api.validation import validate_pagination, ValidationError, sanitize_search_string
+
 
 
 conversion_bp = Blueprint("conversions", __name__)
@@ -109,7 +111,7 @@ def _resolve_order(db, order_id: int | None = None, external_ref: str | None = N
     if order_id is not None:
         order = db.get(Order, order_id)
         if not order:
-            return None, None, "Order not found", 404
+            return None, None, f"Order with ID {order_id} not found", 404
         return order_id, None, None, None
     
     if external_ref is not None:
@@ -117,7 +119,7 @@ def _resolve_order(db, order_id: int | None = None, external_ref: str | None = N
             select(Order).where(Order.external_order_number == external_ref)
         ).scalar_one_or_none()
         if not order:
-            return None, None, f"Order with external_order_number '{external_ref}' not found", 404
+            return None, None, f"Order with external_order_number '{escape(external_ref)}' not found", 404
         return order.id, external_ref, None, None
     
     # Neither provided - this is valid (order_id can be None)
