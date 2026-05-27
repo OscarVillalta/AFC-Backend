@@ -18,6 +18,7 @@ from database.models import (
 from app.api.validation import validate_pagination, ValidationError, sanitize_search_string
 
 
+
 conversion_bp = Blueprint("conversions", __name__)
 
 
@@ -80,10 +81,48 @@ def _serialize_batch(batch: ConversionBatch, conversions_total: int | None = Non
         "note": batch.note,
         "created_by": batch.created_by,
         "created_at": batch.created_at.isoformat(),
+        "external_ref": batch.external_ref,
     }
     if conversions_total is not None:
         payload["totals"] = {"conversions": conversions_total}
     return payload
+
+
+def _resolve_order(db, order_id: int | None = None, external_ref: str | None = None) -> tuple[int | None, str | None, str | None, int | None]:
+    """
+    Resolve order_id and external_ref from the provided parameters.
+    
+    Args:
+        db: Database session for querying orders
+        order_id: Optional integer ID of the order
+        external_ref: Optional string representing the external order number to look up
+    
+    Returns:
+        Tuple of (resolved_order_id, resolved_external_ref, error_message, error_status_code)
+        - resolved_order_id: The order ID to use (None if error or neither provided)
+        - resolved_external_ref: The external reference to store (None if using order_id or error)
+        - error_message: Error description if validation failed (None if successful)
+        - error_status_code: HTTP status code for the error (None if successful)
+    """
+    if order_id is not None and external_ref is not None:
+        return None, None, "Cannot provide both order_id and external_ref", 400
+    
+    if order_id is not None:
+        order = db.get(Order, order_id)
+        if not order:
+            return None, None, "Order not found by ID", 404
+        return order_id, None, None, None
+    
+    if external_ref is not None:
+        order = db.execute(
+            select(Order).where(Order.external_order_number == external_ref)
+        ).scalar_one_or_none()
+        if not order:
+            return None, None, "Order not found by external order number", 404
+        return order.id, external_ref, None, None
+    
+    # Neither provided - this is valid (order_id can be None)
+    return None, None, None, None
 
 
 def _validate_and_get_product_with_quantity(db, product_id: int | None = None, child_product_id: int | None = None, warehouse_id: int | None = None):
@@ -281,17 +320,19 @@ def create_conversion_batch():
     if not conversions_payload:
         return jsonify({"error": "At least one conversion is required."}), 400
 
-    order_id = data.get("order_id")
-    if order_id:
-        order = db.get(Order, order_id)
-        if not order:
-            return jsonify({"error": "Order not found"}), 404
+    # Resolve order_id and external_ref
+    order_id_input = data.get("order_id")
+    external_ref_input = data.get("external_ref")
+    resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(db, order_id_input, external_ref_input)
+    if error:
+        return jsonify({"error": error}), error_code
 
     batch = ConversionBatch(
-        order_id=order_id,
+        order_id=resolved_order_id,
         warehouse_id=g.active_warehouse_id,
         note=data.get("note"),
         created_by=data.get("created_by"),
+        external_ref=resolved_external_ref,
     )
     db.add(batch)
     db.flush()
@@ -517,13 +558,53 @@ def update_conversion_batch(batch_id: int):
     if not batch:
         return jsonify({"error": "Conversion batch not found"}), 404
 
-    if "order_id" in data:
-        new_order_id = data.get("order_id")
-        if new_order_id is not None:
-            order = db.get(Order, new_order_id)
-            if not order:
-                return jsonify({"error": "Order not found"}), 404
-        batch.order_id = new_order_id
+    # Handle order_id and external_ref updates
+    # Note: external_ref and order_id should be kept in sync - external_ref is for reference only
+    if "order_id" in data or "external_ref" in data:
+        # Determine which parameter(s) were provided
+        has_order_id = "order_id" in data
+        has_external_ref = "external_ref" in data
+        
+        if has_order_id and has_external_ref:
+            # Both provided - validate they don't conflict
+            order_id_input = data.get("order_id")
+            external_ref_input = data.get("external_ref")
+            resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(db, order_id_input, external_ref_input)
+            if error:
+                return jsonify({"error": error}), error_code
+            batch.order_id = resolved_order_id
+            batch.external_ref = resolved_external_ref
+        elif has_external_ref:
+            # Only external_ref provided - look up order and set both fields
+            external_ref_input = data.get("external_ref")
+            if external_ref_input is None:
+                # Explicitly clearing both fields
+                batch.order_id = None
+                batch.external_ref = None
+            else:
+                # Look up order by external_ref
+                order = db.execute(
+                    select(Order).where(Order.external_order_number == external_ref_input)
+                ).scalar_one_or_none()
+                if not order:
+                    return jsonify({"error": "Order not found by external order number"}), 404
+                batch.order_id = order.id
+                batch.external_ref = external_ref_input
+        else:
+            # Only order_id provided - set order_id and clear external_ref
+            order_id_input = data.get("order_id")
+            if order_id_input is None:
+                # Explicitly clearing both fields
+                batch.order_id = None
+                batch.external_ref = None
+            else:
+                # Validate order exists
+                order = db.get(Order, order_id_input)
+                if not order:
+                    return jsonify({"error": "Order not found by ID"}), 404
+                batch.order_id = order_id_input
+                # Clear external_ref to maintain consistency
+                batch.external_ref = None
 
     if "note" in data:
         batch.note = data.get("note")
