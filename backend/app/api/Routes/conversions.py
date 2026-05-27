@@ -1035,6 +1035,10 @@ def search_conversions():
     batch_id = request.args.get("batch_id", type=int)
     order_id = request.args.get("order_id", type=int)
     product_id = request.args.get("product_id", type=int)
+    created_by = request.args.get("created_by")
+    external_order_id = request.args.get("external_order_id")
+    date_from = request.args.get("date_from")
+    date_to = request.args.get("date_to")
 
     # Scope to the active warehouse
     filters.append(Conversion.warehouse_id == g.active_warehouse_id)
@@ -1044,6 +1048,17 @@ def search_conversions():
 
     if order_id:
         filters.append(Conversion.batch.has(ConversionBatch.order_id == order_id))
+
+    if created_by:
+        filters.append(Conversion.batch.has(ConversionBatch.created_by == created_by))
+
+    if external_order_id:
+        # Filter by external order number via the batch's order relationship
+        filters.append(
+            Conversion.batch.has(
+                ConversionBatch.order.has(Order.external_order_number == external_order_id)
+            )
+        )
 
     if product_id:
         filters.append(
@@ -1064,6 +1079,25 @@ def search_conversions():
                 ),
             )
         )
+
+    # Date range filters
+    if date_from:
+        try:
+            parsed_from = datetime.fromisoformat(date_from)
+            if parsed_from.tzinfo is None:
+                parsed_from = parsed_from.replace(tzinfo=timezone.utc)
+            filters.append(Conversion.created_at >= parsed_from)
+        except ValueError:
+            return jsonify({"error": "Invalid date_from format. Use ISO 8601 format."}), 400
+
+    if date_to:
+        try:
+            parsed_to = datetime.fromisoformat(date_to)
+            if parsed_to.tzinfo is None:
+                parsed_to = parsed_to.replace(tzinfo=timezone.utc)
+            filters.append(Conversion.created_at <= parsed_to)
+        except ValueError:
+            return jsonify({"error": "Invalid date_to format. Use ISO 8601 format."}), 400
 
     conversions = (
         db.execute(
