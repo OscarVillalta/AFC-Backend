@@ -111,7 +111,7 @@ def _resolve_order(db, order_id: int | None = None, external_ref: str | None = N
     if order_id is not None:
         order = db.get(Order, order_id)
         if not order:
-            return None, None, f"Order with ID {order_id} not found", 404
+            return None, None, "Order not found by ID", 404
         return order_id, None, None, None
     
     if external_ref is not None:
@@ -119,7 +119,7 @@ def _resolve_order(db, order_id: int | None = None, external_ref: str | None = N
             select(Order).where(Order.external_order_number == external_ref)
         ).scalar_one_or_none()
         if not order:
-            return None, None, f"Order with external_order_number '{escape(external_ref)}' not found", 404
+            return None, None, "Order not found by external order number", 404
         return order.id, external_ref, None, None
     
     # Neither provided - this is valid (order_id can be None)
@@ -561,15 +561,33 @@ def update_conversion_batch(batch_id: int):
 
     # Handle order_id and external_ref updates
     if "order_id" in data or "external_ref" in data:
-        order_id_input = data.get("order_id")
-        external_ref_input = data.get("external_ref")
+        # Determine which field is being updated
+        order_id_input = data.get("order_id") if "order_id" in data else batch.order_id
+        external_ref_input = data.get("external_ref") if "external_ref" in data else batch.external_ref
         
-        resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(db, order_id_input, external_ref_input)
-        if error:
-            return jsonify({"error": error}), error_code
-        
-        batch.order_id = resolved_order_id
-        batch.external_ref = resolved_external_ref
+        # If only external_ref is provided, we need to look it up
+        # If only order_id is provided, we use it and preserve existing external_ref
+        if "external_ref" in data and "order_id" not in data:
+            # Only external_ref is being updated
+            resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(db, None, external_ref_input)
+            if error:
+                return jsonify({"error": error}), error_code
+            batch.order_id = resolved_order_id
+            batch.external_ref = resolved_external_ref
+        elif "order_id" in data and "external_ref" not in data:
+            # Only order_id is being updated, preserve external_ref if it doesn't conflict
+            resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(db, order_id_input, None)
+            if error:
+                return jsonify({"error": error}), error_code
+            batch.order_id = resolved_order_id
+            # Don't change external_ref if only order_id is being updated
+        else:
+            # Both fields are being updated
+            resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(db, order_id_input, external_ref_input)
+            if error:
+                return jsonify({"error": error}), error_code
+            batch.order_id = resolved_order_id
+            batch.external_ref = resolved_external_ref
 
     if "note" in data:
         batch.note = data.get("note")
