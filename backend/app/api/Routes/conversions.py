@@ -815,7 +815,7 @@ def reverse_conversion(conversion_id: int):
         # We'll return an error for now, or we could create multiple conversions
         return jsonify(
             {
-                "error": "Cannot reverse conversions with multiple decreases. Please reverse manually or use batch reversal."
+                "error": "Cannot reverse conversions with multiple decreases. Manual reversal required."
             }
         ), 400
 
@@ -829,7 +829,7 @@ def reverse_conversion(conversion_id: int):
         # Create a new batch for this reversal
         batch = ConversionBatch(
             warehouse_id=conversion.warehouse_id,
-            order_id=conversion.batch.order_id if conversion.batch else None,
+            order_id=conversion.batch.order_id if conversion.batch is not None else None,
             created_by=g.get("username"),
             note=f"Reversal batch for conversion #{conversion_id}",
         )
@@ -858,8 +858,9 @@ def reverse_conversion(conversion_id: int):
         )
     except ValueError as e:
         db.rollback()
-        return jsonify({"error": str(e)}), 400
-    except Exception:
+        current_app.logger.warning("Validation error reversing conversion %s: %s", conversion_id, str(e))
+        return jsonify({"error": "Validation error", "details": "Invalid conversion data"}), 400
+    except Exception as e:
         db.rollback()
         current_app.logger.exception("Error reversing conversion %s", conversion_id)
         return jsonify({"error": "Failed to reverse conversion. See server logs for details."}), 500
@@ -992,7 +993,7 @@ def reverse_conversion_batch(batch_id: int):
             skipped.append(
                 {
                     "conversion_id": conv.id,
-                    "reason": f"Error: {str(e)}",
+                    "reason": "Error during reversal. See server logs.",
                 }
             )
 
