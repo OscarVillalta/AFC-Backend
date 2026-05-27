@@ -87,30 +87,41 @@ def _serialize_batch(batch: ConversionBatch, conversions_total: int | None = Non
     return payload
 
 
-def _resolve_order(db, order_id: int | None = None, external_ref: str | None = None) -> tuple[int | None, str | None, str | None]:
+def _resolve_order(db, order_id: int | None = None, external_ref: str | None = None) -> tuple[int | None, str | None, str | None, int | None]:
     """
     Resolve order_id and external_ref from the provided parameters.
-    Returns: (resolved_order_id, resolved_external_ref, error_message)
+    
+    Args:
+        db: Database session for querying orders
+        order_id: Optional integer ID of the order
+        external_ref: Optional string representing the external order number to look up
+    
+    Returns:
+        Tuple of (resolved_order_id, resolved_external_ref, error_message, error_status_code)
+        - resolved_order_id: The order ID to use (None if error or neither provided)
+        - resolved_external_ref: The external reference to store (None if using order_id or error)
+        - error_message: Error description if validation failed (None if successful)
+        - error_status_code: HTTP status code for the error (None if successful)
     """
     if order_id is not None and external_ref is not None:
-        return None, None, "Cannot provide both order_id and external_ref"
+        return None, None, "Cannot provide both order_id and external_ref", 400
     
     if order_id is not None:
         order = db.get(Order, order_id)
         if not order:
-            return None, None, "Order not found"
-        return order_id, None, None
+            return None, None, "Order not found", 404
+        return order_id, None, None, None
     
     if external_ref is not None:
         order = db.execute(
             select(Order).where(Order.external_order_number == external_ref)
         ).scalar_one_or_none()
         if not order:
-            return None, None, f"Order with external_order_number '{external_ref}' not found"
-        return order.id, external_ref, None
+            return None, None, f"Order with external_order_number '{external_ref}' not found", 404
+        return order.id, external_ref, None, None
     
     # Neither provided - this is valid (order_id can be None)
-    return None, None, None
+    return None, None, None, None
 
 
 def _validate_and_get_product_with_quantity(db, product_id: int | None = None, child_product_id: int | None = None, warehouse_id: int | None = None):
@@ -311,9 +322,9 @@ def create_conversion_batch():
     # Resolve order_id and external_ref
     order_id_input = data.get("order_id")
     external_ref_input = data.get("external_ref")
-    resolved_order_id, resolved_external_ref, error = _resolve_order(db, order_id_input, external_ref_input)
+    resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(db, order_id_input, external_ref_input)
     if error:
-        return jsonify({"error": error}), 400 if "Cannot provide both" in error else 404
+        return jsonify({"error": error}), error_code
 
     batch = ConversionBatch(
         order_id=resolved_order_id,
@@ -551,9 +562,9 @@ def update_conversion_batch(batch_id: int):
         order_id_input = data.get("order_id")
         external_ref_input = data.get("external_ref")
         
-        resolved_order_id, resolved_external_ref, error = _resolve_order(db, order_id_input, external_ref_input)
+        resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(db, order_id_input, external_ref_input)
         if error:
-            return jsonify({"error": error}), 400 if "Cannot provide both" in error else 404
+            return jsonify({"error": error}), error_code
         
         batch.order_id = resolved_order_id
         batch.external_ref = resolved_external_ref
