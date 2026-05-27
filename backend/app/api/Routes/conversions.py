@@ -748,6 +748,277 @@ def rollback_conversion_batch(batch_id: int):
     )
 
 
+@conversion_bp.route("/conversions/<int:conversion_id>/reverse", methods=["POST"])
+def reverse_conversion(conversion_id: int):
+    """
+    Reverse a conversion by creating a new conversion that does the opposite:
+    - What was increased becomes decreased
+    - What was decreased becomes increased
+    Includes stock checking before executing the reversal.
+    """
+    db = g.db
+    payload = request.get_json() or {}
+    conversion = db.get(Conversion, conversion_id)
+
+    if not conversion:
+        return jsonify({"error": "Conversion not found"}), 404
+
+    state = _derive_state(conversion)
+    if state != ConversionState.COMPLETED.value:
+        return jsonify({"error": "Can only reverse completed conversions"}), 400
+
+    # Check stock for what will be decreased (the original increase)
+    increase_txn = conversion.increase_txn
+    qty_record = _get_quantity_record_from_transaction(increase_txn)
+    required = abs(increase_txn.quantity_delta)
+
+    if qty_record and qty_record.on_hand < required:
+        return (
+            jsonify(
+                {
+                    "error": "Cannot reverse conversion due to insufficient stock.",
+                    "details": {
+                        "product_id": increase_txn.product_id,
+                        "child_product_id": increase_txn.child_product_id,
+                        "on_hand": qty_record.on_hand,
+                        "required": required,
+                    },
+                }
+            ),
+            409,
+        )
+
+    # Build the reverse conversion payload
+    reverse_payload = {
+        "decreases": [
+            {
+                "product_id": increase_txn.product_id,
+                "child_product_id": increase_txn.child_product_id,
+                "quantity": abs(increase_txn.quantity_delta),
+            }
+        ],
+        "increase": {},
+        "note": payload.get("note", f"Reversal of conversion #{conversion_id}"),
+    }
+
+    # The original decreases become the new increase
+    # For simplicity, we'll combine all decreases into one increase
+    # If there were multiple decreases, we need to create multiple reverse conversions
+    # or combine them if they're the same product
+    if len(conversion.decreases) == 1:
+        decrease_txn = conversion.decreases[0].transaction
+        reverse_payload["increase"]["product_id"] = decrease_txn.product_id
+        reverse_payload["increase"]["child_product_id"] = decrease_txn.child_product_id
+        reverse_payload["increase"]["quantity"] = abs(decrease_txn.quantity_delta)
+    else:
+        # For multiple decreases, this becomes more complex
+        # We'll return an error for now, or we could create multiple conversions
+        return jsonify(
+            {
+                "error": "Cannot reverse conversions with multiple decreases. Manual reversal required."
+            }
+        ), 400
+
+    # Create a new batch for the reverse conversion if not specified
+    batch_id = payload.get("batch_id")
+    if batch_id:
+        batch = db.get(ConversionBatch, batch_id)
+        if not batch:
+            return jsonify({"error": f"Batch {batch_id} not found"}), 404
+    else:
+        # Create a new batch for this reversal
+        batch = ConversionBatch(
+            warehouse_id=conversion.warehouse_id,
+            order_id=conversion.batch.order_id if conversion.batch is not None else None,
+            created_by=g.get("username"),
+            note=f"Reversal batch for conversion #{conversion_id}",
+        )
+        db.add(batch)
+        db.flush()
+
+    try:
+        reverse_conversion = _create_conversion(
+            db, batch, reverse_payload, conversion.warehouse_id
+        )
+        db.commit()
+    except InsufficientStockError as e:
+        db.rollback()
+        return (
+            jsonify(
+                {
+                    "error": "Insufficient stock to create reverse conversion",
+                    "details": {
+                        "product_id": e.product_id,
+                        "on_hand": e.on_hand,
+                        "required": e.required,
+                    },
+                }
+            ),
+            409,
+        )
+    except ValueError as e:
+        db.rollback()
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        db.rollback()
+        current_app.logger.exception("Error reversing conversion %s", conversion_id)
+        return jsonify({"error": "Failed to reverse conversion. See server logs for details."}), 500
+
+    return (
+        jsonify(
+            {
+                "message": "Conversion reversed successfully.",
+                "original_conversion_id": conversion_id,
+                "reverse_conversion": _serialize_conversion(reverse_conversion),
+            }
+        ),
+        201,
+    )
+
+
+@conversion_bp.route("/conversion_batches/<int:batch_id>/reverse", methods=["POST"])
+def reverse_conversion_batch(batch_id: int):
+    """
+    Reverse each conversion in a batch, skipping conversions that cannot be reversed
+    due to insufficient stock.
+    """
+    db = g.db
+    payload = request.get_json() or {}
+    batch = db.get(ConversionBatch, batch_id)
+
+    if not batch:
+        return jsonify({"error": "Conversion batch not found"}), 404
+
+    conversions = (
+        db.execute(select(Conversion).where(Conversion.batch_id == batch_id)).scalars().all()
+    )
+
+    # Create a new batch for all the reverse conversions
+    reverse_batch = ConversionBatch(
+        warehouse_id=batch.warehouse_id,
+        order_id=batch.order_id,
+        created_by=g.get("username"),
+        note=payload.get("note", f"Reversal of batch #{batch_id}"),
+    )
+    db.add(reverse_batch)
+    db.flush()
+
+    reversed = []
+    skipped = []
+
+    for conv in conversions:
+        state = _derive_state(conv)
+        if state != ConversionState.COMPLETED.value:
+            skipped.append(
+                {
+                    "conversion_id": conv.id,
+                    "reason": "Conversion is not in completed state",
+                }
+            )
+            continue
+
+        # Check if conversion has multiple decreases
+        if len(conv.decreases) != 1:
+            skipped.append(
+                {
+                    "conversion_id": conv.id,
+                    "reason": "Conversion has multiple decreases, cannot auto-reverse",
+                }
+            )
+            continue
+
+        # Check stock for what will be decreased (the original increase)
+        increase_txn = conv.increase_txn
+        qty_record = _get_quantity_record_from_transaction(increase_txn)
+        required = abs(increase_txn.quantity_delta)
+
+        if qty_record and qty_record.on_hand < required:
+            skipped.append(
+                {
+                    "conversion_id": conv.id,
+                    "reason": "Insufficient stock",
+                    "details": {
+                        "product_id": increase_txn.product_id,
+                        "child_product_id": increase_txn.child_product_id,
+                        "on_hand": qty_record.on_hand,
+                        "required": required,
+                    },
+                }
+            )
+            continue
+
+        # Build the reverse conversion payload
+        decrease_txn = conv.decreases[0].transaction
+        reverse_payload = {
+            "decreases": [
+                {
+                    "product_id": increase_txn.product_id,
+                    "child_product_id": increase_txn.child_product_id,
+                    "quantity": abs(increase_txn.quantity_delta),
+                }
+            ],
+            "increase": {
+                "product_id": decrease_txn.product_id,
+                "child_product_id": decrease_txn.child_product_id,
+                "quantity": abs(decrease_txn.quantity_delta),
+            },
+            "note": f"Reversal of conversion #{conv.id}",
+        }
+
+        try:
+            reverse_conversion = _create_conversion(
+                db, reverse_batch, reverse_payload, conv.warehouse_id
+            )
+            reversed.append(
+                {
+                    "original_conversion_id": conv.id,
+                    "reverse_conversion_id": reverse_conversion.id,
+                }
+            )
+        except InsufficientStockError as e:
+            skipped.append(
+                {
+                    "conversion_id": conv.id,
+                    "reason": "Insufficient stock during creation",
+                    "details": {
+                        "product_id": e.product_id,
+                        "on_hand": e.on_hand,
+                        "required": e.required,
+                    },
+                }
+            )
+        except Exception as e:
+            current_app.logger.exception("Error reversing conversion %s", conv.id)
+            skipped.append(
+                {
+                    "conversion_id": conv.id,
+                    "reason": "Failed to reverse conversion",
+                }
+            )
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        current_app.logger.exception("Error committing batch reversal %s", batch_id)
+        return jsonify({"error": "Failed to commit batch reversal. See server logs for details."}), 500
+
+    return (
+        jsonify(
+            {
+                "message": "Batch reversal completed.",
+                "original_batch_id": batch_id,
+                "reverse_batch_id": reverse_batch.id,
+                "results": {
+                    "reversed": reversed,
+                    "skipped": skipped,
+                },
+            }
+        ),
+        200,
+    )
+
+
 @conversion_bp.route("/conversions/search", methods=["GET"])
 def search_conversions():
     db = g.db
