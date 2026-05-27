@@ -858,8 +858,7 @@ def reverse_conversion(conversion_id: int):
         )
     except ValueError as e:
         db.rollback()
-        current_app.logger.warning("Validation error reversing conversion %s: %s", conversion_id, str(e))
-        return jsonify({"error": "Validation error", "details": "Invalid conversion data"}), 400
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         db.rollback()
         current_app.logger.exception("Error reversing conversion %s", conversion_id)
@@ -993,7 +992,7 @@ def reverse_conversion_batch(batch_id: int):
             skipped.append(
                 {
                     "conversion_id": conv.id,
-                    "reason": "Error during reversal. See server logs.",
+                    "reason": "Failed to reverse conversion",
                 }
             )
 
