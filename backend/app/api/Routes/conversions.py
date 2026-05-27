@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 from flask import Blueprint, jsonify, request, g, current_app
 from sqlalchemy import func, or_, select, text
-from markupsafe import escape
 
 from database.models import (
     Conversion,
@@ -560,34 +559,52 @@ def update_conversion_batch(batch_id: int):
         return jsonify({"error": "Conversion batch not found"}), 404
 
     # Handle order_id and external_ref updates
+    # Note: external_ref and order_id should be kept in sync - external_ref is for reference only
     if "order_id" in data or "external_ref" in data:
-        # Determine which field is being updated
-        order_id_input = data.get("order_id") if "order_id" in data else batch.order_id
-        external_ref_input = data.get("external_ref") if "external_ref" in data else batch.external_ref
+        # Determine which parameter(s) were provided
+        has_order_id = "order_id" in data
+        has_external_ref = "external_ref" in data
         
-        # If only external_ref is provided, we need to look it up
-        # If only order_id is provided, we use it and preserve existing external_ref
-        if "external_ref" in data and "order_id" not in data:
-            # Only external_ref is being updated
-            resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(db, None, external_ref_input)
-            if error:
-                return jsonify({"error": error}), error_code
-            batch.order_id = resolved_order_id
-            batch.external_ref = resolved_external_ref
-        elif "order_id" in data and "external_ref" not in data:
-            # Only order_id is being updated, preserve external_ref if it doesn't conflict
-            resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(db, order_id_input, None)
-            if error:
-                return jsonify({"error": error}), error_code
-            batch.order_id = resolved_order_id
-            # Don't change external_ref if only order_id is being updated
-        else:
-            # Both fields are being updated
+        if has_order_id and has_external_ref:
+            # Both provided - validate they don't conflict
+            order_id_input = data.get("order_id")
+            external_ref_input = data.get("external_ref")
             resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(db, order_id_input, external_ref_input)
             if error:
                 return jsonify({"error": error}), error_code
             batch.order_id = resolved_order_id
             batch.external_ref = resolved_external_ref
+        elif has_external_ref:
+            # Only external_ref provided - look up order and set both fields
+            external_ref_input = data.get("external_ref")
+            if external_ref_input is None:
+                # Explicitly clearing both fields
+                batch.order_id = None
+                batch.external_ref = None
+            else:
+                # Look up order by external_ref
+                order = db.execute(
+                    select(Order).where(Order.external_order_number == external_ref_input)
+                ).scalar_one_or_none()
+                if not order:
+                    return jsonify({"error": "Order not found by external order number"}), 404
+                batch.order_id = order.id
+                batch.external_ref = external_ref_input
+        else:
+            # Only order_id provided - set order_id and clear external_ref
+            order_id_input = data.get("order_id")
+            if order_id_input is None:
+                # Explicitly clearing both fields
+                batch.order_id = None
+                batch.external_ref = None
+            else:
+                # Validate order exists
+                order = db.get(Order, order_id_input)
+                if not order:
+                    return jsonify({"error": "Order not found by ID"}), 404
+                batch.order_id = order_id_input
+                # Clear external_ref to maintain consistency
+                batch.external_ref = None
 
     if "note" in data:
         batch.note = data.get("note")
