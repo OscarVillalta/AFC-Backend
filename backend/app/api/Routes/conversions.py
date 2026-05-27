@@ -548,17 +548,15 @@ def update_conversion_batch(batch_id: int):
 
     # Handle order_id and external_ref updates
     if "order_id" in data or "external_ref" in data:
-        order_id_input = data.get("order_id") if "order_id" in data else None
-        external_ref_input = data.get("external_ref") if "external_ref" in data else None
+        order_id_input = data.get("order_id")
+        external_ref_input = data.get("external_ref")
         
-        # Only validate if at least one is being updated
-        if "order_id" in data or "external_ref" in data:
-            resolved_order_id, resolved_external_ref, error = _resolve_order(db, order_id_input, external_ref_input)
-            if error:
-                return jsonify({"error": error}), 400 if "Cannot provide both" in error else 404
-            
-            batch.order_id = resolved_order_id
-            batch.external_ref = resolved_external_ref
+        resolved_order_id, resolved_external_ref, error = _resolve_order(db, order_id_input, external_ref_input)
+        if error:
+            return jsonify({"error": error}), 400 if "Cannot provide both" in error else 404
+        
+        batch.order_id = resolved_order_id
+        batch.external_ref = resolved_external_ref
 
     if "note" in data:
         batch.note = data.get("note")
