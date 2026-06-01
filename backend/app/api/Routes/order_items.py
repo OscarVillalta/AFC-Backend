@@ -1,3 +1,4 @@
+import logging
 from flask import Blueprint, g, jsonify, request
 from sqlalchemy import select, func, update
 from sqlalchemy.exc import IntegrityError, DatabaseError
