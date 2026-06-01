@@ -427,11 +427,14 @@ def allocate_remaining_order_items(item_id):
     print("ID: " + str(item.id), flush=True)
     print("Order type" + order.type, flush=True)
     print("Amount: " + str(qty_to_allocate), flush=True)
+    print("Before: " + str(qty_record.reserved), flush=True)
+    print(qty_record.to_dict())
     
     if order.type == "incoming":
         qty_record.ordered += qty_to_allocate
     else:
         qty_record.reserved += qty_to_allocate
+    print("After: " + str(qty_record.reserved), flush=True)
 
     db.add(txn)
     order.update_status()
