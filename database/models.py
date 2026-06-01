@@ -746,9 +746,9 @@ class Transaction(Base, SerializerMixin):
 
         # Remove pending planning effect
         if self.quantity_delta > 0:
-            qty_record.ordered -= abs(self.quantity_delta)
+            qty_record.ordered = Quantity.ordered - abs(self.quantity_delta)
         else:
-            qty_record.reserved -= abs(self.quantity_delta)
+            qty_record.reserved = Quantity.reserved - abs(self.quantity_delta)
 
         self.state = TransactionState.COMMITTED.value
         self.last_updated_at = datetime.now(timezone.utc)
@@ -772,14 +772,18 @@ class Transaction(Base, SerializerMixin):
         if self.state != TransactionState.COMMITTED.value:
             raise ValueError("Only committed transactions can be rolled back.")
 
-        qty_record = self._get_quantity_record()
+        # ✅ CRITICAL FIX: Pass lock=True to acquire a pessimistic lock (FOR UPDATE)
+        # If another request is touching this quantity, Python pauses here until it finishes.
+        qty_record = self._get_quantity_record(lock=True)
+        
         if not qty_record:
             raise ValueError("Quantity record missing.")
 
         reversed_delta = -self.quantity_delta  # opposite sign
         rollback_requires_stock = reversed_delta < 0  # removing stock
 
-        # ✅ NEW: Prevent negative on_hand when rollback would remove stock
+        # ✅ SAFE VALIDATION: Because the row is locked, this check is now thread-safe.
+        # No other transaction can alter the on_hand quantity out from under us.
         if rollback_requires_stock:
             required = abs(reversed_delta)
             if qty_record.on_hand < required:
@@ -806,7 +810,8 @@ class Transaction(Base, SerializerMixin):
         reversed_txn.ledger_sequence = seq_val
         reversed_txn.last_updated_at = datetime.now(timezone.utc)
 
-        # Apply the reversal to physical inventory
+        # ✅ SAFE MATH: We can use standard Python += math here because the lock 
+        # guarantees we are working with the absolute latest numbers.
         qty_record.on_hand += reversed_txn.quantity_delta
 
         if self.order_item:
@@ -830,9 +835,9 @@ class Transaction(Base, SerializerMixin):
             qty_record = self._get_quantity_record()
             if qty_record:
                 if self.quantity_delta > 0:
-                    qty_record.ordered -= abs(self.quantity_delta)
+                    qty_record.ordered = Quantity.ordered - abs(self.quantity_delta)
                 else:
-                    qty_record.reserved -= abs(self.quantity_delta)
+                    qty_record.reserved = Quantity.reserved - abs(self.quantity_delta)
 
             self.state = TransactionState.CANCELLED.value
             self.last_updated_at = datetime.now(timezone.utc)
