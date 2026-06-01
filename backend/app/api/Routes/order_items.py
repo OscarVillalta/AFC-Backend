@@ -424,17 +424,13 @@ def allocate_remaining_order_items(item_id):
     if not qty_record:
         return jsonify({"error": "Quantity record not found"}), 404
     
-    print("ID: " + str(item.id), flush=True)
-    print("Order type" + order.type, flush=True)
-    print("Amount: " + str(qty_to_allocate), flush=True)
-    print("Before: " + str(qty_record.reserved), flush=True)
+
     print(qty_record.to_dict())
     
     if order.type == "incoming":
-        qty_record.ordered += qty_to_allocate
+        qty_record.ordered = Quantity.ordered + qty_to_allocate
     else:
-        qty_record.reserved += qty_to_allocate
-    print("After: " + str(qty_record.reserved), flush=True)
+        qty_record.reserved = Quantity.reserved + qty_to_allocate
 
     db.add(txn)
     order.update_status()
