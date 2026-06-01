@@ -1,5 +1,5 @@
 from flask import Blueprint, g, jsonify, request
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.api.Schemas.order_item_schema import OrderItemSchema
 from database.models import OrderItem, Order, Product, ChildProduct, Transaction, TransactionState, OrderType, OrderItemType, Quantity
@@ -142,8 +142,6 @@ def create_order_item() -> Tuple[Any, int]:
         else:
             position = validate_positive_integer(position, "position", allow_zero=True)
             # If position is specified, shift existing items down
-            # Use SQLAlchemy 2.0 style update
-            from sqlalchemy import update
             db.execute(
                 update(OrderItem)
                 .where(OrderItem.order_id == order.id)
@@ -186,36 +184,56 @@ def create_order_item() -> Tuple[Any, int]:
 @order_item_bp.route("/order_items/<int:item_id>", methods=["PATCH"])
 def update_order_item(item_id):
     db = g.db
-    item = db.get(OrderItem, item_id)
-    if not item:
-        return jsonify({"error": "Order item not found"}), 404
 
-    data = request.get_json()
-    if "quantity_ordered" in data:
-        item.quantity_ordered = data["quantity_ordered"]
-    if "note" in data:
-        item.note = data["note"]
-    if "type" in data:
-        new_type = data["type"]
-        valid_types = [t.value for t in OrderItemType]
-        if new_type not in valid_types:
-            return jsonify({"error": f"Invalid type. Must be one of: {valid_types}"}), 400
-        # Allow toggling between separator types
-        separator_types = [OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value]
-        # Allow toggling between product item types (Product_Item <-> Media_Cut)
-        product_item_types = [OrderItemType.PRODUCT_ITEM.value, OrderItemType.MEDIA_CUT.value]
-        if item.type in separator_types and new_type in separator_types:
-            item.type = new_type
-        elif item.type in product_item_types and new_type in product_item_types:
-            item.type = new_type
-        else:
-            return jsonify({"error": "Type change is only allowed between separator types or between Product_Item and Media_Cut"}), 400
+    try:
+        item = db.get(OrderItem, item_id)
+        if not item:
+            raise ResourceNotFoundError("Order item", item_id)
 
-    db.commit()
-    return jsonify({
-        "message": "Order item updated successfully.",
-        "item": item_schema.dump(item)
-    }), 200
+        data = request.get_json()
+        if not data:
+            raise InvalidInputError("Request body is required")
+
+        if "quantity_ordered" in data:
+            quantity_ordered = validate_positive_integer(
+                data["quantity_ordered"], "quantity_ordered", allow_zero=True
+            )
+            item.quantity_ordered = quantity_ordered
+        if "note" in data:
+            item.note = data["note"]
+        if "type" in data:
+            new_type = data["type"]
+            valid_types = [t.value for t in OrderItemType]
+            if new_type not in valid_types:
+                raise InvalidInputError(f"Invalid type. Must be one of: {valid_types}")
+            # Allow toggling between separator types
+            separator_types = [OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value]
+            # Allow toggling between product item types (Product_Item <-> Media_Cut)
+            product_item_types = [OrderItemType.PRODUCT_ITEM.value, OrderItemType.MEDIA_CUT.value]
+            if item.type in separator_types and new_type in separator_types:
+                item.type = new_type
+            elif item.type in product_item_types and new_type in product_item_types:
+                item.type = new_type
+            else:
+                raise InvalidInputError("Type change is only allowed between separator types or between Product_Item and Media_Cut")
+
+        safe_commit(db, "updating order item")
+        return jsonify({
+            "message": "Order item updated successfully.",
+            "item": item_schema.dump(item)
+        }), 200
+
+    except (ResourceNotFoundError, InvalidInputError, CustomValidationError) as e:
+        return jsonify(e.to_dict()), e.status_code
+    except IntegrityError as e:
+        db.rollback()
+        return handle_database_error(e, "updating order item")
+    except DatabaseError as e:
+        db.rollback()
+        return handle_database_error(e, "updating order item")
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": "Unexpected error", "details": str(e)}), 500
 
 @order_item_bp.route("/order_items/<int:item_id>/allocate", methods=["POST"])
 def allocate_order_item(item_id):
@@ -243,16 +261,17 @@ def allocate_order_item(item_id):
     note = body.get("note")
 
     # 🔹 Determine direction and reason
-    sign = 1 if order.type == "supplier" else -1
+    is_incoming = order.type == OrderType.INCOMING.value
+    sign = 1 if is_incoming else -1
     qty_delta = qty_to_allocate * sign
-    reason = "receive" if order.type == "supplier" else "shipment"
+    reason = "receive" if is_incoming else "shipment"
 
-    # 🔹 Compute total already allocated (pending + committed)
+    # 🔹 Compute total already allocated (pending + committed only)
     # Use absolute value of quantity_delta since transactions can be positive or negative
     existing_qty_abs = abs(db.scalar(
         select(func.coalesce(func.sum(Transaction.quantity_delta), 0))
         .where(Transaction.order_item_id == item.id)
-        .where(Transaction.state.in_(["pending", "committed", "rolled_back"]))
+        .where(Transaction.state.in_(["pending", "committed"]))
     )) or 0
 
     projected_total = existing_qty_abs + qty_to_allocate
@@ -265,6 +284,28 @@ def allocate_order_item(item_id):
             "allocated_so_far": existing_qty_abs,
             "attempted_allocation": qty_to_allocate
         }), 400
+
+    # 🔹 Update Quantity record (ordered/reserved)
+    product_id_for_qty = item.product_id
+    if product_id_for_qty is None and item.child_product:
+        product_id_for_qty = item.child_product.parent_product_id
+
+    qty_record = None
+    if product_id_for_qty:
+        qty_record = db.execute(
+            select(Quantity).where(
+                (Quantity.product_id == product_id_for_qty) &
+                (Quantity.warehouse_id == order.warehouse_id)
+            )
+        ).scalar_one_or_none()
+
+    if not qty_record:
+        return jsonify({"error": "Quantity record not found"}), 404
+
+    if is_incoming:
+        qty_record.ordered += qty_to_allocate
+    else:
+        qty_record.reserved += qty_to_allocate
 
     # 🔹 Create pending transaction
     txn = Transaction(
@@ -315,7 +356,7 @@ def allocate_remaining_order_items(item_id):
     if qty_to_fulfill == 0:
         return jsonify({
             "message": "Order item is already fully fulfilled.",
-        }), 203
+        }), 200
 
     # 🔹 MEDIA_CUT bypass: skip inventory transaction, directly mark as fulfilled
     if item.type == OrderItemType.MEDIA_CUT.value:
@@ -334,7 +375,7 @@ def allocate_remaining_order_items(item_id):
     existing_qty = db.scalar(
         select(func.coalesce(func.sum(Transaction.quantity_delta), 0))
         .where(Transaction.order_item_id == item.id)
-        .where(Transaction.state.in_(["pending", "committed", "rolled_back"]))
+        .where(Transaction.state.in_(["pending", "committed"]))
     ) or 0
 
     qty_to_allocate = item.quantity_ordered - abs(existing_qty)
@@ -351,7 +392,7 @@ def allocate_remaining_order_items(item_id):
     if qty_to_allocate == 0:
         return jsonify({
             "message": "Order item is already fully allocated.",
-        }), 203
+        }), 200
 
     # 🔹 Create pending transaction
     txn = Transaction(
@@ -388,7 +429,8 @@ def allocate_remaining_order_items(item_id):
     else:
         qty_record.reserved += qty_to_allocate
 
-    db.add(txn)  
+    db.add(txn)
+    order.update_status()
     db.commit()
 
     return jsonify({
@@ -501,6 +543,7 @@ def commit_all_order_item_txns(item_id):
         if order.to_dict()["type"] == "incoming":
             for txn in pending_txns:
                 txn.commit(db)
+                committed += 1
         else:
             for txn in pending_txns: 
                 qty_record = txn._get_quantity_record()
@@ -547,12 +590,11 @@ def get_order_item_transactions(item_id):
     if not item:
         return jsonify({"error": "Order item not found"}), 404
 
-    txns = (
-        db.query(Transaction)
-        .filter(Transaction.order_item_id == item.id)
+    txns = db.scalars(
+        select(Transaction)
+        .where(Transaction.order_item_id == item.id)
         .order_by(Transaction.created_at.desc())
-        .all()
-    )
+    ).all()
 
     return jsonify([
         {
@@ -567,7 +609,7 @@ def get_order_item_transactions(item_id):
     ]), 200
 
 @order_item_bp.route(
-    "/order-items/<int:order_item_id>/transactions",
+    "/order_items/<int:order_item_id>/transactions",
     methods=["POST"]
 )
 def create_order_item_transaction(order_item_id):
@@ -725,23 +767,21 @@ def reorder_order_items(order_id):
     # Update positions
     if old_position < new_position:
         # Moving down: shift items between old and new position up
-        db.query(OrderItem).filter(
-            OrderItem.order_id == order_id,
-            OrderItem.position > old_position,
-            OrderItem.position <= new_position
-        ).update(
-            {OrderItem.position: OrderItem.position - 1},
-            synchronize_session=False
+        db.execute(
+            update(OrderItem)
+            .where(OrderItem.order_id == order_id)
+            .where(OrderItem.position > old_position)
+            .where(OrderItem.position <= new_position)
+            .values(position=OrderItem.position - 1)
         )
     else:
         # Moving up: shift items between new and old position down
-        db.query(OrderItem).filter(
-            OrderItem.order_id == order_id,
-            OrderItem.position >= new_position,
-            OrderItem.position < old_position
-        ).update(
-            {OrderItem.position: OrderItem.position + 1},
-            synchronize_session=False
+        db.execute(
+            update(OrderItem)
+            .where(OrderItem.order_id == order_id)
+            .where(OrderItem.position >= new_position)
+            .where(OrderItem.position < old_position)
+            .values(position=OrderItem.position + 1)
         )
 
     # Update the item's position
