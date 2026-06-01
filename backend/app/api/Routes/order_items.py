@@ -1,4 +1,3 @@
-import logging
 from flask import Blueprint, g, jsonify, request
 from sqlalchemy import select, func, update
 from sqlalchemy.exc import IntegrityError, DatabaseError
@@ -425,9 +424,9 @@ def allocate_remaining_order_items(item_id):
     if not qty_record:
         return jsonify({"error": "Quantity record not found"}), 404
     
-    print("ID: " + str(item.id))
-    print("Order type" + order.type)
-    print("Amount: " + str(qty_to_allocate))
+    print("ID: " + str(item.id), flush=True)
+    print("Order type" + order.type, flush=True)
+    print("Amount: " + str(qty_to_allocate), flush=True)
     
     if order.type == "incoming":
         qty_record.ordered += qty_to_allocate
