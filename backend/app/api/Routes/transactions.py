@@ -222,7 +222,7 @@ def get_transaction_summary():
     # Net quantity change
     net_q = select(func.coalesce(func.sum(Transaction.quantity_delta), 0))
     if filters:
-        net_q = net_q.where(*filters)
+        net_q = net_q.where(*filters, Transaction.state != "cancelled")
     net_qty = db.execute(net_q).scalar()
 
     # Committed count
