@@ -220,7 +220,7 @@ def get_order_items(order_id):
             elif product and product.category.name == "Stock Items":
                 part_number = product.stock_item.name
             elif product and product.category.name == "Media Items":
-                part_number = product.media.name
+                part_number = product.media.part_number
             elif product:
                 part_number = f"Product #{product.id}"
             else:
@@ -1309,8 +1309,8 @@ def find_product_by_name(db, item_name: str):
     media_item = db.execute(
         select(Media).where(
             or_(
-                Media.name == item_name,
-                func.lower(Media.name) == item_name.lower()
+                Media.part_number == item_name,
+                func.lower(Media.part_number) == item_name.lower()
             )
         )
     ).first()
