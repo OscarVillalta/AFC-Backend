@@ -313,6 +313,14 @@ def create_order():
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
 
+    # ===============================
+    # ❌ Prevent creation of Void orders
+    # ===============================
+    if data.get("type") == OrderType.VOID.value:
+        return jsonify({
+            "error": "Cannot create orders with type 'Void'"
+        }), 400
+
     order = Order.from_dict(data)
 
     # Assign active warehouse to the order
@@ -416,6 +424,14 @@ def patch_order(order_id):
 
     if not order:
         return jsonify({"error": "Order not found"}), 404
+
+    # ===============================
+    # ❌ Prevent modifications to Void orders
+    # ===============================
+    if order.type == OrderType.VOID.value:
+        return jsonify({
+            "error": "Cannot modify orders with type 'Void'"
+        }), 400
 
     data = request.get_json() or {}
 
