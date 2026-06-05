@@ -199,8 +199,7 @@ def update_order_item(item_id):
         # ===============================
         # ❌ Prevent modifying items in Void orders
         # ===============================
-        order = db.get(Order, item.order_id)
-        if order and order.type == OrderType.VOID.value:
+        if item.order.type == OrderType.VOID.value:
             raise InvalidInputError("Cannot modify items in orders with type 'Void'")
 
         data = request.get_json()
