@@ -84,6 +84,12 @@ def create_order_item() -> Tuple[Any, int]:
         if not order:
             raise ResourceNotFoundError("Order", data["order_id"])
         
+        # ===============================
+        # ❌ Prevent adding items to Void orders
+        # ===============================
+        if order.type == OrderType.VOID.value:
+            raise InvalidInputError("Cannot add items to orders with type 'Void'")
+        
         item_type = data.get("type", OrderItemType.PRODUCT_ITEM.value)
         is_separator = item_type in (OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value)
         
@@ -189,6 +195,13 @@ def update_order_item(item_id):
         item = db.get(OrderItem, item_id)
         if not item:
             raise ResourceNotFoundError("Order item", item_id)
+
+        # ===============================
+        # ❌ Prevent modifying items in Void orders
+        # ===============================
+        order = db.get(Order, item.order_id)
+        if order and order.type == OrderType.VOID.value:
+            raise InvalidInputError("Cannot modify items in orders with type 'Void'")
 
         data = request.get_json()
         if not data:

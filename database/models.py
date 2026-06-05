@@ -21,6 +21,7 @@ class OrderType(str, Enum):
     DELIVERY = "delivery"
     SHIPMENT = "shipment"
     INCOMING = "incoming"
+    VOID = "void"
     # Legacy value kept for backward compatibility with existing data
     OUTGOING = "outgoing"
 
