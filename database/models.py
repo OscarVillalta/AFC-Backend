@@ -49,6 +49,7 @@ class OrderStatus(str, Enum):
     PENDING = "Pending"
     PARTIALLY_FULFILLED = "Partially Fulfilled"
     COMPLETED = "Completed"
+    VOIDED = "Voided"
 
 
 class OrderItemType(str, Enum):

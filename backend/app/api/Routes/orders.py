@@ -382,6 +382,34 @@ def update_order_status(order_id):
         "status": order.status
     }), 200
 
+@order_bp.route("/orders/<int:order_id>/void", methods=["POST"])
+@jwt_required()
+def void_order(order_id):
+    """
+    Void an order by setting its type to VOID and status to VOIDED.
+    """
+    db = g.db
+    order = db.get(Order, order_id)
+
+    if not order:
+        return jsonify({"error": "Order not found"}), 404
+
+    if order.type == OrderType.VOID.value:
+        return jsonify({"error": "Order is already voided"}), 400
+
+    order.type = OrderType.VOID.value
+    order.status = OrderStatus.VOIDED.value
+    db.commit()
+
+    return jsonify({
+        "message": "Order voided successfully",
+        "id": order.id,
+        "order_number": order.order_number,
+        "type": order.type,
+        "status": order.status,
+    }), 200
+
+
 @order_bp.route("/orders/<int:order_id>", methods=["DELETE"])
 @permission_required("orders:edit")
 def delete_order(order_id: int):
