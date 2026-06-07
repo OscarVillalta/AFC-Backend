@@ -401,7 +401,7 @@ def void_order(order_id):
     order.status = OrderStatus.VOIDED.value
 
     if order.external_order_number != "":
-        order.description = order.description + "/n" + str(order.external_order_number)
+        order.description = order.description + "/n Quickbooks ID:" + str(order.external_order_number)
         order.external_order_number = ""
     db.commit()
 
