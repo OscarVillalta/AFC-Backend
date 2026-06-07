@@ -399,6 +399,7 @@ def void_order(order_id):
 
     order.type = OrderType.VOID.value
     order.status = OrderStatus.VOIDED.value
+    order.external_order_number = ""
     db.commit()
 
     return jsonify({
