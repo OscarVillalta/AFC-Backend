@@ -776,7 +776,7 @@ class Transaction(Base, SerializerMixin):
 
         # ✅ CRITICAL FIX: Pass lock=True to acquire a pessimistic lock (FOR UPDATE)
         # If another request is touching this quantity, Python pauses here until it finishes.
-        qty_record = self._get_quantity_record(lock=True)
+        qty_record = self._get_quantity_record()
         
         if not qty_record:
             raise ValueError("Quantity record missing.")
