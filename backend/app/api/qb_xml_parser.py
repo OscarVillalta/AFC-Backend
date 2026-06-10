@@ -225,7 +225,7 @@ def extract_qb_metadata(qbxml_response: str, entity_type: str) -> Dict:
         metadata['txn_date'] = txn_date
     
     # Extract ETA (ExpectedDate for purchase orders)
-    expected_date = get_element_text(ret_element, "ExpectedDate")
+    expected_date = get_element_text(ret_element, "ShipDate")
     if expected_date:
         metadata['eta'] = expected_date
     

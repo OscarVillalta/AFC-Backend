@@ -997,7 +997,6 @@ def create_order_from_qb():
         )
         response.raise_for_status()
         qb_result = response.json()
-        print(qb_result, flush=True)
     except requests.exceptions.Timeout:
         raise ExternalServiceError(
             "QuickBooks Agent",
