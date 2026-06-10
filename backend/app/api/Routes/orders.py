@@ -1022,7 +1022,7 @@ def create_order_from_qb():
     
     # Parse ETA from metadata (set by QB ExpectedDate for purchase orders)
     eta_value = None
-    eta_str = metadata.get("eta")
+    eta_str = metadata.get("ship_date")
     if eta_str:
         try:
             eta_value = datetime.strptime(eta_str, "%Y-%m-%d").date()
