@@ -997,6 +997,7 @@ def create_order_from_qb():
         )
         response.raise_for_status()
         qb_result = response.json()
+        print(qb_result, flush=True)
     except requests.exceptions.Timeout:
         raise ExternalServiceError(
             "QuickBooks Agent",
@@ -1024,8 +1025,6 @@ def create_order_from_qb():
     try:
         line_items = parse_qb_line_items(qbxml_response, entity_type)
         metadata = extract_qb_metadata(qbxml_response, entity_type)
-        print(metadata, flush=True)
-        print(line_items, flush=True)
     except ValueError as e:
         return jsonify({
             "error": "Failed to parse QuickBooks response",
@@ -1072,7 +1071,7 @@ def create_order_from_qb():
     
     # Parse ETA from metadata (set by QB ExpectedDate for purchase orders)
     eta_value = date.today()
-    eta_str = metadata.get("ship_date")
+    eta_str = metadata.get("eta")
     if eta_str:
         try:
             eta_value = datetime.strptime(eta_str, "%Y-%m-%d").date()
