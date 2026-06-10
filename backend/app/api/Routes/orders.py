@@ -7,7 +7,7 @@ from app.api.Schemas.order_schema import OrderSchema
 from database.models import Customer, Supplier, OrderType, OrderStatus, OrderItemType, Transaction, TransactionState, OUTGOING_TYPES, VALID_ORDER_TYPES
 from database.models import Order, OrderItem, Product, AirFilter, StockItem, StockItemCategory, Quantity, OrderTracker, Department, BlockedItem, Media
 from marshmallow import ValidationError
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from typing import Optional, Dict, Any, List, Tuple
 import re
 import requests
@@ -1069,7 +1069,7 @@ def create_order_from_qb():
                 db.flush()
     
     # Parse ETA from metadata (set by QB ExpectedDate for purchase orders)
-    eta_value = None
+    eta_value = date.today()
     eta_str = metadata.get("ship_date")
     if eta_str:
         try:
