@@ -1024,7 +1024,7 @@ def create_order_from_qb():
     try:
         line_items = parse_qb_line_items(qbxml_response, entity_type)
         metadata = extract_qb_metadata(qbxml_response, entity_type)
-        print(metadata, flush=true)
+        print(metadata, flush=True)
     except ValueError as e:
         return jsonify({
             "error": "Failed to parse QuickBooks response",
