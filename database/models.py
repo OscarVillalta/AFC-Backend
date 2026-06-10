@@ -21,6 +21,7 @@ class OrderType(str, Enum):
     DELIVERY = "delivery"
     SHIPMENT = "shipment"
     INCOMING = "incoming"
+    VOID = "void"
     # Legacy value kept for backward compatibility with existing data
     OUTGOING = "outgoing"
 
@@ -48,6 +49,7 @@ class OrderStatus(str, Enum):
     PENDING = "Pending"
     PARTIALLY_FULFILLED = "Partially Fulfilled"
     COMPLETED = "Completed"
+    VOIDED = "Voided"
 
 
 class OrderItemType(str, Enum):
@@ -774,7 +776,7 @@ class Transaction(Base, SerializerMixin):
 
         # ✅ CRITICAL FIX: Pass lock=True to acquire a pessimistic lock (FOR UPDATE)
         # If another request is touching this quantity, Python pauses here until it finishes.
-        qty_record = self._get_quantity_record(lock=True)
+        qty_record = self._get_quantity_record()
         
         if not qty_record:
             raise ValueError("Quantity record missing.")

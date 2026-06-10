@@ -731,9 +731,9 @@ def rollback_transaction(txn_id):
         db.rollback()
         return jsonify({"error": str(e)}), 400
 
-    except Exception:
+    except Exception as e:
         db.rollback()
-        return jsonify({"error": "Unexpected error while rolling back transaction"}), 500
+        return jsonify({"error": str(e)}), 500
 
 # =====================================================
 # 🔹 GET Pending Transactions with Order ETA (for projected stock graph)
