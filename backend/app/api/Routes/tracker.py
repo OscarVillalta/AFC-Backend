@@ -40,6 +40,16 @@ def _check_department_permission(user_permissions, department):
     return None
 
 
+def _parse_date(value: str | None) -> datetime | None:
+    """Parse an ISO date string, returning None if the value is empty/None."""
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except (ValueError, TypeError):
+        return None
+
+
 tracker_bp = Blueprint("tracker", __name__)
 
 
@@ -324,6 +334,28 @@ def get_packing_slips() -> Tuple[Any, int]:
     order_type = request.args.get("order_type", "").strip()
     offset = (page - 1) * limit
 
+    # Date Created filters (Order.created_at)
+    start_date_raw = request.args.get("start_date", type=str)
+    end_date_raw = request.args.get("end_date", type=str)
+    before_date_raw = request.args.get("before_date", type=str)
+    after_date_raw = request.args.get("after_date", type=str)
+
+    # Last Updated filters (OrderTracker.updated_at)
+    last_updated_start_raw = request.args.get("last_updated_start", type=str)
+    last_updated_end_raw = request.args.get("last_updated_end", type=str)
+    last_updated_before_raw = request.args.get("last_updated_before", type=str)
+    last_updated_after_raw = request.args.get("last_updated_after", type=str)
+
+    # Parse all date params (invalid values become None and are silently ignored)
+    start_date = _parse_date(start_date_raw)
+    end_date = _parse_date(end_date_raw)
+    before_date = _parse_date(before_date_raw)
+    after_date = _parse_date(after_date_raw)
+    last_updated_start = _parse_date(last_updated_start_raw)
+    last_updated_end = _parse_date(last_updated_end_raw)
+    last_updated_before = _parse_date(last_updated_before_raw)
+    last_updated_after = _parse_date(last_updated_after_raw)
+
     # Correlated sub-query: count of completed stages for each order row
     _completed_stages_subq = (
         select(func.count(OrderTrackerStage.id))
@@ -370,6 +402,27 @@ def get_packing_slips() -> Tuple[Any, int]:
 
     if order_type:
         base_query = base_query.where(Order.type == order_type)
+
+    # Date Created filters (Order.created_at)
+    if start_date and end_date:
+        base_query = base_query.where(Order.created_at >= start_date)
+        base_query = base_query.where(Order.created_at <= end_date)
+    elif before_date:
+        base_query = base_query.where(Order.created_at <= before_date)
+    elif after_date:
+        base_query = base_query.where(Order.created_at >= after_date)
+
+    # Last Updated filters (OrderTracker.updated_at)
+    if last_updated_start and last_updated_end:
+        base_query = base_query.where(OrderTracker.updated_at.is_not(None))
+        base_query = base_query.where(OrderTracker.updated_at >= last_updated_start)
+        base_query = base_query.where(OrderTracker.updated_at <= last_updated_end)
+    elif last_updated_before:
+        base_query = base_query.where(OrderTracker.updated_at.is_not(None))
+        base_query = base_query.where(OrderTracker.updated_at <= last_updated_before)
+    elif last_updated_after:
+        base_query = base_query.where(OrderTracker.updated_at.is_not(None))
+        base_query = base_query.where(OrderTracker.updated_at >= last_updated_after)
 
     # Tracker status filter using stage-completion counts
     if tracker_status == "Not Started":
@@ -420,6 +473,27 @@ def get_packing_slips() -> Tuple[Any, int]:
         counts_query = counts_query.where(_search_filter)
     if order_type:
         counts_query = counts_query.where(Order.type == order_type)
+
+    # Apply same date filters to counts query
+    if start_date and end_date:
+        counts_query = counts_query.where(Order.created_at >= start_date)
+        counts_query = counts_query.where(Order.created_at <= end_date)
+    elif before_date:
+        counts_query = counts_query.where(Order.created_at <= before_date)
+    elif after_date:
+        counts_query = counts_query.where(Order.created_at >= after_date)
+
+    if last_updated_start and last_updated_end:
+        counts_query = counts_query.where(OrderTracker.updated_at.is_not(None))
+        counts_query = counts_query.where(OrderTracker.updated_at >= last_updated_start)
+        counts_query = counts_query.where(OrderTracker.updated_at <= last_updated_end)
+    elif last_updated_before:
+        counts_query = counts_query.where(OrderTracker.updated_at.is_not(None))
+        counts_query = counts_query.where(OrderTracker.updated_at <= last_updated_before)
+    elif last_updated_after:
+        counts_query = counts_query.where(OrderTracker.updated_at.is_not(None))
+        counts_query = counts_query.where(OrderTracker.updated_at >= last_updated_after)
+
     counts_row = db.execute(counts_query).one()
     status_counts = {
         "Not Started": counts_row.not_started or 0,
