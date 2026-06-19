@@ -1076,7 +1076,8 @@ def create_order_from_qb():
             eta_value = datetime.strptime(eta_str, "%Y-%m-%d").date()
         except ValueError:
             pass
-    
+
+    # Parse creation date
     created_at_value = date.today()
     created_at_str = metadata.get("created_at")
     if created_at_str:
