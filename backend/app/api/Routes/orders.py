@@ -1073,7 +1073,7 @@ def create_order_from_qb():
     eta_str = metadata.get("eta")
     if eta_str:
         try:
-            eta_value = datetime.strptime(eta_str, "%Y-%m-%d").date()
+            eta_value = datetime.fromisoformat(eta_str).date()
         except ValueError:
             pass
 
@@ -1082,9 +1082,9 @@ def create_order_from_qb():
     created_at_str = metadata.get("created_at")
     if created_at_str:
         try:
-            created_at_value = datetime.strptime(created_at_str, "%Y-%m-%d").date()
+            created_at_value = datetime.fromisoformat(created_at_str).date()
         except ValueError:
-            print("erro", flush=True)
+            print("error", flush=True)
             pass
     
     # Determine the final order type

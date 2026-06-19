@@ -167,8 +167,6 @@ def extract_qb_metadata(qbxml_response: str, entity_type: str) -> Dict:
     if not qbxml_response:
         return {}
     
-    print(qbxml_response, flush=True)
-    
     try:
         root = ET.fromstring(qbxml_response)
     except ET.ParseError:
@@ -223,6 +221,7 @@ def extract_qb_metadata(qbxml_response: str, entity_type: str) -> Dict:
     
     # Get creation date
     creation_date = get_element_text(ret_element, "TimeCreated")
+    print(creation_date, flush=True)
     if creation_date:
         metadata['created_at'] = creation_date
     
