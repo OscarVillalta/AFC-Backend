@@ -14,7 +14,7 @@ from app.api.error_handling import (
 
 # All order types that participate in the packing-slip tracker
 # (outgoing types + incoming / purchase orders)
-TRACKER_TYPES = OUTGOING_TYPES | {OrderType.INCOMING.value}
+TRACKER_TYPES = OUTGOING_TYPES | {OrderType.INCOMING.value, OrderType.VOID.value}
 
 # Maps each Department value to the permission required to update it.
 DEPARTMENT_PERMISSION_MAP = {
