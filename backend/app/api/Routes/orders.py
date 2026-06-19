@@ -1078,7 +1078,7 @@ def create_order_from_qb():
             pass
     
     created_at_value = date.today()
-    created_at_str = metadata.get("creation_date")
+    created_at_str = metadata.get("created_at")
     if created_at_str:
         try:
              created_at_value = datetime.strptime(created_at_str, "%Y-%m-%d").date()

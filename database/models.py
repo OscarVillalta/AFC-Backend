@@ -554,7 +554,7 @@ class Order(Base, SerializerMixin):
 
     status: Mapped[str] = mapped_column(String, default=OrderStatus.PENDING.value, nullable=False)
     description: Mapped[Optional[str]] = mapped_column()
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
     completed_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     eta: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     is_paid: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
