@@ -1102,7 +1102,7 @@ def create_order_from_qb():
             final_order_type = OrderType.INSTALLATION.value  # default for non-PO QB orders
 
     # Create the order
-    print(created_at_value)
+    print(created_at_value, flush=True)
     order = Order(
         type=final_order_type,
         customer_id=customer.id if customer else None,
