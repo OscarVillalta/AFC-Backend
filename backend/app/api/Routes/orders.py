@@ -1082,8 +1082,9 @@ def create_order_from_qb():
     created_at_str = metadata.get("created_at")
     if created_at_str:
         try:
-             created_at_value = datetime.strptime(created_at_str, "%Y-%m-%d").date()
+            created_at_value = datetime.strptime(created_at_str, "%Y-%m-%d").date()
         except ValueError:
+            print("erro", flush=True)
             pass
     
     # Determine the final order type

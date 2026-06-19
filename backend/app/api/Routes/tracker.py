@@ -526,8 +526,6 @@ def get_packing_slips() -> Tuple[Any, int]:
             "stages": [s.to_dict() for s in stages],
         })
 
-        print(results, flush=True)
-
     return jsonify({
         "page": page,
         "limit": limit,
