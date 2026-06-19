@@ -167,6 +167,8 @@ def extract_qb_metadata(qbxml_response: str, entity_type: str) -> Dict:
     if not qbxml_response:
         return {}
     
+    print(qbxml_response, flush=True)
+    
     try:
         root = ET.fromstring(qbxml_response)
     except ET.ParseError:
