@@ -1068,12 +1068,20 @@ def create_order_from_qb():
                 db.add(customer)
                 db.flush()
     
-    # Parse ETA from metadata (set by QB ExpectedDate for purchase orders)
+    # Parse ETA from metadata (set by QB ExpectedDate for orders)
     eta_value = date.today()
     eta_str = metadata.get("eta")
     if eta_str:
         try:
             eta_value = datetime.strptime(eta_str, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    
+    created_at_value = date.today()
+    created_at_str = metadata.get("creation_date")
+    if created_at_str:
+        try:
+             created_at_value = datetime.strptime(created_at_str, "%Y-%m-%d").date()
         except ValueError:
             pass
     
@@ -1102,7 +1110,8 @@ def create_order_from_qb():
         external_order_number=reference_number,
         description=metadata.get("memo", f"QB {entity_type.replace('_', ' ').title()} #{reference_number}"),
         status=OrderStatus.PENDING.value,
-        eta=eta_value
+        eta=eta_value,
+        created_at=created_at_value
     )
     
     db.add(order)

@@ -221,10 +221,10 @@ def extract_qb_metadata(qbxml_response: str, entity_type: str) -> Dict:
         if vendor_name:
             metadata['vendor_name'] = vendor_name
     
-    # Extract transaction date
-    txn_date = get_element_text(ret_element, "TxnDate")
-    if txn_date:
-        metadata['txn_date'] = txn_date
+    # Get creation date
+    creation_date = get_element_text(ret_element, "TimeCreated")
+    if creation_date:
+        metadata['created_at'] = creation_date
     
     # Extract ETA (ExpectedDate for purchase orders)
     expected_date = get_element_text(ret_element, "ShipDate")
