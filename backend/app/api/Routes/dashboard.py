@@ -1,5 +1,6 @@
 from flask import Blueprint, g, jsonify, request
 from sqlalchemy import select, func, desc, and_, or_
+from sqlalchemy.orm import selectinload
 from flask_jwt_extended import jwt_required
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -10,9 +11,61 @@ from database.models import (
     ConversionBatch,
     Quantity,
     TransactionReason,
+    Product,
+    ChildProduct,
 )
 
 dashboard_bp = Blueprint("dashboard", __name__)
+
+
+def _product_display_name(product: Product) -> str:
+    if product.air_filter:
+        return product.air_filter.part_number
+    if product.stock_item:
+        return product.stock_item.name
+    if product.media:
+        return product.media.part_number
+    return f"Product {product.id}"
+
+
+def _child_product_display_name(child: ChildProduct) -> str:
+    if child.air_filter:
+        return child.air_filter.part_number
+    if child.stock_item:
+        return child.stock_item.name
+    if child.media:
+        return child.media.part_number
+    return f"Child {child.id}"
+
+
+def _transaction_feed_entry(t: Transaction) -> dict:
+    product_id = t.product_id
+    product_name = None
+
+    if t.child_product:
+        product_id = t.child_product.parent_product_id
+        product_name = _child_product_display_name(t.child_product)
+    elif t.product:
+        product_id = t.product.id
+        product_name = _product_display_name(t.product)
+
+    order_number = None
+    external_order_number = None
+    if t.order:
+        order_number = t.order.order_number
+        external_order_number = t.order.external_order_number
+
+    return {
+        "id": t.id,
+        "quantity_delta": t.quantity_delta,
+        "reason": t.reason,
+        "created_at": t.created_at.isoformat() if t.created_at else None,
+        "order_id": t.order_id,
+        "order_number": order_number,
+        "external_order_number": external_order_number,
+        "product_id": product_id,
+        "product_name": product_name,
+    }
 
 
 @dashboard_bp.route("/dashboard/stats", methods=["GET"])
@@ -61,19 +114,33 @@ def get_dashboard_stats():
         select(Transaction)
         .where(Transaction.state == "committed")
         .where(Transaction.warehouse_id == wh)
+        .options(
+            selectinload(Transaction.order),
+            selectinload(Transaction.product).selectinload(Product.air_filter),
+            selectinload(Transaction.product).selectinload(Product.stock_item),
+            selectinload(Transaction.product).selectinload(Product.media),
+            selectinload(Transaction.child_product).selectinload(ChildProduct.air_filter),
+            selectinload(Transaction.child_product).selectinload(ChildProduct.stock_item),
+            selectinload(Transaction.child_product).selectinload(ChildProduct.media),
+        )
         .order_by(desc(Transaction.created_at))
         .limit(10)
     ).scalars().all()
 
-    recent_transactions = [
-        {
-            "id": t.id,
-            "quantity_delta": t.quantity_delta,
-            "reason": t.reason,
-            "created_at": t.created_at.isoformat() if t.created_at else None,
-        }
-        for t in recent_txns
-    ]
+    recent_transactions = [_transaction_feed_entry(t) for t in recent_txns]
+
+    # #region agent log
+    try:
+        import json as _json
+        _log_path = r"c:\Users\AFCadmin2\Desktop\Master\debug-495c74.log"
+        _sample = recent_transactions[:3]
+        _with_order = sum(1 for x in recent_transactions if x.get("order_id") is not None)
+        _with_product = sum(1 for x in recent_transactions if x.get("product_id") is not None and x.get("product_name"))
+        with open(_log_path, "a", encoding="utf-8") as _f:
+            _f.write(_json.dumps({"sessionId": "495c74", "hypothesisId": "A,B,C", "location": "dashboard.py:get_dashboard_stats", "message": "recent_transactions built", "data": {"count": len(recent_transactions), "with_order_id": _with_order, "with_product": _with_product, "sample": _sample}, "timestamp": int(__import__("time").time() * 1000)}) + "\n")
+    except Exception:
+        pass
+    # #endregion
 
     recent_ords = db.execute(
         select(Order)
@@ -87,6 +154,7 @@ def get_dashboard_stats():
         {
             "id": o.id,
             "order_number": o.order_number,
+            "external_order_number": o.external_order_number,
             "type": o.type,
             "completed_at": o.completed_at.isoformat() if o.completed_at else None,
         }
