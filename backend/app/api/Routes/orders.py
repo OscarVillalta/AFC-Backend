@@ -4,7 +4,7 @@ from sqlalchemy import select, func, null
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.api.Schemas.order_schema import OrderSchema
-from database.models import Customer, Supplier, OrderType, OrderStatus, OrderItemType, Transaction, TransactionState, OUTGOING_TYPES, VALID_ORDER_TYPES
+from database.models import Customer, Supplier, OrderType, OrderStatus, OrderItemType, Transaction, TransactionState, TransactionReason, OUTGOING_TYPES, VALID_ORDER_TYPES
 from database.models import Order, OrderItem, Product, AirFilter, StockItem, StockItemCategory, Quantity, OrderTracker, Department, BlockedItem, Media
 from marshmallow import ValidationError
 from datetime import datetime, timedelta, timezone, date
@@ -396,6 +396,29 @@ def void_order(order_id):
 
     if order.type == OrderType.VOID.value:
         return jsonify({"error": "Order is already voided"}), 400
+
+    blocking_txns = db.scalars(
+        select(Transaction.id)
+        .where(Transaction.order_id == order.id)
+        .where(
+            or_(
+                Transaction.state == TransactionState.PENDING.value,
+                and_(
+                    Transaction.state == TransactionState.COMMITTED.value,
+                    Transaction.reason != TransactionReason.ROLLBACK.value,
+                ),
+            )
+        )
+        .limit(1)
+    ).first()
+
+    if blocking_txns is not None:
+        return jsonify({
+            "error": (
+                "Order cannot be voided. Cancel pending reservations/orders "
+                "and rollback committed stock movements first."
+            )
+        }), 409
 
     order.type = OrderType.VOID.value
     order.status = OrderStatus.VOIDED.value

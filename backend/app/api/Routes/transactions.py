@@ -714,6 +714,9 @@ def rollback_transaction(txn_id):
     if not txn:
         return jsonify({"error": "Transaction not found"}), 404
 
+    if txn.reason == TransactionReason.ROLLBACK.value:
+        return jsonify({"error": "Reversal transactions cannot be rolled back."}), 400
+
     try:
         new_txn = txn.rollback(db)
         db.commit()

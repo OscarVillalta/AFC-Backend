@@ -774,6 +774,9 @@ class Transaction(Base, SerializerMixin):
         if self.state != TransactionState.COMMITTED.value:
             raise ValueError("Only committed transactions can be rolled back.")
 
+        if self.reason == TransactionReason.ROLLBACK.value:
+            raise ValueError("Reversal transactions cannot be rolled back.")
+
         # ✅ CRITICAL FIX: Pass lock=True to acquire a pessimistic lock (FOR UPDATE)
         # If another request is touching this quantity, Python pauses here until it finishes.
         qty_record = self._get_quantity_record()
