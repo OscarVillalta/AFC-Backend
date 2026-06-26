@@ -2,6 +2,7 @@ from flask import Blueprint, g, jsonify, request
 from sqlalchemy import select, func, desc, and_, or_
 from flask_jwt_extended import jwt_required
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from database.models import (
     Order,
@@ -126,6 +127,12 @@ def get_net_kpis():
     
     # Calculate the date threshold
     date_threshold = datetime.now(timezone.utc) - timedelta(days=days)
+    prev_date_threshold = date_threshold - timedelta(days=days)
+    
+    def calc_pct(current: int, previous: int) -> Optional[float]:
+        if previous == 0:
+            return 100.0 if current > 0 else 0.0
+        return round(((current - previous) / abs(previous)) * 100, 1)
     
     # Net Delivered: sum of quantity_delta for fulfillment and sale reasons in the last N days
     # Note: TransactionReason enum uses 'shipment' not 'fulfillment', and there's no 'sale' in the enum
@@ -140,6 +147,17 @@ def get_net_kpis():
         )
     ) or 0
     
+    net_delivered_prev = db.scalar(
+        select(func.coalesce(func.sum(Transaction.quantity_delta), 0))
+        .where(
+            Transaction.warehouse_id == wh,
+            Transaction.state == "committed",
+            Transaction.created_at >= prev_date_threshold,
+            Transaction.created_at < date_threshold,
+            Transaction.reason == TransactionReason.SHIPMENT.value
+        )
+    ) or 0
+    
     # Net Received: sum of quantity_delta for receive reason and positive adjustments in the last N days
     net_received = db.scalar(
         select(func.coalesce(func.sum(Transaction.quantity_delta), 0))
@@ -147,6 +165,23 @@ def get_net_kpis():
             Transaction.warehouse_id == wh,
             Transaction.state == "committed",
             Transaction.created_at >= date_threshold,
+            or_(
+                Transaction.reason == TransactionReason.RECEIVE.value,
+                and_(
+                    Transaction.reason == TransactionReason.ADJUSTMENT.value,
+                    Transaction.quantity_delta > 0
+                )
+            )
+        )
+    ) or 0
+    
+    net_received_prev = db.scalar(
+        select(func.coalesce(func.sum(Transaction.quantity_delta), 0))
+        .where(
+            Transaction.warehouse_id == wh,
+            Transaction.state == "committed",
+            Transaction.created_at >= prev_date_threshold,
+            Transaction.created_at < date_threshold,
             or_(
                 Transaction.reason == TransactionReason.RECEIVE.value,
                 and_(
@@ -190,5 +225,7 @@ def get_net_kpis():
         "net_reserved": int(net_reserved),
         "net_ordered": int(net_ordered),
         "net_backordered": int(net_backordered),
+        "net_delivered_pct": calc_pct(int(net_delivered), int(net_delivered_prev)),
+        "net_received_pct": calc_pct(int(net_received), int(net_received_prev)),
         "days": days,
     })
