@@ -1,8 +1,8 @@
 from flask import Blueprint, g, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt
+from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 from sqlalchemy import select, func, or_, case, and_
 from sqlalchemy.exc import IntegrityError, DatabaseError
-from database.models import Order, OrderTracker, OrderHistory, OrderTrackerStage, Department, OutgoingOrderType, Customer, Supplier, OrderType, OUTGOING_TYPES
+from database.models import Order, OrderTracker, OrderHistory, OrderTrackerStage, Department, OutgoingOrderType, Customer, Supplier, OrderType, OUTGOING_TYPES, User
 from datetime import datetime, timezone
 from typing import Tuple, Any
 
@@ -24,6 +24,105 @@ DEPARTMENT_PERMISSION_MAP = {
     Department.DELIVERY_DEPT.value: "tracker:update_delivery",
 }
 
+_TRACKER_DEPARTMENT_FILTER_VALUES = {
+    Department.SALES.value,
+    Department.LOGISTICS.value,
+    Department.DELIVERY_DEPT.value,
+    Department.SERVICE.value,
+}
+
+TRACKER_UPDATE_ANY = "tracker:update_any"
+
+
+def _department_filter_cond(department: str, completed_stages_subq):
+    """Orders currently positioned at the given tracker department."""
+    not_started_sales = and_(
+        OrderTracker.id.is_(None),
+        completed_stages_subq == 0,
+        Order.type != OrderType.INCOMING.value,
+    )
+    not_started_logistics = and_(
+        OrderTracker.id.is_(None),
+        completed_stages_subq == 0,
+        Order.type == OrderType.INCOMING.value,
+    )
+
+    if department == Department.SALES.value:
+        return or_(OrderTracker.current_department == department, not_started_sales)
+    if department == Department.LOGISTICS.value:
+        return or_(OrderTracker.current_department == department, not_started_logistics)
+    return OrderTracker.current_department == department
+
+# Step paths per order type — must mirror frontend trackerSteps.ts
+_INSTALLATION_STEPS = [
+    Department.SALES.value,
+    Department.LOGISTICS.value,
+    Department.DELIVERY_DEPT.value,
+    Department.SERVICE.value,
+    Department.SALES.value,
+    Department.LOGISTICS.value,
+]
+_WILL_CALL_STEPS = [
+    Department.SALES.value,
+    Department.LOGISTICS.value,
+    Department.DELIVERY_DEPT.value,
+    Department.LOGISTICS.value,
+]
+_PURCHASE_ORDER_STEPS = [
+    Department.LOGISTICS.value,
+    Department.DELIVERY_DEPT.value,
+    Department.LOGISTICS.value,
+]
+
+
+def _steps_for_order_type(order_type: str) -> list[str]:
+    """Return ordered department values for the tracker path of an order type."""
+    t = (order_type or "").lower()
+    if t == OrderType.INSTALLATION.value:
+        return _INSTALLATION_STEPS
+    if t == OrderType.INCOMING.value:
+        return _PURCHASE_ORDER_STEPS
+    return _WILL_CALL_STEPS
+
+
+def _first_incomplete_index(stages: list[OrderTrackerStage], total_steps: int) -> int:
+    stage_map = {s.stage_index: s for s in stages}
+    for i in range(total_steps):
+        if not stage_map.get(i) or not stage_map[i].is_completed:
+            return i
+    return -1
+
+
+def _last_completed_index(stages: list[OrderTrackerStage], total_steps: int) -> int:
+    stage_map = {s.stage_index: s for s in stages}
+    for i in range(total_steps - 1, -1, -1):
+        if stage_map.get(i) and stage_map[i].is_completed:
+            return i
+    return -1
+
+
+def _check_department_permission(user_permissions, department):
+    """Return an error response if the user lacks permission for the given department, or None if allowed."""
+    if TRACKER_UPDATE_ANY in user_permissions:
+        return None
+    required_perm = DEPARTMENT_PERMISSION_MAP.get(department)
+    if required_perm and required_perm not in user_permissions:
+        return jsonify({"error": "Forbidden: You do not have permission to update this department."}), 403
+    return None
+
+
+def _resolve_completed_by(data: dict) -> str | None:
+    """Prefer authenticated user email; fall back to client-supplied completed_by."""
+    user_id = get_jwt_identity()
+    if user_id:
+        db = g.db
+        user = db.get(User, int(user_id))
+        if user and user.email:
+            return user.email
+    completed_by = (data.get("completed_by") or "").strip()
+    return completed_by or None
+
+
 # SQLAlchemy CASE expression: total stages expected for each order type
 # Must mirror the frontend step-path definitions (INSTALLATION_STEPS, WILL_CALL_STEPS, PURCHASE_ORDER_STEPS)
 _total_steps_expr = case(
@@ -31,13 +130,6 @@ _total_steps_expr = case(
     (Order.type.in_([OrderType.WILL_CALL.value, OrderType.DELIVERY.value, OrderType.SHIPMENT.value]), 4),
     else_=3,  # incoming / purchase order (and legacy "outgoing")
 )
-
-def _check_department_permission(user_permissions, department):
-    """Return an error response if the user lacks permission for the given department, or None if allowed."""
-    required_perm = DEPARTMENT_PERMISSION_MAP.get(department)
-    if required_perm and required_perm not in user_permissions:
-        return jsonify({"error": "Forbidden: You do not have permission to update this department."}), 403
-    return None
 
 
 def _parse_date(value: str | None) -> datetime | None:
@@ -269,21 +361,37 @@ def toggle_tracker_stage(order_id: int, stage_index: int) -> Tuple[Any, int]:
     data = request.get_json() or {}
 
     user_permissions = get_jwt().get("permissions", [])
-    target_department = data.get("department")
-    if target_department:
-        denied = _check_department_permission(user_permissions, target_department)
-        if denied:
-            return denied
 
     order = db.get(Order, order_id)
     if not order:
         raise ResourceNotFoundError("Order", order_id)
 
+    steps = _steps_for_order_type(order.type)
+    if stage_index < 0 or stage_index >= len(steps):
+        return jsonify({"error": "Invalid stage_index for this order type."}), 400
+
+    target_department = steps[stage_index]
+    denied = _check_department_permission(user_permissions, target_department)
+    if denied:
+        return denied
+
     is_completed = data.get("is_completed")
     if is_completed is None or not isinstance(is_completed, bool):
         return jsonify({"error": "is_completed (boolean) is required."}), 400
 
-    completed_by = data.get("completed_by", "").strip() or None
+    existing_stages = db.execute(
+        select(OrderTrackerStage).where(OrderTrackerStage.order_id == order_id)
+    ).scalars().all()
+
+    first_incomplete = _first_incomplete_index(existing_stages, len(steps))
+    last_completed = _last_completed_index(existing_stages, len(steps))
+
+    if is_completed and stage_index != first_incomplete:
+        return jsonify({"error": "Steps must be completed in order."}), 409
+    if not is_completed and stage_index != last_completed:
+        return jsonify({"error": "Only the most recently completed step can be undone."}), 409
+
+    completed_by = _resolve_completed_by(data) if is_completed else None
 
     stage = db.execute(
         select(OrderTrackerStage).where(
@@ -297,21 +405,36 @@ def toggle_tracker_stage(order_id: int, stage_index: int) -> Tuple[Any, int]:
             order_id=order_id,
             stage_index=stage_index,
             is_completed=is_completed,
-            completed_by=completed_by if is_completed else None,
+            completed_by=completed_by,
             completed_at=datetime.now(timezone.utc) if is_completed else None,
         )
         db.add(stage)
     else:
         stage.is_completed = is_completed
-        stage.completed_by = completed_by if is_completed else None
+        stage.completed_by = completed_by
         stage.completed_at = datetime.now(timezone.utc) if is_completed else None
 
-    # Clear the backordered flag whenever a stage is toggled
     tracker = db.execute(
         select(OrderTracker).where(OrderTracker.order_id == order_id)
     ).scalar_one_or_none()
-    if tracker and tracker.is_backordered:
-        tracker.is_backordered = False
+
+    if tracker:
+        if tracker.is_backordered:
+            tracker.is_backordered = False
+        # Refresh current position after stage change
+        updated_stages = list(existing_stages)
+        stage_in_list = next((s for s in updated_stages if s.stage_index == stage_index), None)
+        if stage_in_list:
+            stage_in_list.is_completed = is_completed
+        elif stage not in updated_stages:
+            updated_stages.append(stage)
+        new_first_incomplete = _first_incomplete_index(updated_stages, len(steps))
+        if new_first_incomplete >= 0:
+            tracker.current_department = steps[new_first_incomplete]
+            tracker.step_index = new_first_incomplete
+        else:
+            tracker.current_department = steps[-1]
+            tracker.step_index = len(steps) - 1
         tracker.updated_at = datetime.now(timezone.utc)
 
     error = safe_commit(db)
@@ -330,7 +453,8 @@ def get_packing_slips() -> Tuple[Any, int]:
     page = request.args.get("page", default=1, type=int)
     limit = request.args.get("limit", default=25, type=int)
     search = request.args.get("search", "").strip()
-    tracker_status = request.args.get("tracker_status", "").strip()  # "Not Started"|"In Progress"|"Completed"|"Backordered"
+    tracker_status = request.args.get("tracker_status", "").strip()
+    tracker_department = request.args.get("tracker_department", "").strip()
     order_type = request.args.get("order_type", "").strip()
     offset = (page - 1) * limit
 
@@ -433,6 +557,13 @@ def get_packing_slips() -> Tuple[Any, int]:
         base_query = base_query.where(_completed_cond)
     elif tracker_status == "Backordered":
         base_query = base_query.where(_backordered_cond)
+
+    if tracker_department:
+        if tracker_department not in _TRACKER_DEPARTMENT_FILTER_VALUES:
+            return jsonify({"error": "Invalid tracker_department."}), 400
+        base_query = base_query.where(
+            _department_filter_cond(tracker_department, _completed_stages_subq)
+        )
 
     # Efficient total count using the filtered query as a subquery
     subq = base_query.subquery()
