@@ -5,6 +5,9 @@ This module centralizes all configuration values that were previously hard-coded
 throughout the application. Values can be overridden via environment variables.
 """
 import os
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Config:
@@ -29,7 +32,27 @@ class Config:
     
     # Transaction Defaults
     DEFAULT_TRANSACTION_DESCRIPTION = "Transaction"
-    
+
+    # Google Calendar (order sync)
+    GOOGLE_CALENDAR_ID = os.getenv("CALENDAR_ID", "")
+    GOOGLE_CALENDAR_CREDENTIALS_PATH = os.getenv(
+        "GOOGLE_CALENDAR_CREDENTIALS_PATH",
+        "packing-slips-tracker-calender-15e35c535e3a.json",
+    )
+    GOOGLE_CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar"]
+    FRONTEND_ORDER_URL_BASE = os.getenv("FRONTEND_ORDER_URL_BASE", "").rstrip("/")
+
+    @classmethod
+    def google_calendar_credentials_file(cls) -> Path:
+        path = Path(cls.GOOGLE_CALENDAR_CREDENTIALS_PATH)
+        if not path.is_absolute():
+            path = PROJECT_ROOT / path
+        return path
+
+    @classmethod
+    def calendar_is_configured(cls) -> bool:
+        return bool(cls.GOOGLE_CALENDAR_ID) and cls.google_calendar_credentials_file().is_file()
+
     @classmethod
     def validate(cls):
         """Validate configuration values."""

@@ -45,6 +45,8 @@ Thumbs.db
 # Environment
 .env.local
 .env.*.local
+packing-slips-tracker-calender-15e35c535e3a.json
+packing-slips-tracker-calender-15e35c535e3a-private.json
 
 # Build outputs
 dist/

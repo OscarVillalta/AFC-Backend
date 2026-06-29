@@ -21,6 +21,7 @@ ALL_PERMISSIONS = [
     "tracker:update_sales", "tracker:update_service",
     "tracker:update_logistics", "tracker:update_delivery",
     "tracker:update_any", "tracker:set_backordered",
+    "calendar:view", "calendar:manage",
     "conversions:view", "conversions:create", "conversions:edit", "conversions:rollback"
 ]
 

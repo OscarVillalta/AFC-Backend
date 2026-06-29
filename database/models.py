@@ -98,6 +98,12 @@ class Department(str, Enum):
     ACCOUNTING = "ACCOUNTING"
 
 
+class CalendarSyncStatus(str, Enum):
+    PENDING = "pending"
+    SYNCED = "synced"
+    ERROR = "error"
+
+
 
 # =====================================================
 # 🔹 Base Serializer
@@ -595,6 +601,13 @@ class Order(Base, SerializerMixin):
         cascade="all, delete-orphan",
     )
 
+    calendar_event: Mapped[Optional["OrderCalendarEvent"]] = relationship(
+        "OrderCalendarEvent",
+        back_populates="order",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
     def update_status(self):
         if not self.items:
             self.status = OrderStatus.PENDING.value
@@ -953,6 +966,35 @@ class OrderTrackerStage(Base, SerializerMixin):
     __table_args__ = (
         UniqueConstraint("order_id", "stage_index", name="uq_order_tracker_stage"),
     )
+
+
+class OrderCalendarEvent(Base, SerializerMixin):
+    """Maps an order to a Google Calendar event (1:1)."""
+    __tablename__ = "order_calendar_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    order_id: Mapped[int] = mapped_column(
+        ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    google_event_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, unique=True)
+    google_calendar_id: Mapped[str] = mapped_column(String, nullable=False)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    starts_at: Mapped[datetime] = mapped_column(nullable=False)
+    ends_at: Mapped[datetime] = mapped_column(nullable=False)
+    all_day: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    sync_status: Mapped[str] = mapped_column(
+        String, default=CalendarSyncStatus.PENDING.value, nullable=False
+    )
+    last_synced_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    last_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    order: Mapped["Order"] = relationship("Order", back_populates="calendar_event")
 
 
 # =====================================================
