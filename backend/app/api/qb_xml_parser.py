@@ -4,7 +4,6 @@ Helper module to parse QuickBooks XML responses.
 import defusedxml.ElementTree as ET
 from typing import List, Dict, Optional
 
-
 def parse_qb_line_items(qbxml_response: str, entity_type: str) -> List[Dict]:
     """
     Parse QuickBooks XML response and extract line items.
