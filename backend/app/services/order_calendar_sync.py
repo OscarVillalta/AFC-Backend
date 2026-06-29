@@ -133,7 +133,7 @@ def sync_order_to_calendar(
     existing.google_calendar_id = Config.GOOGLE_CALENDAR_ID
 
     if not Config.calendar_is_configured():
-        message = "Calendar is not configured. Set CALENDAR_ID and GOOGLE_CALENDAR_CREDENTIALS_PATH."
+        message = Config.calendar_not_configured_message()
         existing.sync_status = CalendarSyncStatus.ERROR.value
         existing.last_error = message
         if raise_on_error:

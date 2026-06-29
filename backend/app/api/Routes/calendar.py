@@ -40,11 +40,9 @@ def _parse_iso_datetime(value: Optional[str]) -> Optional[datetime]:
 
 def _ensure_calendar_configured() -> None:
     if not Config.calendar_is_configured():
-        print(Config.GOOGLE_CALENDAR_ID, flush=True)
-        print(Config.GOOGLE_CALENDAR_CREDENTIALS_PATH, flush=True)
         raise ExternalServiceError(
             "Google Calendar",
-            "Calendar is not configured. Set CALENDAR_ID and GOOGLE_CALENDAR_CREDENTIALS_PATH.",
+            Config.calendar_not_configured_message(),
         )
 
 

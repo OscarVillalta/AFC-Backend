@@ -22,7 +22,7 @@ def _get_calendar_service():
         if not Config.calendar_is_configured():
             raise ExternalServiceError(
                 "Google Calendar",
-                "Calendar is not configured. Set CALENDAR_ID and credentials path.",
+                Config.calendar_not_configured_message(),
             )
         service_account_info = Config.google_calendar_service_account_info()
         if service_account_info:

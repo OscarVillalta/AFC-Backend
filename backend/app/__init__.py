@@ -40,12 +40,10 @@ def create_app():
     app = Flask(__name__)
     CORS(app, resources={r"/*": {"origins": "*"}})
 
-    if Config.calendar_is_configured():
-        logging.getLogger(__name__).info("Google Calendar integration is configured.")
-    else:
+    if not Config.calendar_is_configured():
         logging.getLogger(__name__).warning(
-            "Google Calendar integration is NOT configured. "
-            "Order calendar sync will be skipped until CALENDAR_ID and credentials are set."
+            "Google Calendar integration is NOT configured. %s",
+            Config.calendar_not_configured_message(),
         )
 
     # JWT configuration

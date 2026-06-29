@@ -70,6 +70,48 @@ class Config:
         return json.loads(cls.GOOGLE_CALENDAR_CREDENTIALS_JSON)
 
     @classmethod
+    def calendar_config_diagnostics(cls) -> dict[str, Any]:
+        credentials_file = cls.google_calendar_credentials_file()
+        json_env_set = bool(cls.GOOGLE_CALENDAR_CREDENTIALS_JSON)
+        json_env_valid = False
+        if json_env_set:
+            try:
+                json.loads(cls.GOOGLE_CALENDAR_CREDENTIALS_JSON)
+                json_env_valid = True
+            except json.JSONDecodeError:
+                json_env_valid = False
+        return {
+            "calendar_id_set": bool(cls.GOOGLE_CALENDAR_ID),
+            "calendar_id_length": len(cls.GOOGLE_CALENDAR_ID or ""),
+            "credentials_path": cls.GOOGLE_CALENDAR_CREDENTIALS_PATH,
+            "credentials_file_resolved": str(credentials_file),
+            "credentials_file_exists": credentials_file.is_file(),
+            "credentials_json_env_set": json_env_set,
+            "credentials_json_env_valid": json_env_valid,
+            "has_credentials": cls.has_google_calendar_credentials(),
+            "is_configured": cls.calendar_is_configured(),
+        }
+
+    @classmethod
+    def calendar_not_configured_message(cls) -> str:
+        diag = cls.calendar_config_diagnostics()
+        hints: list[str] = []
+        if not diag["calendar_id_set"]:
+            hints.append("Set env var CALENDAR_ID (not GOOGLE_CALENDAR_ID).")
+        if not diag["has_credentials"]:
+            if diag["credentials_json_env_set"] and not diag["credentials_json_env_valid"]:
+                hints.append(
+                    "GOOGLE_CALENDAR_CREDENTIALS_JSON is set but is not valid JSON."
+                )
+            elif not diag["credentials_json_env_set"] and not diag["credentials_file_exists"]:
+                hints.append(
+                    "On Render, set GOOGLE_CALENDAR_CREDENTIALS_JSON to the full service "
+                    "account JSON (a credentials file path alone is not enough unless the "
+                    f"file exists at {diag['credentials_file_resolved']})."
+                )
+        return "Calendar is not configured. " + " ".join(hints)
+
+    @classmethod
     def calendar_is_configured(cls) -> bool:
         return bool(cls.GOOGLE_CALENDAR_ID) and cls.has_google_calendar_credentials()
 

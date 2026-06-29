@@ -53,11 +53,6 @@ def _order_for_calendar_sync(db, order: Order) -> Order:
 
 def _best_effort_sync_order_calendar(db, order: Order) -> None:
     if not Config.calendar_is_configured():
-        logger.warning(
-            "Skipping calendar sync for order %s: calendar is not configured "
-            "(set CALENDAR_ID and credentials file or GOOGLE_CALENDAR_CREDENTIALS_JSON)",
-            order.id,
-        )
         return
     try:
         synced_order = _order_for_calendar_sync(db, order)
