@@ -1,11 +1,14 @@
+import logging
+
 from flask import Blueprint, g, jsonify, request
 from flask_jwt_extended import jwt_required
 from sqlalchemy import select, func, null
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError, DatabaseError
+from sqlalchemy.orm import joinedload
 from app.api.Schemas.order_schema import OrderSchema
 from database.models import Customer, Supplier, OrderType, OrderStatus, OrderItemType, Transaction, TransactionState, TransactionReason, OUTGOING_TYPES, VALID_ORDER_TYPES
-from database.models import Order, OrderItem, Product, AirFilter, StockItem, StockItemCategory, Quantity, OrderTracker, Department, BlockedItem, Media
+from database.models import Order, OrderItem, Product, AirFilter, StockItem, StockItemCategory, Quantity, OrderTracker, Department, BlockedItem, Media, CalendarSyncStatus
 from marshmallow import ValidationError
 from datetime import datetime, timedelta, timezone, date
 from typing import Optional, Dict, Any, List, Tuple
@@ -37,13 +40,37 @@ from app.services.order_calendar_sync import sync_order_to_calendar, delete_orde
 order_bp = Blueprint("orders", __name__)
 order_schema = OrderSchema()
 order_list_schema = OrderSchema(many=True)
+logger = logging.getLogger(__name__)
+
+
+def _order_for_calendar_sync(db, order: Order) -> Order:
+    return db.execute(
+        select(Order)
+        .options(joinedload(Order.customer), joinedload(Order.supplier))
+        .where(Order.id == order.id)
+    ).scalar_one()
 
 
 def _best_effort_sync_order_calendar(db, order: Order) -> None:
+    if not Config.calendar_is_configured():
+        logger.warning(
+            "Skipping calendar sync for order %s: calendar is not configured "
+            "(set CALENDAR_ID and credentials file or GOOGLE_CALENDAR_CREDENTIALS_JSON)",
+            order.id,
+        )
+        return
     try:
-        sync_order_to_calendar(db, order, raise_on_error=False)
+        synced_order = _order_for_calendar_sync(db, order)
+        event, _ = sync_order_to_calendar(db, synced_order, raise_on_error=False)
         db.commit()
+        if event and event.sync_status == CalendarSyncStatus.ERROR.value:
+            logger.warning(
+                "Calendar sync failed for order %s: %s",
+                order.id,
+                event.last_error,
+            )
     except Exception:
+        logger.exception("Calendar sync raised for order %s", order.id)
         db.rollback()
 
 

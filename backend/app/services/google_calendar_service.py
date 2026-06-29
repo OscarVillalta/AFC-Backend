@@ -24,10 +24,17 @@ def _get_calendar_service():
                 "Google Calendar",
                 "Calendar is not configured. Set CALENDAR_ID and credentials path.",
             )
-        credentials = service_account.Credentials.from_service_account_file(
-            str(Config.google_calendar_credentials_file()),
-            scopes=Config.GOOGLE_CALENDAR_SCOPES,
-        )
+        service_account_info = Config.google_calendar_service_account_info()
+        if service_account_info:
+            credentials = service_account.Credentials.from_service_account_info(
+                service_account_info,
+                scopes=Config.GOOGLE_CALENDAR_SCOPES,
+            )
+        else:
+            credentials = service_account.Credentials.from_service_account_file(
+                str(Config.google_calendar_credentials_file()),
+                scopes=Config.GOOGLE_CALENDAR_SCOPES,
+            )
         _calendar_service = build("calendar", "v3", credentials=credentials, cache_discovery=False)
     return _calendar_service
 
@@ -94,9 +101,16 @@ def resolve_event_times(
     )
 
 
+def _order_number_for_title(order: Order) -> str:
+    external = (order.external_order_number or "").strip()
+    if external:
+        return external
+    return order.order_number or f"#{order.id}"
+
+
 def build_default_title(order: Order) -> str:
-    number = order.order_number or f"#{order.id}"
-    return f"{number} · {_party_name(order)}"
+    number = _order_number_for_title(order)
+    return f"{number} · {_party_name(order)} · {_format_type_label(order.type)}"
 
 
 def build_default_description(order: Order) -> str:

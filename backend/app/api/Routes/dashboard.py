@@ -129,19 +129,6 @@ def get_dashboard_stats():
 
     recent_transactions = [_transaction_feed_entry(t) for t in recent_txns]
 
-    # #region agent log
-    try:
-        import json as _json
-        _log_path = r"c:\Users\AFCadmin2\Desktop\Master\debug-495c74.log"
-        _sample = recent_transactions[:3]
-        _with_order = sum(1 for x in recent_transactions if x.get("order_id") is not None)
-        _with_product = sum(1 for x in recent_transactions if x.get("product_id") is not None and x.get("product_name"))
-        with open(_log_path, "a", encoding="utf-8") as _f:
-            _f.write(_json.dumps({"sessionId": "495c74", "hypothesisId": "A,B,C", "location": "dashboard.py:get_dashboard_stats", "message": "recent_transactions built", "data": {"count": len(recent_transactions), "with_order_id": _with_order, "with_product": _with_product, "sample": _sample}, "timestamp": int(__import__("time").time() * 1000)}) + "\n")
-    except Exception:
-        pass
-    # #endregion
-
     recent_ords = db.execute(
         select(Order)
         .where(Order.status == "Completed")

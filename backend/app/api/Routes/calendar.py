@@ -65,7 +65,7 @@ def _event_to_dict(event: OrderCalendarEvent, include_order: bool = False) -> di
             "order_number": event.order.order_number,
             "type": event.order.type,
             "status": event.order.status,
-            "external_order_number": event.order.external_order_number,
+            "Quickbooks_Order_Number": event.order.external_order_number,
         }
     return data
 

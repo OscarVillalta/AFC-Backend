@@ -1,7 +1,11 @@
-from flask import Flask, g, request
-from datetime import timedelta
+import logging
 import os
+
+from flask import Flask, g, request, jsonify
+from datetime import timedelta
 from flask_jwt_extended import JWTManager
+
+from app.config import Config
 from database import SessionLocal
 from backend.app.api.Routes.suppliers import supplier_bp
 from backend.app.api.Routes.quantity import quantity_bp
@@ -36,13 +40,39 @@ def create_app():
     app = Flask(__name__)
     CORS(app, resources={r"/*": {"origins": "*"}})
 
+    if Config.calendar_is_configured():
+        logging.getLogger(__name__).info("Google Calendar integration is configured.")
+    else:
+        logging.getLogger(__name__).warning(
+            "Google Calendar integration is NOT configured. "
+            "Order calendar sync will be skipped until CALENDAR_ID and credentials are set."
+        )
+
     # JWT configuration
     app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=5)
     if not app.config["JWT_SECRET_KEY"]:
         raise RuntimeError("JWT_SECRET_KEY environment variable is not set.")
     
-    JWTManager(app)
+    jwt = JWTManager(app)
+
+    @jwt.invalid_token_loader
+    def invalid_token_callback(error_string):
+        return jsonify({
+            "error": "Invalid token",
+            "details": error_string,
+        }), 401
+
+    @jwt.unauthorized_loader
+    def unauthorized_callback(error_string):
+        return jsonify({
+            "error": "Authorization required",
+            "details": error_string,
+        }), 401
+
+    @jwt.expired_token_loader
+    def expired_token_callback(_jwt_header, _jwt_payload):
+        return jsonify({"error": "Token has expired"}), 401
 
     #BluePrints
     app.register_blueprint(auth_bp, url_prefix='/api')

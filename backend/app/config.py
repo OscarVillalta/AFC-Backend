@@ -4,8 +4,10 @@ Application configuration module.
 This module centralizes all configuration values that were previously hard-coded
 throughout the application. Values can be overridden via environment variables.
 """
+import json
 import os
 from pathlib import Path
+from typing import Any, Optional
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -39,6 +41,8 @@ class Config:
         "GOOGLE_CALENDAR_CREDENTIALS_PATH",
         "packing-slips-tracker-calender-15e35c535e3a.json",
     )
+    # Optional: full service-account JSON for hosts without a credentials file (e.g. Render).
+    GOOGLE_CALENDAR_CREDENTIALS_JSON = os.getenv("GOOGLE_CALENDAR_CREDENTIALS_JSON", "").strip()
     GOOGLE_CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar"]
     FRONTEND_ORDER_URL_BASE = os.getenv("FRONTEND_ORDER_URL_BASE", "").rstrip("/")
 
@@ -50,8 +54,24 @@ class Config:
         return path
 
     @classmethod
+    def has_google_calendar_credentials(cls) -> bool:
+        if cls.GOOGLE_CALENDAR_CREDENTIALS_JSON:
+            try:
+                json.loads(cls.GOOGLE_CALENDAR_CREDENTIALS_JSON)
+                return True
+            except json.JSONDecodeError:
+                return False
+        return cls.google_calendar_credentials_file().is_file()
+
+    @classmethod
+    def google_calendar_service_account_info(cls) -> Optional[dict[str, Any]]:
+        if not cls.GOOGLE_CALENDAR_CREDENTIALS_JSON:
+            return None
+        return json.loads(cls.GOOGLE_CALENDAR_CREDENTIALS_JSON)
+
+    @classmethod
     def calendar_is_configured(cls) -> bool:
-        return bool(cls.GOOGLE_CALENDAR_ID) and cls.google_calendar_credentials_file().is_file()
+        return bool(cls.GOOGLE_CALENDAR_ID) and cls.has_google_calendar_credentials()
 
     @classmethod
     def validate(cls):
