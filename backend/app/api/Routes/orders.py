@@ -32,10 +32,28 @@ from app.api.error_handling import (
     ExternalServiceError
 )
 from app.api.qb_xml_parser import parse_qb_line_items, extract_qb_metadata
+from app.services.order_calendar_sync import sync_order_to_calendar, delete_order_calendar_event
 
 order_bp = Blueprint("orders", __name__)
 order_schema = OrderSchema()
 order_list_schema = OrderSchema(many=True)
+
+
+def _best_effort_sync_order_calendar(db, order: Order) -> None:
+    try:
+        sync_order_to_calendar(db, order, raise_on_error=False)
+        db.commit()
+    except Exception:
+        db.rollback()
+
+
+def _best_effort_delete_order_calendar(db, order: Order) -> None:
+    try:
+        deleted = delete_order_calendar_event(db, order, raise_on_error=False)
+        if deleted:
+            db.commit()
+    except Exception:
+        db.rollback()
 
 # GET all orders (paginated, filterable)
 @order_bp.route("/orders", methods=["GET"])
@@ -361,6 +379,7 @@ def create_order():
         order.customer_id = None
 
     db.commit()
+    _best_effort_sync_order_calendar(db, order)
 
     return jsonify(order_schema.dump(order)), 201
 
@@ -427,6 +446,7 @@ def void_order(order_id):
         order.description = order.description + " Quickbooks ID: " + str(order.external_order_number)
         order.external_order_number = ""
     db.commit()
+    _best_effort_sync_order_calendar(db, order)
 
     return jsonify({
         "message": "Order voided successfully",
@@ -459,6 +479,7 @@ def delete_order(order_id: int):
                 "error": "Cannot delete order with existing transactions"
             }), 409
 
+        _best_effort_delete_order_calendar(db, order)
         db.delete(order)
         db.commit()
 
@@ -489,6 +510,10 @@ def patch_order(order_id):
         }), 400
 
     data = request.get_json() or {}
+    previous_type = order.type
+    previous_eta = order.eta
+    previous_customer_id = order.customer_id
+    previous_supplier_id = order.supplier_id
 
     # ===============================
     # ❌ Disallowed fields
@@ -583,6 +608,17 @@ def patch_order(order_id):
         order.is_invoiced = bool(data["is_invoiced"])
 
     db.commit()
+    should_sync_calendar = (
+        ("type" in data and order.type != previous_type)
+        or ("eta" in data and order.eta != previous_eta)
+        or ("cs_id" in data and (
+            order.customer_id != previous_customer_id
+            or order.supplier_id != previous_supplier_id
+        ))
+        or ("supplier_id" in data and order.supplier_id != previous_supplier_id)
+    )
+    if should_sync_calendar:
+        _best_effort_sync_order_calendar(db, order)
 
     # ===============================
     # Return updated order (same shape as GET)
@@ -1325,6 +1361,7 @@ def create_order_from_qb():
             db.add(tracker)
 
         safe_commit(db, "creating order from QuickBooks")
+        _best_effort_sync_order_calendar(db, order)
         
     except (CustomValidationError, DuplicateResourceError, ExternalServiceError) as e:
         db.rollback()

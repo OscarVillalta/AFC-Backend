@@ -19,6 +19,7 @@ from app.api.error_handling import (
     handle_database_error,
 )
 from app.services import google_calendar_service as gcal
+from app.services.order_calendar_sync import sync_order_to_calendar
 from database.models import Order, OrderCalendarEvent, CalendarSyncStatus
 
 calendar_bp = Blueprint("calendar", __name__)
@@ -395,23 +396,23 @@ def sync_calendar_event_for_order(order_id: int) -> Tuple[Any, int]:
         data = request.get_json(silent=True) or {}
 
         order = _get_order_in_warehouse(db, order_id)
-        existing = db.execute(
-            select(OrderCalendarEvent).where(OrderCalendarEvent.order_id == order_id)
-        ).scalar_one_or_none()
-
-        try:
-            event = _create_or_update_from_order(db, order, data, existing=existing)
-        except ExternalServiceError as exc:
-            error = safe_commit(db)
-            if error:
-                return handle_database_error(error)
-            return _api_error_response(exc)
+        event, created = sync_order_to_calendar(
+            db,
+            order,
+            overrides=data,
+            raise_on_error=True,
+        )
 
         error = safe_commit(db)
         if error:
             return handle_database_error(error)
 
-        status_code = 200 if existing else 201
+        if event is None:
+            return jsonify({
+                "message": "Order has no ETA or is void, so no calendar event was created."
+            }), 200
+
+        status_code = 201 if created else 200
         return jsonify(_event_to_dict(event, include_order=True)), status_code
     except APIException as exc:
         return _api_error_response(exc)

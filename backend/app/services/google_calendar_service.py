@@ -49,6 +49,17 @@ def _format_type_label(order_type: str) -> str:
     return (order_type or "order").replace("_", " ").title()
 
 
+def color_id_for_order_type(order_type: str) -> Optional[str]:
+    mapping = {
+        OrderType.INCOMING.value: "6",
+        OrderType.INSTALLATION.value: "9",
+        OrderType.WILL_CALL.value: "3",
+        OrderType.DELIVERY.value: "7",
+        OrderType.SHIPMENT.value: "1",
+    }
+    return mapping.get(order_type)
+
+
 def resolve_event_times(
     order: Order,
     *,
@@ -85,7 +96,7 @@ def resolve_event_times(
 
 def build_default_title(order: Order) -> str:
     number = order.order_number or f"#{order.id}"
-    return f"{number} · {_party_name(order)} · {_format_type_label(order.type)}"
+    return f"{number} · {_party_name(order)}"
 
 
 def build_default_description(order: Order) -> str:
@@ -137,6 +148,9 @@ def build_google_event_body(
             }
         },
     }
+    color_id = color_id_for_order_type(order.type)
+    if color_id:
+        body["colorId"] = color_id
     if all_day:
         start_day = starts_at.date() if isinstance(starts_at, datetime) else starts_at
         end_day = ends_at.date() if isinstance(ends_at, datetime) else ends_at
