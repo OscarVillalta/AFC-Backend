@@ -10,3 +10,4 @@ class OrderItemSchema(Schema):
     quantity_fulfilled = fields.Int(dump_only=True)
     note = fields.Str(allow_none=True)
     position = fields.Int(load_default=None)
+    no_stock_deduction = fields.Bool(load_default=None)

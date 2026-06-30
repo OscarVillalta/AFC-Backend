@@ -9,6 +9,7 @@ from database.models import (
 )
 from app.api.Schemas.product_schema import ProductSchema
 from app.api.tokens import permission_required
+from app.api.error_handling import safe_commit
 
 product_bp = Blueprint("products", __name__)
 product_schema = ProductSchema()
@@ -136,9 +137,38 @@ def get_product(id):
         "id": product.id,
         "category": category,
         "reference_id": product.reference_id,
+        "default_no_stock_deduction": product.default_no_stock_deduction,
         "details": details,
         "quantity": quantity,
         "child_products": child_products_data
+    }), 200
+
+
+@product_bp.route("/products/<int:id>", methods=["PATCH"])
+@permission_required("catalog:edit")
+def patch_product(id):
+    db = g.db
+    product = db.get(Product, id)
+
+    if not product:
+        return jsonify({"error": "Product not found"}), 404
+
+    data = request.get_json() or {}
+
+    if "default_no_stock_deduction" in data:
+        value = data["default_no_stock_deduction"]
+        if not isinstance(value, bool):
+            return jsonify({"error": "default_no_stock_deduction must be a boolean"}), 400
+        product.default_no_stock_deduction = value
+
+    error = safe_commit(db)
+    if error:
+        from app.api.error_handling import handle_database_error
+        return handle_database_error(error)
+
+    return jsonify({
+        "id": product.id,
+        "default_no_stock_deduction": product.default_no_stock_deduction,
     }), 200
 
 

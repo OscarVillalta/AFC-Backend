@@ -32,7 +32,8 @@ from app.api.error_handling import (
     safe_commit,
     ResourceNotFoundError,
     DuplicateResourceError,
-    ExternalServiceError
+    ExternalServiceError,
+    InvalidInputError,
 )
 from app.api.qb_xml_parser import parse_qb_line_items, extract_qb_metadata
 from app.services.order_calendar_sync import sync_order_to_calendar, delete_order_calendar_event
@@ -87,7 +88,7 @@ def get_orders() -> Tuple[Any, int]:
     Query Parameters:
         page (int): Page number (default: 1)
         limit (int): Items per page (default: 25, max: 100)
-        type (str): Filter by order type ("incoming" | "outgoing")
+        type (str): Filter by order type (specific type or "outgoing" for all customer-facing types)
         status (str): Filter by order status
         search (str): Search keyword in order_number
     
@@ -204,6 +205,7 @@ def get_order(order_id: int) -> Tuple[Any, int]:
             "is_paid": order.is_paid,
             "is_invoiced": order.is_invoiced,
             "warehouse_id": order.warehouse_id,
+            "can_manual_complete": order.can_manual_complete(),
         }), 200
         
     except ResourceNotFoundError as e:
@@ -289,6 +291,11 @@ def get_order_items(order_id):
             "reserved": reserved,
             "available": available,
             "is_media": is_media,
+            "no_stock_deduction": (
+                False
+                if order.type == OrderType.INCOMING.value
+                else item.no_stock_deduction
+            ),
         })
 
     return jsonify(items), 200
@@ -422,6 +429,63 @@ def update_order_status(order_id):
         "message": "Order status updated.",
         "status": order.status
     }), 200
+
+
+@order_bp.route("/orders/<int:order_id>/complete-manual", methods=["POST"])
+@jwt_required()
+@permission_required("orders:edit")
+def complete_order_manual(order_id: int) -> Tuple[Any, int]:
+    """Mark an order Completed when it has no stock-trackable line items."""
+    db = g.db
+
+    try:
+        order_id = validate_positive_integer(order_id, "order_id")
+        order = db.get(Order, order_id)
+        if not order:
+            raise ResourceNotFoundError("Order", order_id)
+
+        if not order.can_manual_complete():
+            raise InvalidInputError(
+                "This order cannot be manually completed. "
+                "It must have line items and no stock-trackable products pending fulfillment."
+            )
+
+        for item in order.items:
+            if item.type in (
+                OrderItemType.UNIT_SEPARATOR.value,
+                OrderItemType.SECTION_SEPARATOR.value,
+            ):
+                continue
+            if item.skips_inventory():
+                item.quantity_fulfilled = item.quantity_ordered
+
+        order.status = OrderStatus.COMPLETED.value
+        order.completed_at = datetime.now(timezone.utc)
+
+        safe_commit(db, "manually completing order")
+
+        return jsonify({
+            "message": "Order marked as completed.",
+            "status": order.status,
+            "completed_at": (
+                order.completed_at.strftime(Config.DATE_FORMAT)
+                if order.completed_at else None
+            ),
+            "can_manual_complete": False,
+        }), 200
+
+    except (ResourceNotFoundError, InvalidInputError, CustomValidationError) as e:
+        return jsonify(e.to_dict()), e.status_code
+    except IntegrityError as e:
+        db.rollback()
+        return handle_database_error(e, "manually completing order")
+    except DatabaseError as e:
+        db.rollback()
+        return handle_database_error(e, "manually completing order")
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": "Unexpected error", "details": str(e)}), 500
+
 
 @order_bp.route("/orders/<int:order_id>/void", methods=["POST"])
 @jwt_required()
@@ -676,6 +740,32 @@ def parse_date(date_str: str):
 # SEARCH
 # ===============================
 
+def _parse_search_list_arg(name: str) -> list[str]:
+    seen: set[str] = set()
+    values: list[str] = []
+    for raw in request.args.getlist(name):
+        for part in raw.split(","):
+            value = part.strip()
+            if value and value not in seen:
+                seen.add(value)
+                values.append(value)
+    return values
+
+
+def _parse_search_int_list_arg(name: str) -> list[int]:
+    ids: list[int] = []
+    seen: set[int] = set()
+    for raw in _parse_search_list_arg(name):
+        try:
+            parsed = int(raw)
+        except ValueError:
+            continue
+        if parsed not in seen:
+            seen.add(parsed)
+            ids.append(parsed)
+    return ids
+
+
 @order_bp.route("/orders/search", methods=["GET"])
 @jwt_required()
 def search_orders():
@@ -687,7 +777,9 @@ def search_orders():
     description = request.args.get("description")
     customer_name = request.args.get("customer_name")
     supplier_name = request.args.get("supplier_name")
-    order_type = request.args.get("type")
+    customer_ids = _parse_search_int_list_arg("customer_id")
+    supplier_ids = _parse_search_int_list_arg("supplier_id")
+    order_types = _parse_search_list_arg("type")
     status = request.args.get("status")
     
     # Date filters for created_at
@@ -756,12 +848,15 @@ def search_orders():
     # Scope to the active warehouse
     filters.append(Order.warehouse_id == g.active_warehouse_id)
 
-    if order_type and order_type.lower() != "all":
-        # "outgoing" is a legacy/convenience filter matching all outgoing-equivalent types
-        if order_type == "outgoing":
+    if order_types:
+        if len(order_types) == 1 and order_types[0].lower() == "outgoing":
             filters.append(Order.type.in_(OUTGOING_TYPES))
         else:
-            filters.append(Order.type == order_type)
+            normalized_types = [
+                t for t in order_types if t.lower() not in {"all", "outgoing"}
+            ]
+            if normalized_types:
+                filters.append(Order.type.in_(normalized_types))
 
     if status and status.lower() != "all":
         filters.append(Order.status == status)
@@ -790,10 +885,19 @@ def search_orders():
     if description:
         filters.append(Order.description.ilike(f"%{description}%"))
 
-    # Separate customer and supplier name filters
+    # Customer / supplier filters (exact ID match; OR when both are provided)
+    party_conds = []
+    if customer_ids:
+        party_conds.append(Order.customer_id.in_(customer_ids))
+    if supplier_ids:
+        party_conds.append(Order.supplier_id.in_(supplier_ids))
+    if party_conds:
+        filters.append(or_(*party_conds))
+
+    # Legacy name-based filters
     if customer_name:
         filters.append(Customer.name.ilike(f"%{customer_name}%"))
-    
+
     if supplier_name:
         filters.append(Supplier.name.ilike(f"%{supplier_name}%"))
     
@@ -857,7 +961,7 @@ def search_orders():
 
     # ---------------- Page ----------------
     rows = db.execute(
-        query.order_by(Order.created_at.desc())
+        query.order_by(Order.order_number.desc())
         .limit(limit)
         .offset(offset)
     ).mappings().all()
@@ -899,6 +1003,8 @@ def allocate_all(order_id):
     created = []
 
     for item in order.items:
+        if item.skips_inventory():
+            continue
 
         # Sum existing pending allocations
         pending_qty = sum(
@@ -1328,11 +1434,12 @@ def create_order_from_qb():
                     qty_ordered = 0
                 
                 item_type = OrderItemType.PRODUCT_ITEM.value
-                if getattr(product, 'media', None) is not None:
+                no_stock_deduction = False if is_purchase_order else bool(product.default_no_stock_deduction)
+                if not is_purchase_order and getattr(product, 'media', None) is not None:
                     media_default_desc = (product.media.description or "").strip()
                     qb_desc = (qb_line.get("description") or "").strip()
                     if qb_desc.lower() != media_default_desc.lower():
-                        item_type = OrderItemType.MEDIA_CUT.value
+                        no_stock_deduction = True
 
                 order_item = OrderItem(
                     order_id=order.id,
@@ -1341,7 +1448,8 @@ def create_order_from_qb():
                     quantity_ordered=int(qty_ordered),
                     quantity_fulfilled=0,
                     note=qb_line.get("description"),
-                    position=position
+                    position=position,
+                    no_stock_deduction=no_stock_deduction,
                 )
                 db.add(order_item)
                 db.flush() # Important: Get ID immediately
@@ -1369,6 +1477,7 @@ def create_order_from_qb():
                     "reserved": reserved,
                     "available": available,
                     "is_media": is_media,
+                    "no_stock_deduction": order_item.no_stock_deduction,
                 })
                 position += 1
 

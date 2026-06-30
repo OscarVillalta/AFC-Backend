@@ -29,13 +29,70 @@ _TRACKER_DEPARTMENT_FILTER_VALUES = {
     Department.LOGISTICS.value,
     Department.DELIVERY_DEPT.value,
     Department.SERVICE.value,
+    "COMPLETED",
 }
 
 TRACKER_UPDATE_ANY = "tracker:update_any"
 
 
+def _parse_list_arg(name: str) -> list[str]:
+    """Parse repeated query params and/or comma-separated values into a deduped list."""
+    seen: set[str] = set()
+    values: list[str] = []
+    for raw in request.args.getlist(name):
+        for part in raw.split(","):
+            value = part.strip()
+            if value and value not in seen:
+                seen.add(value)
+                values.append(value)
+    return values
+
+
+def _parse_party_filter() -> tuple[tuple[list[int], list[int]], str]:
+    """Parse party=customer:{id} and party=supplier:{id} list args."""
+    customer_ids: list[int] = []
+    supplier_ids: list[int] = []
+    seen: set[str] = set()
+
+    for raw in _parse_list_arg("party"):
+        if raw in seen:
+            continue
+        seen.add(raw)
+
+        if raw.startswith("customer:"):
+            try:
+                customer_ids.append(int(raw.split(":", 1)[1]))
+            except (ValueError, IndexError):
+                return None, "Invalid party filter value."
+        elif raw.startswith("supplier:"):
+            try:
+                supplier_ids.append(int(raw.split(":", 1)[1]))
+            except (ValueError, IndexError):
+                return None, "Invalid party filter value."
+        else:
+            return None, "Invalid party filter value."
+
+    return (customer_ids, supplier_ids), ""
+
+
+def _party_filter_cond(customer_ids: list[int], supplier_ids: list[int]):
+    party_conds = []
+    if customer_ids:
+        party_conds.append(Order.customer_id.in_(customer_ids))
+    if supplier_ids:
+        party_conds.append(Order.supplier_id.in_(supplier_ids))
+    return or_(*party_conds) if party_conds else None
+
+
+def _order_number_search_cond(search: str):
+    return or_(
+        Order.order_number.ilike(f"%{search}%"),
+        Order.external_order_number.ilike(f"%{search}%"),
+    )
+
+
 def _department_filter_cond(department: str, completed_stages_subq):
-    """Orders currently positioned at the given tracker department."""
+    """Orders currently positioned at the given tracker department (in progress only)."""
     not_started_sales = and_(
         OrderTracker.id.is_(None),
         completed_stages_subq == 0,
@@ -48,10 +105,15 @@ def _department_filter_cond(department: str, completed_stages_subq):
     )
 
     if department == Department.SALES.value:
-        return or_(OrderTracker.current_department == department, not_started_sales)
-    if department == Department.LOGISTICS.value:
-        return or_(OrderTracker.current_department == department, not_started_logistics)
-    return OrderTracker.current_department == department
+        dept_cond = or_(OrderTracker.current_department == department, not_started_sales)
+    elif department == Department.LOGISTICS.value:
+        dept_cond = or_(OrderTracker.current_department == department, not_started_logistics)
+    else:
+        dept_cond = OrderTracker.current_department == department
+
+    # Fully completed orders keep the last step's department on the tracker row;
+    # exclude them so they only match the dedicated COMPLETED filter.
+    return and_(dept_cond, completed_stages_subq < _total_steps_expr)
 
 # Step paths per order type — must mirror frontend trackerSteps.ts
 _INSTALLATION_STEPS = [
@@ -128,7 +190,7 @@ def _resolve_completed_by(data: dict) -> str | None:
 _total_steps_expr = case(
     (Order.type == OrderType.INSTALLATION.value, 6),
     (Order.type.in_([OrderType.WILL_CALL.value, OrderType.DELIVERY.value, OrderType.SHIPMENT.value]), 4),
-    else_=3,  # incoming / purchase order (and legacy "outgoing")
+    else_=3,  # incoming / purchase order
 )
 
 
@@ -383,22 +445,17 @@ def toggle_tracker_stage(order_id: int, stage_index: int) -> Tuple[Any, int]:
         select(OrderTrackerStage).where(OrderTrackerStage.order_id == order_id)
     ).scalars().all()
 
-    first_incomplete = _first_incomplete_index(existing_stages, len(steps))
-    last_completed = _last_completed_index(existing_stages, len(steps))
-
-    if is_completed and stage_index != first_incomplete:
-        return jsonify({"error": "Steps must be completed in order."}), 409
-    if not is_completed and stage_index != last_completed:
-        return jsonify({"error": "Only the most recently completed step can be undone."}), 409
-
-    completed_by = _resolve_completed_by(data) if is_completed else None
-
     stage = db.execute(
         select(OrderTrackerStage).where(
             OrderTrackerStage.order_id == order_id,
             OrderTrackerStage.stage_index == stage_index,
         )
     ).scalar_one_or_none()
+
+    if stage is not None and stage.is_completed == is_completed:
+        return jsonify({"error": "Stage is already in the requested state."}), 409
+
+    completed_by = _resolve_completed_by(data) if is_completed else None
 
     if stage is None:
         stage = OrderTrackerStage(
@@ -454,8 +511,8 @@ def get_packing_slips() -> Tuple[Any, int]:
     limit = request.args.get("limit", default=25, type=int)
     search = request.args.get("search", "").strip()
     tracker_status = request.args.get("tracker_status", "").strip()
-    tracker_department = request.args.get("tracker_department", "").strip()
-    order_type = request.args.get("order_type", "").strip()
+    tracker_departments = _parse_list_arg("tracker_department")
+    order_types = _parse_list_arg("order_type")
     offset = (page - 1) * limit
 
     # Date Created filters (Order.created_at)
@@ -515,17 +572,22 @@ def get_packing_slips() -> Tuple[Any, int]:
     )
 
     if search:
-        base_query = base_query.where(
-            or_(
-                Order.order_number.ilike(f"%{search}%"),
-                Order.external_order_number.ilike(f"%{search}%"),
-                Customer.name.ilike(f"%{search}%"),
-                Supplier.name.ilike(f"%{search}%"),
-            )
-        )
+        base_query = base_query.where(_order_number_search_cond(search))
 
-    if order_type:
-        base_query = base_query.where(Order.type == order_type)
+    party_result, party_error = _parse_party_filter()
+    if party_error:
+        return jsonify({"error": party_error}), 400
+    customer_ids, supplier_ids = party_result
+    if customer_ids or supplier_ids:
+        party_cond = _party_filter_cond(customer_ids, supplier_ids)
+        if party_cond is not None:
+            base_query = base_query.where(party_cond)
+
+    if order_types:
+        invalid_types = [t for t in order_types if t not in TRACKER_TYPES]
+        if invalid_types:
+            return jsonify({"error": f"Invalid order_type: {invalid_types[0]}"}), 400
+        base_query = base_query.where(Order.type.in_(order_types))
 
     # Date Created filters (Order.created_at)
     if start_date and end_date:
@@ -558,12 +620,21 @@ def get_packing_slips() -> Tuple[Any, int]:
     elif tracker_status == "Backordered":
         base_query = base_query.where(_backordered_cond)
 
-    if tracker_department:
-        if tracker_department not in _TRACKER_DEPARTMENT_FILTER_VALUES:
+    if tracker_departments:
+        invalid_departments = [
+            d for d in tracker_departments if d not in _TRACKER_DEPARTMENT_FILTER_VALUES
+        ]
+        if invalid_departments:
             return jsonify({"error": "Invalid tracker_department."}), 400
-        base_query = base_query.where(
-            _department_filter_cond(tracker_department, _completed_stages_subq)
-        )
+        department_conds = []
+        for department in tracker_departments:
+            if department == "COMPLETED":
+                department_conds.append(_completed_cond)
+            else:
+                department_conds.append(
+                    _department_filter_cond(department, _completed_stages_subq)
+                )
+        base_query = base_query.where(or_(*department_conds))
 
     # Efficient total count using the filtered query as a subquery
     subq = base_query.subquery()
@@ -575,17 +646,11 @@ def get_packing_slips() -> Tuple[Any, int]:
         base_query.order_by(Order.created_at.desc()).limit(limit).offset(offset)
     ).scalars().all()
 
-    # Per-status counts for the tab badges (based on search, ignoring tracker_status)
-    _search_filter = (
-        or_(
-            Order.order_number.ilike(f"%{search}%"),
-            Order.external_order_number.ilike(f"%{search}%"),
-            Customer.name.ilike(f"%{search}%"),
-            Supplier.name.ilike(f"%{search}%"),
-        )
-        if search
-        else None
-    )
+    # Per-status counts for the tab badges (based on search/filters, ignoring tracker_status)
+    _search_filter = _order_number_search_cond(search) if search else None
+    _party_filter = None
+    if customer_ids or supplier_ids:
+        _party_filter = _party_filter_cond(customer_ids, supplier_ids)
     counts_query = (
         select(
             func.count(case((_backordered_cond, 1))).label("backordered"),
@@ -602,8 +667,10 @@ def get_packing_slips() -> Tuple[Any, int]:
     )
     if _search_filter is not None:
         counts_query = counts_query.where(_search_filter)
-    if order_type:
-        counts_query = counts_query.where(Order.type == order_type)
+    if _party_filter is not None:
+        counts_query = counts_query.where(_party_filter)
+    if order_types:
+        counts_query = counts_query.where(Order.type.in_(order_types))
 
     # Apply same date filters to counts query
     if start_date and end_date:

@@ -2,7 +2,7 @@ from flask import Blueprint, g, jsonify, request
 from sqlalchemy import select, func, update
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.api.Schemas.order_item_schema import OrderItemSchema
-from database.models import OrderItem, Order, Product, ChildProduct, Transaction, TransactionState, OrderType, OrderItemType, Quantity
+from database.models import OrderItem, Order, Product, ChildProduct, Transaction, TransactionState, OrderType, OrderItemType, Quantity, OUTGOING_TYPES
 from marshmallow import ValidationError
 from typing import Tuple, Any
 
@@ -22,6 +22,28 @@ from app.api.error_handling import (
 order_item_bp = Blueprint("order_items", __name__)
 item_schema = OrderItemSchema()
 item_list_schema = OrderItemSchema(many=True)
+
+
+def _product_for_item_defaults(db, product_id=None, child_product_id=None):
+    if product_id:
+        return db.get(Product, product_id)
+    if child_product_id:
+        child = db.get(ChildProduct, child_product_id)
+        return child.parent_product if child else None
+    return None
+
+
+def _has_blocking_transactions(db, order_item_id: int) -> bool:
+    blocking = db.scalar(
+        select(Transaction.id)
+        .where(Transaction.order_item_id == order_item_id)
+        .where(Transaction.state.in_([
+            TransactionState.PENDING.value,
+            TransactionState.COMMITTED.value,
+        ]))
+        .limit(1)
+    )
+    return blocking is not None
 
 # GET a single order item
 @order_item_bp.route("/order_items/<int:item_id>", methods=["GET"])
@@ -100,6 +122,7 @@ def create_order_item() -> Tuple[Any, int]:
             product_id = None
             child_product_id = None
             quantity_ordered = 0
+            no_stock_deduction = False
         else:
             # Check for product_id or child_product_id
             has_product = "product_id" in data and data["product_id"] is not None
@@ -117,24 +140,26 @@ def create_order_item() -> Tuple[Any, int]:
                     raise ResourceNotFoundError("Product", data["product_id"])
                 product_id = product.id
                 child_product_id = None
-                # Auto-detect media products and set type to Media_Cut
-                if product.category and product.category.name == "Media":
-                    item_type = OrderItemType.MEDIA_CUT.value
             else:
                 child_product = db.get(ChildProduct, data["child_product_id"])
                 if not child_product:
                     raise ResourceNotFoundError("ChildProduct", data["child_product_id"])
                 product_id = None
                 child_product_id = child_product.id
-                # Auto-detect media child products and set type to Media_Cut
-                if child_product.category and child_product.category.name == "Media":
-                    item_type = OrderItemType.MEDIA_CUT.value
+                product = child_product.parent_product
             
             quantity_ordered = validate_positive_integer(
                 data["quantity_ordered"], 
                 "quantity_ordered", 
                 allow_zero=True
             )
+
+            if order.type == OrderType.INCOMING.value:
+                no_stock_deduction = False
+            elif "no_stock_deduction" in data and data["no_stock_deduction"] is not None:
+                no_stock_deduction = bool(data["no_stock_deduction"])
+            else:
+                no_stock_deduction = bool(product.default_no_stock_deduction) if product else False
         
         # Handle position
         position = data.get("position")
@@ -165,6 +190,7 @@ def create_order_item() -> Tuple[Any, int]:
             quantity_fulfilled=0,
             note=data.get("note"),
             position=position,
+            no_stock_deduction=no_stock_deduction,
         )
         
         db.add(item)
@@ -213,6 +239,21 @@ def update_order_item(item_id):
             item.quantity_ordered = quantity_ordered
         if "note" in data:
             item.note = data["note"]
+        if "no_stock_deduction" in data:
+            if item.order.type == OrderType.INCOMING.value:
+                if bool(data["no_stock_deduction"]):
+                    raise InvalidInputError(
+                        "no_stock_deduction is not available on incoming orders."
+                    )
+                item.no_stock_deduction = False
+            else:
+                new_value = bool(data["no_stock_deduction"])
+                if new_value != item.no_stock_deduction:
+                    if _has_blocking_transactions(db, item.id):
+                        raise InvalidInputError(
+                            "Cannot change no_stock_deduction while pending or committed transactions exist."
+                        )
+                    item.no_stock_deduction = new_value
         if "type" in data:
             new_type = data["type"]
             valid_types = [t.value for t in OrderItemType]
@@ -220,14 +261,10 @@ def update_order_item(item_id):
                 raise InvalidInputError(f"Invalid type. Must be one of: {valid_types}")
             # Allow toggling between separator types
             separator_types = [OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value]
-            # Allow toggling between product item types (Product_Item <-> Media_Cut)
-            product_item_types = [OrderItemType.PRODUCT_ITEM.value, OrderItemType.MEDIA_CUT.value]
             if item.type in separator_types and new_type in separator_types:
                 item.type = new_type
-            elif item.type in product_item_types and new_type in product_item_types:
-                item.type = new_type
             else:
-                raise InvalidInputError("Type change is only allowed between separator types or between Product_Item and Media_Cut")
+                raise InvalidInputError("Type change is only allowed between separator types")
 
         safe_commit(db, "updating order item")
         return jsonify({
@@ -257,6 +294,11 @@ def allocate_order_item(item_id):
     order = item.order
     if not order:
         return jsonify({"error": "Order not associated"}), 400
+
+    if item.skips_inventory():
+        return jsonify({
+            "error": "Cannot allocate stock for items with no stock deduction enabled."
+        }), 400
 
     # 🔹 Parse requested allocation quantity
     body = request.get_json(silent=True) or {}
@@ -370,14 +412,14 @@ def allocate_remaining_order_items(item_id):
             "message": "Order item is already fully fulfilled.",
         }), 200
 
-    # 🔹 MEDIA_CUT bypass: skip inventory transaction, directly mark as fulfilled
-    if item.type == OrderItemType.MEDIA_CUT.value:
+    # 🔹 No-stock-deduction bypass: skip inventory transaction, directly mark as fulfilled
+    if item.skips_inventory():
         item.quantity_fulfilled += qty_to_fulfill
         item.quantity_fulfilled = max(0, min(item.quantity_fulfilled, item.quantity_ordered))
         order.update_status()
         db.commit()
         return jsonify({
-            "message": f"Fulfilled {qty_to_fulfill} unit(s) for media cut order item {item_id} (no stock deduction).",
+            "message": f"Fulfilled {qty_to_fulfill} unit(s) for order item {item_id} (no stock deduction).",
             "order_status": order.status
         }), 200
 
@@ -655,6 +697,11 @@ def create_order_item_transaction(order_item_id):
     if not item:
         return jsonify({"error": "Order item not found"}), 404
 
+    if item.skips_inventory():
+        return jsonify({
+            "error": "Cannot create transactions for items with no stock deduction enabled."
+        }), 400
+
     order = item.order
     product = item.product
     child_product = item.child_product
@@ -698,7 +745,7 @@ def create_order_item_transaction(order_item_id):
     # -------------------------
     # Apply PENDING inventory effects
     # -------------------------
-    if order.type == OrderType.OUTGOING.value:
+    if order.type in OUTGOING_TYPES:
         # Reserve stock
         if qty.on_hand < quantity:
             return jsonify({

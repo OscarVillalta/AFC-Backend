@@ -22,8 +22,6 @@ class OrderType(str, Enum):
     SHIPMENT = "shipment"
     INCOMING = "incoming"
     VOID = "void"
-    # Legacy value kept for backward compatibility with existing data
-    OUTGOING = "outgoing"
 
 
 # Outgoing-equivalent types: require customer, create tracker, reduce stock
@@ -32,10 +30,9 @@ OUTGOING_TYPES = {
     OrderType.WILL_CALL.value,
     OrderType.DELIVERY.value,
     OrderType.SHIPMENT.value,
-    OrderType.OUTGOING.value,  # legacy
 }
 
-# All valid non-legacy type values accepted for new orders
+# Valid type values accepted for new orders
 VALID_ORDER_TYPES = {
     OrderType.INSTALLATION.value,
     OrderType.WILL_CALL.value,
@@ -57,7 +54,6 @@ class OrderItemType(str, Enum):
     SECTION_SEPARATOR = "Section_Separator"
     PRODUCT_ITEM = "Product_Item"
     SALES_ITEM = "Sales_Item"
-    MEDIA_CUT = "Media_Cut"
 
 
 class TransactionState(str, Enum):
@@ -332,6 +328,7 @@ class Product(Base, SerializerMixin):
     reference_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    default_no_stock_deduction: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     category: Mapped["ProductCategory"] = relationship("ProductCategory", back_populates="products")
 
@@ -608,16 +605,34 @@ class Order(Base, SerializerMixin):
         cascade="all, delete-orphan",
     )
 
+    def stock_trackable_items(self) -> list["OrderItem"]:
+        return [
+            item for item in self.items
+            if item.type not in (OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value)
+            and not item.skips_inventory()
+        ]
+
+    def can_manual_complete(self) -> bool:
+        if self.type == OrderType.VOID.value:
+            return False
+        if self.status in (OrderStatus.COMPLETED.value, OrderStatus.VOIDED.value):
+            return False
+        if not self.items:
+            return False
+        return len(self.stock_trackable_items()) == 0
+
     def update_status(self):
         if not self.items:
             self.status = OrderStatus.PENDING.value
             self.completed_at = None
             return
 
-        # Filter out separator items for status calculation
-        non_separator_items = [item for item in self.items if item.type not in (OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value, OrderItemType.MEDIA_CUT.value)]
+        # Filter out separator items and no-stock-deduction lines for status calculation
+        non_separator_items = self.stock_trackable_items()
         
         if not non_separator_items:
+            if self.status == OrderStatus.COMPLETED.value:
+                return
             self.status = OrderStatus.PENDING.value
             self.completed_at = None
             return
@@ -664,6 +679,7 @@ class OrderItem(Base, SerializerMixin):
     quantity_fulfilled: Mapped[int] = mapped_column(default=0)
     note: Mapped[Optional[str]] = mapped_column(nullable=True)
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    no_stock_deduction: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     completion_date: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 
@@ -680,6 +696,11 @@ class OrderItem(Base, SerializerMixin):
     @property
     def remaining(self) -> int:
         return max(self.quantity_ordered - self.quantity_fulfilled, 0)
+
+    def skips_inventory(self) -> bool:
+        if self.order and self.order.type == OrderType.INCOMING.value:
+            return False
+        return bool(self.no_stock_deduction)
 
     @property
     def status(self) -> str:
