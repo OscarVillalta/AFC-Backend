@@ -2,7 +2,7 @@ from flask import Blueprint, g, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 from sqlalchemy import select, func, or_, case, and_
 from sqlalchemy.exc import IntegrityError, DatabaseError
-from database.models import Order, OrderTracker, OrderHistory, OrderTrackerStage, Department, OutgoingOrderType, Customer, Supplier, OrderType, OUTGOING_TYPES, User
+from database.models import Order, OrderTracker, OrderHistory, OrderTrackerStage, Department, OutgoingOrderType, Customer, Supplier, OrderType, OrderStatus, OUTGOING_TYPES, User
 from datetime import datetime, timezone
 from typing import Tuple, Any
 
@@ -511,6 +511,7 @@ def get_packing_slips() -> Tuple[Any, int]:
     limit = request.args.get("limit", default=25, type=int)
     search = request.args.get("search", "").strip()
     tracker_status = request.args.get("tracker_status", "").strip()
+    stock_state = request.args.get("stock_state", "").strip()
     tracker_departments = _parse_list_arg("tracker_department")
     order_types = _parse_list_arg("order_type")
     offset = (page - 1) * limit
@@ -619,6 +620,12 @@ def get_packing_slips() -> Tuple[Any, int]:
         base_query = base_query.where(_completed_cond)
     elif tracker_status == "Backordered":
         base_query = base_query.where(_backordered_cond)
+
+    # Stock state filter (mirrors frontend: Completed → Delivered, else Reserved)
+    if stock_state == "Delivered":
+        base_query = base_query.where(Order.status == OrderStatus.COMPLETED.value)
+    elif stock_state == "Reserved":
+        base_query = base_query.where(Order.status != OrderStatus.COMPLETED.value)
 
     if tracker_departments:
         invalid_departments = [

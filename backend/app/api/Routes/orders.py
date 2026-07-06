@@ -35,7 +35,7 @@ from app.api.error_handling import (
     ExternalServiceError,
     InvalidInputError,
 )
-from app.api.qb_xml_parser import parse_qb_line_items, extract_qb_metadata
+from app.services.qb_order_service import create_order_from_qb_record, validate_qb_doc_type
 from app.services.order_calendar_sync import sync_order_to_calendar, delete_order_calendar_event
 
 order_bp = Blueprint("orders", __name__)
@@ -1112,391 +1112,52 @@ def get_or_create_qb_supplier(db):
 def create_order_from_qb():
     """
     Create a new order from QuickBooks data.
-    
+
     Items in the "blocked_items" table are skipped. Unmatched items (not found in
     air_filters or stock_items) are automatically added to the stock_items table
     and associated with the configured QuickBooks supplier.
-    
+
     Expects JSON body with:
     {
         "reference_number": "8800",
         "qb_doc_type": "sales_order" | "estimate" | "invoice" | "purchase_order",
         "order_type": "installation" | "will_call" | "delivery" | "shipment"  (optional, for non-purchase orders)
     }
-    
-    Returns:
-        JSON with order details, including:
-        - new_products: Array of newly created StockItem products
-        - new_products_created: Count of new products created
-        - created_items: All order items created
-        - skipped_items: Items that were skipped (if any)
     """
     db = g.db
     data = request.get_json() or {}
-    
-    # Validate required fields
+
     reference_number = data.get("reference_number")
     qb_doc_type = data.get("qb_doc_type", "").lower()
     order_type_override = data.get("order_type")
-    
+
     if not reference_number:
         return jsonify({"error": "reference_number is required"}), 400
-    
-    # Validate reference_number format (alphanumeric, hyphens, underscores)
+
     if not isinstance(reference_number, str) or not reference_number.strip():
         return jsonify({"error": "reference_number must be a non-empty string"}), 400
-    
+
     reference_number = reference_number.strip()
-    
-    # Check for duplicate order
-    existing_order = db.execute(
-        select(Order).where(Order.external_order_number == reference_number)
-    ).scalar_one_or_none()
-    
-    if existing_order:
-        raise DuplicateResourceError("Order", "external_order_number", reference_number)
-    
-    # Validate qb_doc_type
-    valid_types = ["sales_order", "salesorder", "estimate", "invoice", "purchase_order", "purchaseorder"]
-    if qb_doc_type not in valid_types:
-        raise CustomValidationError(
-            f"qb_doc_type must be one of: {', '.join(valid_types)}"
-        )
-    
-    # Normalize qb_doc_type (salesorder -> sales_order, purchaseorder -> purchase_order)
-    entity_type = qb_doc_type.replace("salesorder", "sales_order").replace("purchaseorder", "purchase_order")
-    
-    # Query QuickBooks via the QB agent
+
     try:
-        headers = {}
-        if Config.QB_API_KEY:
-            headers["X-API-Key"] = Config.QB_API_KEY
-        
-        response = requests.post(
-            f"{Config.QB_AGENT_URL}/jobs",
-            json={
-                "op": "query",
-                "entity": entity_type,
-                "params": {"refnumber": reference_number}
-            },
-            headers=headers,
-            timeout=Config.QB_REQUEST_TIMEOUT
-        )
-        response.raise_for_status()
-        qb_result = response.json()
-    except requests.exceptions.Timeout:
-        raise ExternalServiceError(
-            "QuickBooks Agent",
-            f"Request timed out after {Config.QB_REQUEST_TIMEOUT} seconds"
-        )
-    except requests.exceptions.ConnectionError:
-        raise ExternalServiceError(
-            "QuickBooks Agent",
-            "Connection refused. Is the QB Agent running?"
-        )
-    except requests.RequestException as e:
-        raise ExternalServiceError("QuickBooks Agent", str(e))
-    
-    # Check if QB query was successful
-    if not qb_result.get("success"):
-        return jsonify({
-            "error": "QuickBooks query failed",
-            "qb_error": qb_result.get("errorMessage"),
-            "qb_error_code": qb_result.get("errorCode")
-        }), 400
-    
-    # Parse the QBXML response
-    qbxml_response = qb_result.get("qbxmlResponse", "")
-    
+        validate_qb_doc_type(qb_doc_type)
+    except CustomValidationError as e:
+        return jsonify({"error": str(e)}), 400
+
     try:
-        line_items = parse_qb_line_items(qbxml_response, entity_type)
-        metadata = extract_qb_metadata(qbxml_response, entity_type)
-    except ValueError as e:
-        return jsonify({
-            "error": "Failed to parse QuickBooks response",
-            "details": str(e)
-        }), 400
-    
-    if not line_items:
-        return jsonify({
-            "error": "No line items found in QuickBooks response"
-        }), 400
-    
-    # Determine order type based on QB document type
-    is_purchase_order = entity_type in ("purchase_order", "purchaseorder")
-    
-    # Find or create supplier/customer based on QB vendor/customer name
-    customer = None
-    supplier = None
-    
-    if is_purchase_order:
-        # Purchase orders are INCOMING: find or create supplier from vendor name
-        vendor_name = metadata.get("vendor_name")
-        if vendor_name:
-            supplier = db.execute(
-                select(Supplier).where(Supplier.name == vendor_name)
-            ).scalar_one_or_none()
-            
-            if not supplier:
-                supplier = Supplier(name=vendor_name)
-                db.add(supplier)
-                db.flush()
-    else:
-        # Sales orders/estimates/invoices are OUTGOING: find or create customer
-        customer_name = metadata.get("customer_name")
-        if customer_name:
-            customer = db.execute(
-                select(Customer).where(Customer.name == customer_name)
-            ).scalar_one_or_none()
-            
-            # Create customer if doesn't exist
-            if not customer:
-                customer = Customer(name=customer_name)
-                db.add(customer)
-                db.flush()
-    
-    # Parse ETA from metadata (set by QB ExpectedDate for orders)
-    eta_value = date.today()
-    eta_str = metadata.get("eta")
-    if eta_str:
-        try:
-            eta_value = datetime.fromisoformat(eta_str).date()
-        except ValueError:
-            pass
-
-    # Parse creation date
-    created_at_value = date.today()
-    created_at_str = metadata.get("created_at")
-    if created_at_str:
-        try:
-            created_at_value = datetime.fromisoformat(created_at_str).date()
-        except ValueError:
-            print("error", flush=True)
-            pass
-    
-    # Determine the final order type
-    if is_purchase_order:
-        final_order_type = OrderType.INCOMING.value
-    else:
-        # Validate the order_type_override if provided
-        outgoing_type_options = {
-            OrderType.INSTALLATION.value,
-            OrderType.WILL_CALL.value,
-            OrderType.DELIVERY.value,
-            OrderType.SHIPMENT.value,
-        }
-        if order_type_override and order_type_override in outgoing_type_options:
-            final_order_type = order_type_override
-        else:
-            final_order_type = OrderType.INSTALLATION.value  # default for non-PO QB orders
-
-    # Create the order
-    print(created_at_value, flush=True)
-    order = Order(
-        type=final_order_type,
-        customer_id=customer.id if customer else None,
-        supplier_id=supplier.id if supplier else None,
-        warehouse_id=g.active_warehouse_id,
-        external_order_number=reference_number,
-        description=metadata.get("memo", f"QB {entity_type.replace('_', ' ').title()} #{reference_number}"),
-        status=OrderStatus.PENDING.value,
-        eta=eta_value,
-        created_at=created_at_value
-    )
-    
-    db.add(order)
-    db.flush()  # Get order.id
-    
-    # Generate AFC order number
-    order.order_number = f"AFC-{order.id:06d}"
-    
-    # Process line items
-    created_items = []
-    new_products = []
-    skipped_items = []
-    position = 0
-    
-    try:
-        for qb_line in line_items:
-            if qb_line.get("is_separator"):
-                description = qb_line.get("description", "")
-                separator_type = OrderItemType.UNIT_SEPARATOR.value
-                if description:
-                    desc_lower = description.lower()
-                    replaced, count = re.subn(r'(?:&#149;?|\x95)', '•', description)
-                    if count:
-                        separator_type = OrderItemType.SECTION_SEPARATOR.value
-                        description = replaced
-                    elif "building" in desc_lower or "bldg" in desc_lower or "•" in description:
-                        separator_type = OrderItemType.SECTION_SEPARATOR.value
-
-                separator = OrderItem(
-                    order_id=order.id,
-                    product_id=None,
-                    type=separator_type,
-                    quantity_ordered=0,
-                    quantity_fulfilled=0,
-                    note=description,
-                    position=position
-                )
-                db.add(separator)
-                db.flush() # Important: Get ID immediately
-                
-                created_items.append({
-                    "id": separator.id,
-                    "order_id": order.id,
-                    "product_id": None,
-                    "type": separator_type,
-                    "part_number": "",
-                    "quantity_ordered": 0,
-                    "quantity_fulfilled": 0,
-                    "quantity_pending": 0,
-                    "status": "pending",
-                    "note": description,
-                    "position": position,
-                    "on_hand": None,
-                    "reserved": None,
-                    "available": None,
-                    "is_media": False,
-                })
-                position += 1
-            else:
-                item_name = qb_line.get("name", "").strip()
-                
-                if not item_name:
-                    skipped_items.append({
-                        "name": "(empty)",
-                        "reason": "Item name is empty or missing"
-                    })
-                    position += 1
-                    continue
-                
-                blocked = db.execute(
-                    select(BlockedItem).where(
-                        func.lower(BlockedItem.name) == item_name.lower()
-                    )
-                ).scalar_one_or_none()
-
-                if blocked:
-                    skipped_items.append({
-                        "name": item_name,
-                        "reason": "Item is blocked"
-                    })
-                    position += 1
-                    continue
-
-                product = find_product_by_name(db, item_name)
-                
-                if not product:
-                    qb_supplier = db.execute(
-                        select(Supplier).where(Supplier.name == Config.QB_SUPPLIER_NAME)
-                    ).scalar_one_or_none()
-                    if not qb_supplier:
-                        qb_supplier = Supplier(name=Config.QB_SUPPLIER_NAME)
-                        db.add(qb_supplier)
-                        db.flush()
-
-                    qb_category = db.execute(
-                        select(StockItemCategory).where(StockItemCategory.name == Config.QB_SUPPLIER_NAME)
-                    ).scalar_one_or_none()
-                    if not qb_category:
-                        qb_category = StockItemCategory(name=Config.QB_SUPPLIER_NAME)
-                        db.add(qb_category)
-                        db.flush()
-
-                    new_stock_item = StockItem(
-                        name=item_name,
-                        supplier_id=qb_supplier.id,
-                        category_id=qb_category.id
-                    )
-                    db.add(new_stock_item)
-                    db.flush()
-
-                    product = Product(
-                        category_id=3, 
-                        reference_id=new_stock_item.id
-                    )
-                    db.add(product)
-                    db.flush()
-
-                    quantity = Quantity(product_id=product.id, warehouse_id=g.active_warehouse_id, on_hand=0, reserved=0, ordered=0, location=0)
-                    db.add(quantity)
-                    db.flush()
-
-                    new_products.append({
-                        "name": item_name,
-                        "stock_item_id": new_stock_item.id,
-                        "product_id": product.id
-                    })
-
-                qty_ordered = qb_line.get("quantity", 0)
-                if qty_ordered < 0:
-                    qty_ordered = 0
-                
-                item_type = OrderItemType.PRODUCT_ITEM.value
-                no_stock_deduction = False if is_purchase_order else bool(product.default_no_stock_deduction)
-                if not is_purchase_order and getattr(product, 'media', None) is not None:
-                    media_default_desc = (product.media.description or "").strip()
-                    qb_desc = (qb_line.get("description") or "").strip()
-                    if qb_desc.lower() != media_default_desc.lower():
-                        no_stock_deduction = True
-
-                order_item = OrderItem(
-                    order_id=order.id,
-                    product_id=product.id,
-                    type=item_type,
-                    quantity_ordered=int(qty_ordered),
-                    quantity_fulfilled=0,
-                    note=qb_line.get("description"),
-                    position=position,
-                    no_stock_deduction=no_stock_deduction,
-                )
-                db.add(order_item)
-                db.flush() # Important: Get ID immediately
-                
-                # Fetch quantities for the hydrated response
-                qty_record = getattr(product, 'quantity', None)
-                on_hand = qty_record.on_hand if qty_record else None
-                reserved = qty_record.reserved if qty_record else None
-                available = qty_record.available if qty_record else None
-                is_media = getattr(product, 'media', None) is not None
-                
-                created_items.append({
-                    "id": order_item.id,
-                    "order_id": order.id,
-                    "product_id": product.id,
-                    "type": item_type,
-                    "part_number": item_name, # Use the directly matched/created item name
-                    "quantity_ordered": int(qty_ordered),
-                    "quantity_fulfilled": 0,
-                    "quantity_pending": 0,
-                    "status": "pending",
-                    "note": qb_line.get("description"),
-                    "position": position,
-                    "on_hand": on_hand,
-                    "reserved": reserved,
-                    "available": available,
-                    "is_media": is_media,
-                    "no_stock_deduction": order_item.no_stock_deduction,
-                })
-                position += 1
-
-        if not is_purchase_order:
-            tracker = OrderTracker(
-                order_id=order.id,
-                warehouse_id=g.active_warehouse_id,
-                current_department=Department.SALES.value,
-                step_index=0,
-                updated_at=datetime.now(timezone.utc),
-            )
-            db.add(tracker)
-
-        safe_commit(db, "creating order from QuickBooks")
-        _best_effort_sync_order_calendar(db, order)
-        
-    except (CustomValidationError, DuplicateResourceError, ExternalServiceError) as e:
-        db.rollback()
+        result = create_order_from_qb_record(
+            db,
+            reference_number=reference_number,
+            qb_doc_type=qb_doc_type,
+            order_type=order_type_override,
+            warehouse_id=g.active_warehouse_id,
+        )
+    except DuplicateResourceError as e:
         return jsonify(e.to_dict()), e.status_code
+    except ExternalServiceError as e:
+        return jsonify(e.to_dict()), e.status_code
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except IntegrityError as e:
         db.rollback()
         return handle_database_error(e, "creating order from QuickBooks")
@@ -1508,82 +1169,33 @@ def create_order_from_qb():
         return handle_external_service_error(e, "QuickBooks Agent")
     except Exception as e:
         db.rollback()
-        # Log the full error for debugging but return generic message
         return jsonify({
             "error": "Failed to create order from QuickBooks",
-            "details": str(e)
+            "details": str(e),
         }), 500
-    
+
+    order = result.order
+    _best_effort_sync_order_calendar(db, order)
+
     return jsonify({
         "message": "Order created successfully from QuickBooks",
         "order_id": order.id,
         "order_number": order.order_number,
         "external_order_number": order.external_order_number,
-        "customer_name": customer.name if customer else None,
-        "vendor_name": supplier.name if supplier else None,
+        "customer_name": result.customer.name if result.customer else None,
+        "vendor_name": result.supplier.name if result.supplier else None,
         "eta": order.eta.strftime("%Y-%m-%d") if order.eta else None,
-        "items_created": len(created_items),
-        "new_products_created": len(new_products),
-        "items_skipped": len(skipped_items),
-        "created_items": created_items,
-        "new_products": new_products,
-        "skipped_items": skipped_items,
-        "metadata": metadata
+        "items_created": len(result.created_items),
+        "new_products_created": len(result.new_products),
+        "items_skipped": len(result.skipped_items),
+        "created_items": result.created_items,
+        "new_products": result.new_products,
+        "skipped_items": result.skipped_items,
+        "metadata": result.metadata,
     }), 201
 
 
 def find_product_by_name(db, item_name: str):
-    """
-    Find a product or child product in the database by matching the QB item name.
-    Tries to match against air filters, media items, and stock items.
-    """
-    if not item_name:
-        return None
-    
-    # 1. Try exact matches for air filters
-    air_filter = db.execute(
-        select(AirFilter).where(
-            or_(
-                AirFilter.part_number == item_name,
-                func.lower(AirFilter.part_number) == item_name.lower()
-            )
-        )
-    ).first()
-    
-    if air_filter:
-        if air_filter[0].product:
-            return air_filter[0].product
-        elif getattr(air_filter[0], 'child_product', None):
-            return air_filter[0].child_product.parent_product
-
-    # 2. Try Media items (Fix for Issue #1)
-    media_item = db.execute(
-        select(Media).where(
-            or_(
-                Media.part_number == item_name,
-                func.lower(Media.part_number) == item_name.lower()
-            )
-        )
-    ).first()
-    
-    if media_item:
-        if getattr(media_item[0], 'product', None):
-            return media_item[0].product
-    
-    # 3. Try stock items
-    stock_item = db.execute(
-        select(StockItem).where(
-            or_(
-                StockItem.name == item_name,
-                func.lower(StockItem.name) == item_name.lower()
-            )
-        )
-    ).first()
-    
-    if stock_item:
-        if stock_item[0].product:
-            return stock_item[0].product
-        elif getattr(stock_item[0], 'child_product', None):
-            return stock_item[0].child_product.parent_product
-    
-    return None
+    """Re-export for backward compatibility."""
+    from app.services.qb_order_service import find_product_by_name as _find
+    return _find(db, item_name)
