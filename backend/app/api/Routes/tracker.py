@@ -650,7 +650,7 @@ def get_packing_slips() -> Tuple[Any, int]:
     ).scalar()
 
     orders = db.execute(
-        base_query.order_by(Order.created_at.desc()).limit(limit).offset(offset)
+        base_query.order_by(Order.order_number.desc()).limit(limit).offset(offset)
     ).scalars().all()
 
     # Per-status counts for the tab badges (based on search/filters, ignoring tracker_status)
