@@ -21,13 +21,13 @@ DEPARTMENT_PERMISSION_MAP = {
     Department.SALES.value: "tracker:update_sales",
     Department.SERVICE.value: "tracker:update_service",
     Department.LOGISTICS.value: "tracker:update_logistics",
-    Department.DELIVERY_DEPT.value: "tracker:update_delivery",
+    Department.WAREHOUSE.value: "tracker:update_delivery",
 }
 
 _TRACKER_DEPARTMENT_FILTER_VALUES = {
     Department.SALES.value,
     Department.LOGISTICS.value,
-    Department.DELIVERY_DEPT.value,
+    Department.WAREHOUSE.value,
     Department.SERVICE.value,
     "COMPLETED",
 }
@@ -119,7 +119,7 @@ def _department_filter_cond(department: str, completed_stages_subq):
 _INSTALLATION_STEPS = [
     Department.SALES.value,
     Department.LOGISTICS.value,
-    Department.DELIVERY_DEPT.value,
+    Department.WAREHOUSE.value,
     Department.SERVICE.value,
     Department.SALES.value,
     Department.LOGISTICS.value,
@@ -127,12 +127,12 @@ _INSTALLATION_STEPS = [
 _WILL_CALL_STEPS = [
     Department.SALES.value,
     Department.LOGISTICS.value,
-    Department.DELIVERY_DEPT.value,
+    Department.WAREHOUSE.value,
     Department.LOGISTICS.value,
 ]
 _PURCHASE_ORDER_STEPS = [
     Department.LOGISTICS.value,
-    Department.DELIVERY_DEPT.value,
+    Department.WAREHOUSE.value,
     Department.LOGISTICS.value,
 ]
 

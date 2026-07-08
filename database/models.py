@@ -89,7 +89,7 @@ class OutgoingOrderType(str, Enum):
 class Department(str, Enum):
     SALES = "SALES"
     LOGISTICS = "LOGISTICS"
-    DELIVERY_DEPT = "DELIVERY_DEPT"
+    WAREHOUSE = "WAREHOUSE"
     SERVICE = "SERVICE"
     ACCOUNTING = "ACCOUNTING"
 

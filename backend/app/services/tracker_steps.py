@@ -7,7 +7,7 @@ from database.models import Department, OrderType
 INSTALLATION_STEPS = [
     Department.SALES.value,
     Department.LOGISTICS.value,
-    Department.DELIVERY_DEPT.value,
+    Department.WAREHOUSE.value,
     Department.SERVICE.value,
     Department.SALES.value,
     Department.LOGISTICS.value,
@@ -16,13 +16,13 @@ INSTALLATION_STEPS = [
 WILL_CALL_STEPS = [
     Department.SALES.value,
     Department.LOGISTICS.value,
-    Department.DELIVERY_DEPT.value,
+    Department.WAREHOUSE.value,
     Department.LOGISTICS.value,
 ]
 
 PURCHASE_ORDER_STEPS = [
     Department.LOGISTICS.value,
-    Department.DELIVERY_DEPT.value,
+    Department.WAREHOUSE.value,
     Department.LOGISTICS.value,
 ]
 
