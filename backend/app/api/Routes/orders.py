@@ -231,6 +231,8 @@ def get_order_items(order_id):
 
     # Batch fetch pending transaction quantities per order item (avoid N+1 queries)
     pending_by_item: dict = {}
+    has_blocking_by_item: set = set()
+    has_any_txn_by_item: set = set()
     if sorted_items:
         item_ids = [item.id for item in sorted_items]
         pending_rows = db.execute(
@@ -244,6 +246,43 @@ def get_order_items(order_id):
         ).all()
         pending_by_item = {row.order_item_id: row.pending_qty for row in pending_rows}
 
+        # Items with any pending or committed transaction (blocks no-stock-deduction toggle)
+        blocking_rows = db.execute(
+            select(Transaction.order_item_id)
+            .where(Transaction.order_item_id.in_(item_ids))
+            .where(Transaction.state.in_(["pending", "committed"]))
+            .distinct()
+        ).scalars().all()
+        has_blocking_by_item = set(blocking_rows)
+
+        # Items with any transaction at all (blocks deletion)
+        any_txn_rows = db.execute(
+            select(Transaction.order_item_id)
+            .where(Transaction.order_item_id.in_(item_ids))
+            .distinct()
+        ).scalars().all()
+        has_any_txn_by_item = set(any_txn_rows)
+
+    # Batch fetch per-warehouse quantities for all products (avoid N+1 queries)
+    product_ids = [item.product_id for item in sorted_items if item.product_id]
+    quantities_by_product: dict = {}
+    if product_ids:
+        from sqlalchemy.orm import joinedload as _joinedload
+        qty_rows = db.execute(
+            select(Quantity)
+            .options(_joinedload(Quantity.warehouse))
+            .where(Quantity.product_id.in_(product_ids))
+        ).scalars().all()
+        for qty in qty_rows:
+            wh_name = qty.warehouse.name
+            if qty.product_id not in quantities_by_product:
+                quantities_by_product[qty.product_id] = {}
+            quantities_by_product[qty.product_id][wh_name] = {
+                "on_hand": qty.on_hand,
+                "reserved": qty.reserved,
+                "available": max(qty.on_hand - qty.reserved, 0),
+            }
+
     items = []
     for item in sorted_items:
         if item.type in ("Unit_Separator", "Section_Separator"):
@@ -254,6 +293,8 @@ def get_order_items(order_id):
             available = None
             quantity_pending = 0
             is_media = False
+            on_hand_by_warehouse = None
+            available_by_warehouse = None
         else:
             product = item.product
 
@@ -268,12 +309,30 @@ def get_order_items(order_id):
             else:
                 part_number = "Unknown product"
 
-            qty_record = product.quantity if product else None
-            on_hand = qty_record.on_hand if qty_record else None
-            reserved = qty_record.reserved if qty_record else None
-            available = qty_record.available if qty_record else None
+            # Use the order's warehouse for the primary on_hand/reserved/available fields
+            order_wh_qty = None
+            if product and item.product_id in quantities_by_product:
+                wh_data = quantities_by_product[item.product_id]
+                # Find quantity record for the order's own warehouse
+                order_wh_name = order.warehouse.name if order.warehouse else None
+                if order_wh_name and order_wh_name in wh_data:
+                    order_wh_qty = wh_data[order_wh_name]
+                elif wh_data:
+                    order_wh_qty = next(iter(wh_data.values()))
+
+            on_hand = order_wh_qty["on_hand"] if order_wh_qty else None
+            reserved = order_wh_qty["reserved"] if order_wh_qty else None
+            available = order_wh_qty["available"] if order_wh_qty else None
             quantity_pending = pending_by_item.get(item.id, 0)
             is_media = product is not None and product.media is not None
+
+            if item.product_id and item.product_id in quantities_by_product:
+                wh_data = quantities_by_product[item.product_id]
+                on_hand_by_warehouse = {name: data["on_hand"] for name, data in wh_data.items()}
+                available_by_warehouse = {name: data["available"] for name, data in wh_data.items()}
+            else:
+                on_hand_by_warehouse = None
+                available_by_warehouse = None
 
         items.append({
             "id": item.id,
@@ -296,6 +355,10 @@ def get_order_items(order_id):
                 if order.type == OrderType.INCOMING.value
                 else item.no_stock_deduction
             ),
+            "on_hand_by_warehouse": on_hand_by_warehouse,
+            "available_by_warehouse": available_by_warehouse,
+            "has_blocking_transactions": item.id in has_blocking_by_item,
+            "has_any_transactions": item.id in has_any_txn_by_item,
         })
 
     return jsonify(items), 200
