@@ -36,6 +36,7 @@ from database.models import (
     StockItem,
     StockItemCategory,
     Supplier,
+    Warehouse,
 )
 
 VALID_QB_DOC_TYPES = [
@@ -381,15 +382,18 @@ def create_order_from_qb_record(
             db.add(product)
             db.flush()
 
-            quantity = Quantity(
-                product_id=product.id,
-                warehouse_id=warehouse_id,
-                on_hand=0,
-                reserved=0,
-                ordered=0,
-                location=0,
-            )
-            db.add(quantity)
+            warehouses = db.execute(select(Warehouse)).scalars().all()
+            for wh in warehouses:
+                db.add(
+                    Quantity(
+                        product_id=product.id,
+                        warehouse_id=wh.id,
+                        on_hand=0,
+                        reserved=0,
+                        ordered=0,
+                        location=0,
+                    )
+                )
             db.flush()
 
             new_products.append({
