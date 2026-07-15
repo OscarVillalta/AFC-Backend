@@ -37,6 +37,7 @@ from app.api.error_handling import (
 )
 from app.services.qb_order_service import create_order_from_qb_record, validate_qb_doc_type
 from app.services.order_calendar_sync import sync_order_to_calendar, delete_order_calendar_event
+from app.services.tracker_import_service import apply_completed_order_state
 
 order_bp = Blueprint("orders", __name__)
 order_schema = OrderSchema()
@@ -545,6 +546,75 @@ def complete_order_manual(order_id: int) -> Tuple[Any, int]:
     except DatabaseError as e:
         db.rollback()
         return handle_database_error(e, "manually completing order")
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": "Unexpected error", "details": str(e)}), 500
+
+
+@order_bp.route("/orders/<int:order_id>/force-no-stock", methods=["POST"])
+@jwt_required()
+@permission_required("order:forceNoStock")
+def force_order_no_stock(order_id: int) -> Tuple[Any, int]:
+    """Set all line items to no-stock-deduction and mark the order completed."""
+    db = g.db
+
+    try:
+        order_id = validate_positive_integer(order_id, "order_id")
+        order = db.execute(
+            select(Order).options(joinedload(Order.items)).where(Order.id == order_id)
+        ).unique().scalar_one_or_none()
+        if not order:
+            raise ResourceNotFoundError("Order", order_id)
+
+        if order.type == OrderType.VOID.value:
+            raise InvalidInputError("Cannot force no stock on void orders.")
+        if order.status == OrderStatus.COMPLETED.value:
+            raise InvalidInputError("Order is already completed.")
+        if order.type == OrderType.INCOMING.value:
+            raise InvalidInputError("No stock deduction is not available on incoming orders.")
+
+        committed_txns = db.scalars(
+            select(Transaction)
+            .where(Transaction.order_id == order.id)
+            .where(Transaction.state == TransactionState.COMMITTED.value)
+            .where(Transaction.reason != TransactionReason.ROLLBACK.value)
+        ).all()
+        if committed_txns:
+            raise InvalidInputError(
+                "Cannot force no stock while committed inventory transactions exist. "
+                "Roll back stock movements first."
+            )
+
+        pending_txns = db.scalars(
+            select(Transaction)
+            .where(Transaction.order_id == order.id)
+            .where(Transaction.state == TransactionState.PENDING.value)
+        ).all()
+        for txn in pending_txns:
+            txn.cancel()
+
+        apply_completed_order_state(db, order)
+
+        safe_commit(db, "forcing order no stock completion")
+
+        return jsonify({
+            "message": "Order line items set to no stock deduction and marked completed.",
+            "status": order.status,
+            "completed_at": (
+                order.completed_at.strftime(Config.DATE_FORMAT)
+                if order.completed_at else None
+            ),
+            "can_manual_complete": False,
+        }), 200
+
+    except (ResourceNotFoundError, InvalidInputError, CustomValidationError) as e:
+        return jsonify(e.to_dict()), e.status_code
+    except IntegrityError as e:
+        db.rollback()
+        return handle_database_error(e, "forcing order no stock completion")
+    except DatabaseError as e:
+        db.rollback()
+        return handle_database_error(e, "forcing order no stock completion")
     except Exception as e:
         db.rollback()
         return jsonify({"error": "Unexpected error", "details": str(e)}), 500

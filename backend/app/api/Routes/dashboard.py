@@ -189,11 +189,9 @@ def get_net_kpis():
             return 100.0 if current > 0 else 0.0
         return round(((current - previous) / abs(previous)) * 100, 1)
     
-    # Net Delivered: sum of quantity_delta for fulfillment and sale reasons in the last N days
-    # Note: TransactionReason enum uses 'shipment' not 'fulfillment', and there's no 'sale' in the enum
-    # Based on the enum, we'll use 'shipment' for outgoing deliveries
+    # Net Delivered: outgoing shipment quantity (stored as negative deltas; report as positive)
     net_delivered = db.scalar(
-        select(func.coalesce(func.sum(Transaction.quantity_delta), 0))
+        select(func.coalesce(func.sum(-Transaction.quantity_delta), 0))
         .where(
             Transaction.warehouse_id == wh,
             Transaction.state == "committed",
@@ -203,7 +201,7 @@ def get_net_kpis():
     ) or 0
     
     net_delivered_prev = db.scalar(
-        select(func.coalesce(func.sum(Transaction.quantity_delta), 0))
+        select(func.coalesce(func.sum(-Transaction.quantity_delta), 0))
         .where(
             Transaction.warehouse_id == wh,
             Transaction.state == "committed",

@@ -13,6 +13,7 @@ ALL_PERMISSIONS = [
     "users:view", "users:create", "users:edit", "users:delete",
     "roles:manage",
     "orders:view", "orders:create", "orders:edit", "orders:delete", "orders:mark_invoiced", "orders:mark_paid",
+    "order:forceNoStock",
     "qb:pull_orders", "qb:sync_catalog",
     "inventory:view", "inventory:allocate", "inventory:fulfill", "inventory:manual_adjust",
     "transactions:rollback",

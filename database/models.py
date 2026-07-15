@@ -622,13 +622,28 @@ class Order(Base, SerializerMixin):
         return len(self.stock_trackable_items()) == 0
 
     def update_status(self):
-        if not self.items:
+        db = object_session(self)
+
+        # Always read fresh line items so parallel bulk commits don't use stale snapshots.
+        if db is not None:
+            rows = db.execute(
+                sa_select(OrderItem).where(OrderItem.order_id == self.id)
+            ).scalars().all()
+        else:
+            rows = list(self.items)
+
+        if not rows:
             self.status = OrderStatus.PENDING.value
             self.completed_at = None
             return
 
-        # Filter out separator items and no-stock-deduction lines for status calculation
-        non_separator_items = self.stock_trackable_items()
+        non_separator_items = [
+            item for item in rows
+            if item.type not in (OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value)
+            and not (
+                self.type != OrderType.INCOMING.value and item.no_stock_deduction
+            )
+        ]
         
         if not non_separator_items:
             if self.status == OrderStatus.COMPLETED.value:

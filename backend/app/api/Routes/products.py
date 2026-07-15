@@ -8,12 +8,79 @@ from database.models import (
     Quantity, Supplier, ChildProduct,
 )
 from app.api.Schemas.product_schema import ProductSchema
+from app.api.Schemas.product_migration_schema import ProductMigrationSchema
 from app.api.tokens import permission_required
-from app.api.error_handling import safe_commit
+from app.api.error_handling import (
+    safe_commit,
+    ResourceNotFoundError,
+    InvalidInputError,
+    DuplicateResourceError,
+    handle_database_error,
+)
+from app.services.product_migration_service import migrate_product_catalog_type
+from marshmallow import ValidationError
+from sqlalchemy.exc import IntegrityError, DatabaseError
 
 product_bp = Blueprint("products", __name__)
 product_schema = ProductSchema()
 product_list_schema = ProductSchema(many=True)
+product_migration_schema = ProductMigrationSchema()
+
+
+def _serialize_product_detail(db, product: Product, warehouse_id: int) -> dict:
+    category = product.category.name if product.category else "Unknown"
+    quantity = {}
+    qty = next((q for q in product.quantities if q.warehouse_id == warehouse_id), None)
+    if qty:
+        quantity = qty.to_dict()
+        quantity["available"] = qty.available
+        quantity["backordered"] = qty.backordered
+
+    if product.air_filter:
+        details = product.air_filter.to_dict()
+        details["supplier_name"] = product.air_filter.supplier.name if product.air_filter.supplier else None
+    elif product.stock_item:
+        details = product.stock_item.to_dict()
+        details["supplier_name"] = product.stock_item.supplier.name if product.stock_item.supplier else None
+    elif product.media:
+        details = product.media.to_dict()
+        details["supplier_name"] = product.media.supplier.name if product.media.supplier else None
+    else:
+        details = {}
+
+    child_products_data = []
+    for child in product.child_products:
+        if not child.is_active:
+            continue
+        child_category = child.category.name if child.category else "Unknown"
+        if child.air_filter:
+            child_details = child.air_filter.to_dict()
+            child_details["supplier_name"] = child.air_filter.supplier.name if child.air_filter.supplier else None
+        elif child.stock_item:
+            child_details = child.stock_item.to_dict()
+            child_details["supplier_name"] = child.stock_item.supplier.name if child.stock_item.supplier else None
+        elif child.media:
+            child_details = child.media.to_dict()
+            child_details["supplier_name"] = child.media.supplier.name if child.media.supplier else None
+        else:
+            child_details = {}
+
+        child_products_data.append({
+            "id": child.id,
+            "category": child_category,
+            "reference_id": child.reference_id,
+            "details": child_details,
+        })
+
+    return {
+        "id": product.id,
+        "category": category,
+        "reference_id": product.reference_id,
+        "default_no_stock_deduction": product.default_no_stock_deduction,
+        "details": details,
+        "quantity": quantity,
+        "child_products": child_products_data,
+    }
 
 # =====================================================
 # 🔹 GET all products (joined data: Air + Misc + Quantity)
@@ -170,6 +237,60 @@ def patch_product(id):
         "id": product.id,
         "default_no_stock_deduction": product.default_no_stock_deduction,
     }), 200
+
+
+@product_bp.route("/products/<int:id>/migrate", methods=["POST"])
+@permission_required("catalog:edit")
+def migrate_product(id: int):
+    db = g.db
+    warehouse_id = g.active_warehouse_id
+
+    try:
+        data = product_migration_schema.load(request.get_json() or {})
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), 400
+
+    try:
+        product = migrate_product_catalog_type(
+            db,
+            id,
+            target_type=data["target_type"],
+            target_category_id=data["target_category_id"],
+            overrides=data.get("overrides"),
+            child_overrides=data.get("child_overrides"),
+        )
+        error = safe_commit(db, "migrating product catalog type")
+        if error:
+            return handle_database_error(error)
+
+        product = db.execute(
+            select(Product)
+            .where(Product.id == product.id)
+            .options(
+                selectinload(Product.category),
+                selectinload(Product.quantities),
+                selectinload(Product.air_filter).selectinload(AirFilter.supplier),
+                selectinload(Product.stock_item).selectinload(StockItem.supplier),
+                selectinload(Product.media).selectinload(Media.supplier),
+                selectinload(Product.child_products).selectinload(ChildProduct.air_filter).selectinload(AirFilter.supplier),
+                selectinload(Product.child_products).selectinload(ChildProduct.stock_item).selectinload(StockItem.supplier),
+                selectinload(Product.child_products).selectinload(ChildProduct.media).selectinload(Media.supplier),
+            )
+        ).unique().scalar_one()
+
+        return jsonify({
+            "message": "Product migrated successfully.",
+            "product": _serialize_product_detail(db, product, warehouse_id),
+        }), 200
+    except (ResourceNotFoundError, InvalidInputError, DuplicateResourceError) as e:
+        db.rollback()
+        return jsonify(e.to_dict()), e.status_code
+    except IntegrityError as e:
+        db.rollback()
+        return handle_database_error(e, "migrating product catalog type")
+    except DatabaseError as e:
+        db.rollback()
+        return handle_database_error(e, "migrating product catalog type")
 
 
 @product_bp.route("/products/<int:id>/archive", methods=["PATCH"])
