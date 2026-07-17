@@ -9,6 +9,7 @@ from database.models import (
 )
 from app.api.Schemas.product_schema import ProductSchema
 from app.api.Schemas.product_migration_schema import ProductMigrationSchema
+from app.api.Schemas.product_absorption_schema import ProductAbsorptionSchema
 from app.api.tokens import permission_required
 from app.api.error_handling import (
     safe_commit,
@@ -18,6 +19,7 @@ from app.api.error_handling import (
     handle_database_error,
 )
 from app.services.product_migration_service import migrate_product_catalog_type
+from app.services.product_absorption_service import absorb_product_into_parent
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError, DatabaseError
 
@@ -25,6 +27,7 @@ product_bp = Blueprint("products", __name__)
 product_schema = ProductSchema()
 product_list_schema = ProductSchema(many=True)
 product_migration_schema = ProductMigrationSchema()
+product_absorption_schema = ProductAbsorptionSchema()
 
 
 def _serialize_product_detail(db, product: Product, warehouse_id: int) -> dict:
@@ -291,6 +294,74 @@ def migrate_product(id: int):
     except DatabaseError as e:
         db.rollback()
         return handle_database_error(e, "migrating product catalog type")
+
+
+@product_bp.route("/products/<int:id>/absorb", methods=["POST"])
+@permission_required("catalog:edit")
+def absorb_product(id: int):
+    db = g.db
+    warehouse_id = g.active_warehouse_id
+
+    try:
+        data = product_absorption_schema.load(request.get_json() or {})
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), 400
+
+    try:
+        result = absorb_product_into_parent(
+            db,
+            source_product_id=id,
+            parent_product_id=data["parent_product_id"],
+        )
+        error = safe_commit(db, "absorbing product into parent")
+        if error:
+            return handle_database_error(error)
+
+        parent = db.execute(
+            select(Product)
+            .where(Product.id == result.parent_product_id)
+            .options(
+                selectinload(Product.category),
+                selectinload(Product.quantities),
+                selectinload(Product.air_filter).selectinload(AirFilter.supplier),
+                selectinload(Product.stock_item).selectinload(StockItem.supplier),
+                selectinload(Product.media).selectinload(Media.supplier),
+                selectinload(Product.child_products).selectinload(ChildProduct.air_filter).selectinload(AirFilter.supplier),
+                selectinload(Product.child_products).selectinload(ChildProduct.stock_item).selectinload(StockItem.supplier),
+                selectinload(Product.child_products).selectinload(ChildProduct.media).selectinload(Media.supplier),
+            )
+        ).unique().scalar_one()
+
+        return jsonify({
+            "message": "Product absorbed into parent successfully.",
+            "product": _serialize_product_detail(db, parent, warehouse_id),
+            "absorption": {
+                "child_product_id": result.child_product_id,
+                "parent_product_id": result.parent_product_id,
+                "archived_product_id": result.archived_product_id,
+                "transactions_repointed": result.transactions_repointed,
+                "order_items_repointed": result.order_items_repointed,
+                "children_reparented": result.children_reparented,
+                "quantities_merged": [
+                    {
+                        "warehouse_id": m.warehouse_id,
+                        "on_hand": m.on_hand,
+                        "reserved": m.reserved,
+                        "ordered": m.ordered,
+                    }
+                    for m in result.quantities_merged
+                ],
+            },
+        }), 200
+    except (ResourceNotFoundError, InvalidInputError, DuplicateResourceError) as e:
+        db.rollback()
+        return jsonify(e.to_dict()), e.status_code
+    except IntegrityError as e:
+        db.rollback()
+        return handle_database_error(e, "absorbing product into parent")
+    except DatabaseError as e:
+        db.rollback()
+        return handle_database_error(e, "absorbing product into parent")
 
 
 @product_bp.route("/products/<int:id>/archive", methods=["PATCH"])

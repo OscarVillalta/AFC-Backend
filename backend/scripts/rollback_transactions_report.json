@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-07-16T18:28:08.417824+00:00",
+  "from_id": 1949,
+  "warehouse_id": 1,
+  "note": "Digital Count import",
+  "reason": "adjustment",
+  "dry_run": true,
+  "total_matched": 0,
+  "counts": {
+    "rolled_back": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "dry_run": 0,
+    "failed": 0
+  },
+  "results": []
+}

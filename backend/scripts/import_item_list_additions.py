@@ -8,10 +8,12 @@ warehouse 1.
 
 Column mapping (sheet Additions):
   Item              -> part_number
-  Description       -> description (+ dimensions/MERV parsed from text)
+  Description       -> description (stored as-is; height/width/depth and MERV parsed from text)
   Type              -> air_filter category name (e.g. Pleated)
   Quantity On Hand  -> initial inventory transaction amount
   Preferred Vendor  -> supplier name
+
+Descriptions with two dimensions (e.g. "24 1/2 x 35 1/2 2-Ply Poly Panel") use depth=0.
 
 Usage:
   python scripts/import_item_list_additions.py --dry-run
@@ -250,6 +252,7 @@ def process_row(
         "product_id": product.id,
         "air_filter_id": air_filter.id,
         "transaction_id": transaction_id,
+        "description": row.description,
         "quantity_on_hand": row.quantity_on_hand,
         "warehouse_id": warehouse_id,
         "height": row.height,

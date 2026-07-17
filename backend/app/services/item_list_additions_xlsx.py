@@ -33,7 +33,7 @@ class ItemListAdditionRow:
     def should_skip(self) -> str | None:
         if not self.item:
             return "missing item"
-        if self.height <= 0 or self.width <= 0 or self.depth <= 0:
+        if self.height <= 0 or self.width <= 0:
             return "could not parse dimensions from description"
         return None
 
@@ -73,19 +73,40 @@ def parse_dimensions(description: str | None) -> tuple[int, int, int] | None:
     if not description:
         return None
 
-    match = re.match(
-        r"^([\d./\s]+?)\s*x\s*([\d./\s]+?)\s*x\s*([\d./\s]+)",
-        str(description).strip(),
+    text = str(description).strip()
+    dim_token = r"\d+(?:\s+\d+/\d+|\.\d+|/\d+)?"
+    dim_end = r"(?=\s|$|[^0-9./\s])"
+    three_dim = re.match(
+        rf"^({dim_token})\s*x\s*({dim_token})\s*x\s*({dim_token})",
+        text,
         re.IGNORECASE,
     )
-    if not match:
-        return None
+    if three_dim:
+        return (
+            _parse_dim_token(three_dim.group(1)),
+            _parse_dim_token(three_dim.group(2)),
+            _parse_dim_token(three_dim.group(3)),
+        )
 
-    return (
-        _parse_dim_token(match.group(1)),
-        _parse_dim_token(match.group(2)),
-        _parse_dim_token(match.group(3)),
+    two_dim = re.match(
+        rf"^({dim_token})\s*x\s*({dim_token}(?:\s+\d+/\d+)?){dim_end}",
+        text,
+        re.IGNORECASE,
     )
+    if not two_dim:
+        two_dim = re.search(
+            rf"({dim_token})\s*x\s*({dim_token}(?:\s+\d+/\d+)?){dim_end}",
+            text,
+            re.IGNORECASE,
+        )
+    if two_dim:
+        return (
+            _parse_dim_token(two_dim.group(1)),
+            _parse_dim_token(two_dim.group(2)),
+            0,
+        )
+
+    return None
 
 
 def parse_merv_rating(description: str | None, *, default: int = 10) -> int:
