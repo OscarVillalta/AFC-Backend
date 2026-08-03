@@ -605,11 +605,34 @@ class Order(Base, SerializerMixin):
         cascade="all, delete-orphan",
     )
 
+    @staticmethod
+    def _is_line_fulfilled(item: "OrderItem") -> bool:
+        return item.quantity_ordered > 0 and item.quantity_fulfilled >= item.quantity_ordered
+
     def stock_trackable_items(self) -> list["OrderItem"]:
         return [
             item for item in self.items
             if item.type not in (OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value)
             and not item.skips_inventory()
+        ]
+
+    def skip_inventory_items(self) -> list["OrderItem"]:
+        return [
+            item for item in self.items
+            if item.type not in (OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value)
+            and item.skips_inventory()
+        ]
+
+    def pending_stock_trackable_items(self) -> list["OrderItem"]:
+        return [
+            item for item in self.stock_trackable_items()
+            if not Order._is_line_fulfilled(item)
+        ]
+
+    def unfulfilled_skip_inventory_items(self) -> list["OrderItem"]:
+        return [
+            item for item in self.skip_inventory_items()
+            if not Order._is_line_fulfilled(item)
         ]
 
     def can_manual_complete(self) -> bool:
@@ -619,7 +642,12 @@ class Order(Base, SerializerMixin):
             return False
         if not self.items:
             return False
-        return len(self.stock_trackable_items()) == 0
+        if self.pending_stock_trackable_items():
+            return False
+        trackable = self.stock_trackable_items()
+        if not trackable:
+            return True
+        return len(self.unfulfilled_skip_inventory_items()) > 0
 
     def update_status(self):
         db = object_session(self)
@@ -637,35 +665,38 @@ class Order(Base, SerializerMixin):
             self.completed_at = None
             return
 
-        non_separator_items = [
+        separator_types = (OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value)
+        is_incoming = self.type == OrderType.INCOMING.value
+
+        stock_items = [
             item for item in rows
-            if item.type not in (OrderItemType.UNIT_SEPARATOR.value, OrderItemType.SECTION_SEPARATOR.value)
-            and not (
-                self.type != OrderType.INCOMING.value and item.no_stock_deduction
-            )
+            if item.type not in separator_types
+            and not (not is_incoming and item.no_stock_deduction)
         ]
-        
-        if not non_separator_items:
+
+        skip_items = [
+            item for item in rows
+            if item.type not in separator_types
+            and not is_incoming and item.no_stock_deduction
+        ]
+
+        if not stock_items:
             if self.status == OrderStatus.COMPLETED.value:
                 return
             self.status = OrderStatus.PENDING.value
             self.completed_at = None
             return
 
-        total = len(non_separator_items)
-        fully_complete = 0
-        any_progress = False
+        stock_all_done = all(Order._is_line_fulfilled(item) for item in stock_items)
+        skip_all_done = all(Order._is_line_fulfilled(item) for item in skip_items) if skip_items else True
 
-        for item in non_separator_items:
-            if item.quantity_fulfilled >= item.quantity_ordered and item.quantity_ordered > 0:
-                fully_complete += 1
-            if item.quantity_fulfilled > 0:
-                any_progress = True
-
-        if fully_complete == total:
+        if stock_all_done and skip_all_done:
             self.status = OrderStatus.COMPLETED.value
             self.completed_at = self.completed_at or datetime.now(timezone.utc)
-        elif any_progress:
+        elif stock_all_done and not skip_all_done:
+            self.status = OrderStatus.PARTIALLY_FULFILLED.value
+            self.completed_at = None
+        elif any(item.quantity_fulfilled > 0 for item in stock_items):
             self.status = OrderStatus.PARTIALLY_FULFILLED.value
             self.completed_at = None
         else:
