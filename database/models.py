@@ -815,6 +815,14 @@ class Transaction(Base, SerializerMixin):
             )
         ).scalar_one_or_none()
 
+    @staticmethod
+    def _release_ordered(qty_record: "Quantity", amount: int) -> None:
+        qty_record.ordered = max(0, qty_record.ordered - amount)
+
+    @staticmethod
+    def _release_reserved(qty_record: "Quantity", amount: int) -> None:
+        qty_record.reserved = max(0, qty_record.reserved - amount)
+
     def commit(self, db=None):
         if self.state != TransactionState.PENDING.value:
             return
@@ -826,11 +834,11 @@ class Transaction(Base, SerializerMixin):
         # Apply physical change
         qty_record.on_hand += self.quantity_delta
 
-        # Remove pending planning effect
+        # Remove pending planning effect (never drive reserved/ordered below zero)
         if self.quantity_delta > 0:
-            qty_record.ordered = Quantity.ordered - abs(self.quantity_delta)
+            Transaction._release_ordered(qty_record, abs(self.quantity_delta))
         else:
-            qty_record.reserved = Quantity.reserved - abs(self.quantity_delta)
+            Transaction._release_reserved(qty_record, abs(self.quantity_delta))
 
         self.state = TransactionState.COMMITTED.value
         self.last_updated_at = datetime.now(timezone.utc)
@@ -920,9 +928,9 @@ class Transaction(Base, SerializerMixin):
             qty_record = self._get_quantity_record()
             if qty_record:
                 if self.quantity_delta > 0:
-                    qty_record.ordered = Quantity.ordered - abs(self.quantity_delta)
+                    Transaction._release_ordered(qty_record, abs(self.quantity_delta))
                 else:
-                    qty_record.reserved = Quantity.reserved - abs(self.quantity_delta)
+                    Transaction._release_reserved(qty_record, abs(self.quantity_delta))
 
             self.state = TransactionState.CANCELLED.value
             self.last_updated_at = datetime.now(timezone.utc)

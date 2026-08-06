@@ -1,0 +1,97 @@
+{
+  "generated_at": "2026-08-06T14:52:08.626969+00:00",
+  "dry_run": false,
+  "rows_changed": 15,
+  "changes": [
+    {
+      "product_id": 27617,
+      "warehouse_id": 1,
+      "reserved_before": 0,
+      "reserved_after": 2
+    },
+    {
+      "product_id": 27561,
+      "warehouse_id": 1,
+      "reserved_before": 10,
+      "reserved_after": 13
+    },
+    {
+      "product_id": 27600,
+      "warehouse_id": 1,
+      "reserved_before": -20,
+      "reserved_after": 0
+    },
+    {
+      "product_id": 27606,
+      "warehouse_id": 1,
+      "reserved_before": -8,
+      "reserved_after": 4
+    },
+    {
+      "product_id": 27675,
+      "warehouse_id": 1,
+      "reserved_before": 76,
+      "reserved_after": 84
+    },
+    {
+      "product_id": 27678,
+      "warehouse_id": 1,
+      "reserved_before": -3,
+      "reserved_after": 0
+    },
+    {
+      "product_id": 27868,
+      "warehouse_id": 1,
+      "reserved_before": -4,
+      "reserved_after": 0
+    },
+    {
+      "product_id": 27594,
+      "warehouse_id": 1,
+      "reserved_before": -1,
+      "reserved_after": 0
+    },
+    {
+      "product_id": 27605,
+      "warehouse_id": 1,
+      "reserved_before": 2,
+      "reserved_after": 0
+    },
+    {
+      "product_id": 27615,
+      "warehouse_id": 1,
+      "reserved_before": 0,
+      "reserved_after": 7
+    },
+    {
+      "product_id": 27690,
+      "warehouse_id": 1,
+      "reserved_before": 141,
+      "reserved_after": 148
+    },
+    {
+      "product_id": 27564,
+      "warehouse_id": 1,
+      "reserved_before": 47,
+      "reserved_after": 62
+    },
+    {
+      "product_id": 27663,
+      "warehouse_id": 1,
+      "reserved_before": 1,
+      "reserved_after": 0
+    },
+    {
+      "product_id": 27662,
+      "warehouse_id": 1,
+      "reserved_before": -19,
+      "reserved_after": 14
+    },
+    {
+      "product_id": 27669,
+      "warehouse_id": 1,
+      "reserved_before": -4,
+      "reserved_after": 0
+    }
+  ]
+}
