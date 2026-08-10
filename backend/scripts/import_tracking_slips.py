@@ -33,6 +33,7 @@ from app.services.qb_order_service import (
     create_order_from_qb_record,
     qb_doc_type_from_slip,
     query_qb_document,
+    find_order_by_external_ref,
 )
 from app.services.tracker_import_service import (
     apply_tracker_import,
@@ -92,9 +93,7 @@ def process_row(
         for k, v in completions.items()
     }
 
-    existing = db.execute(
-        select(Order).where(Order.external_order_number == slip)
-    ).scalar_one_or_none()
+    existing = find_order_by_external_ref(db, slip, qb_doc_type)
 
     if existing:
         should_update = update_existing or mark_order_completed or bool(completions)

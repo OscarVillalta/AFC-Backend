@@ -142,6 +142,7 @@ def get_dashboard_stats():
             "id": o.id,
             "order_number": o.order_number,
             "external_order_number": o.external_order_number,
+            "qb_doc_type": o.qb_doc_type,
             "type": o.type,
             "completed_at": o.completed_at.isoformat() if o.completed_at else None,
         }

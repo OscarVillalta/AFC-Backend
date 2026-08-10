@@ -24,6 +24,13 @@ class OrderType(str, Enum):
     VOID = "void"
 
 
+class QBDocType(str, Enum):
+    SALES_ORDER = "sales_order"
+    PURCHASE_ORDER = "purchase_order"
+    INVOICE = "invoice"
+    ESTIMATE = "estimate"
+
+
 # Outgoing-equivalent types: require customer, create tracker, reduce stock
 OUTGOING_TYPES = {
     OrderType.INSTALLATION.value,
@@ -547,6 +554,7 @@ class Order(Base, SerializerMixin):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     order_number: Mapped[str] = mapped_column(unique=True, nullable=True)
     external_order_number: Mapped[Optional[str]] = mapped_column(nullable=True)
+    qb_doc_type: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     type: Mapped[str] = mapped_column(String, nullable=False)  # OrderType values
     order_type: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # OutgoingOrderType values

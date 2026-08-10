@@ -35,7 +35,12 @@ from app.api.error_handling import (
     ExternalServiceError,
     InvalidInputError,
 )
-from app.services.qb_order_service import create_order_from_qb_record, validate_qb_doc_type
+from app.services.qb_order_service import (
+    create_order_from_qb_record,
+    validate_qb_doc_type,
+    assert_external_ref_available,
+    infer_qb_doc_type_for_order,
+)
 from app.services.order_calendar_sync import sync_order_to_calendar, delete_order_calendar_event
 from app.services.tracker_import_service import apply_completed_order_state
 
@@ -189,6 +194,7 @@ def get_order(order_id: int) -> Tuple[Any, int]:
             "id": order.id,
             "order_number": order.order_number,
             "external_order_number": order.external_order_number,
+            "qb_doc_type": order.qb_doc_type,
             "type": order.type,
             "cs_id": cs_id,
             "cs_name": cs_name,
@@ -818,7 +824,46 @@ def patch_order(order_id):
         order.supplier_id = data["supplier_id"]
     
     if "external_order_number" in data:
-        order.external_order_number = data["external_order_number"]
+        new_external = data["external_order_number"]
+        if new_external is not None and str(new_external).strip():
+            new_external = str(new_external).strip()
+            qb_doc_type = order.qb_doc_type
+            if not qb_doc_type:
+                qb_doc_type = infer_qb_doc_type_for_order(order.type, new_external)
+                if qb_doc_type:
+                    order.qb_doc_type = qb_doc_type
+            if qb_doc_type:
+                try:
+                    assert_external_ref_available(
+                        db,
+                        new_external,
+                        qb_doc_type,
+                        exclude_order_id=order.id,
+                    )
+                except DuplicateResourceError as e:
+                    return jsonify(e.to_dict()), e.status_code
+            order.external_order_number = new_external
+        else:
+            order.external_order_number = new_external
+            order.qb_doc_type = None
+
+    if "qb_doc_type" in data:
+        qb_doc_type_input = data["qb_doc_type"]
+        if qb_doc_type_input is None:
+            order.qb_doc_type = None
+        else:
+            normalized = validate_qb_doc_type(qb_doc_type_input)
+            if order.external_order_number and str(order.external_order_number).strip():
+                try:
+                    assert_external_ref_available(
+                        db,
+                        order.external_order_number,
+                        normalized,
+                        exclude_order_id=order.id,
+                    )
+                except DuplicateResourceError as e:
+                    return jsonify(e.to_dict()), e.status_code
+            order.qb_doc_type = normalized
 
     if "is_paid" in data:
         order.is_paid = bool(data["is_paid"])
@@ -851,6 +896,8 @@ def patch_order(order_id):
     return jsonify({
         "id": order.id,
         "order_number": order.order_number,
+        "external_order_number": order.external_order_number,
+        "qb_doc_type": order.qb_doc_type,
         "type": order.type,
         "cs_name": cs_name,
         "status": order.status,
@@ -962,6 +1009,7 @@ def search_orders():
             Order.id,
             Order.order_number,
             Order.external_order_number,
+            Order.qb_doc_type,
             Order.type,
             Order.status,
             Order.description,
@@ -1315,6 +1363,7 @@ def create_order_from_qb():
         "order_id": order.id,
         "order_number": order.order_number,
         "external_order_number": order.external_order_number,
+        "qb_doc_type": order.qb_doc_type,
         "customer_name": result.customer.name if result.customer else None,
         "vendor_name": result.supplier.name if result.supplier else None,
         "eta": order.eta.strftime("%Y-%m-%d") if order.eta else None,

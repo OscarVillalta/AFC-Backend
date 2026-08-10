@@ -716,6 +716,7 @@ def get_packing_slips() -> Tuple[Any, int]:
             "id": order.id,
             "order_number": order.order_number,
             "external_order_number": order.external_order_number,
+            "qb_doc_type": order.qb_doc_type,
             "order_type": order.type,
             "status": order.status,
             "description": order.description,

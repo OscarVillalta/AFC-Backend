@@ -12,6 +12,7 @@ class OrderSchema(Schema):
         allow_none=True,
         validate=validate.Length(min=1)
     )
+    qb_doc_type = fields.Str(allow_none=True)
 
     customer_id = fields.Int(allow_none=True)
     supplier_id = fields.Int(allow_none=True)

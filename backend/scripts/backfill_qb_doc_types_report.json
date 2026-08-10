@@ -1,0 +1,12 @@
+{
+  "generated_at": "2026-08-10T20:37:52.440818+00:00",
+  "dry_run": true,
+  "would_update": 0,
+  "inferred_counts": {},
+  "current_totals_by_type": {
+    "invoice": 2277,
+    "purchase_order": 127
+  },
+  "duplicate_groups": [],
+  "sample_changes": []
+}

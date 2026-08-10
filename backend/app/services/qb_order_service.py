@@ -48,6 +48,15 @@ VALID_QB_DOC_TYPES = [
     "purchaseorder",
 ]
 
+NORMALIZED_QB_DOC_TYPES = {
+    "sales_order",
+    "estimate",
+    "invoice",
+    "purchase_order",
+}
+
+INVOICE_QB_NUMBER_THRESHOLD = 2000
+
 
 @dataclass
 class QBQueryResult:
@@ -72,9 +81,72 @@ def normalize_qb_doc_type(qb_doc_type: str) -> str:
     return qb_doc_type.replace("salesorder", "sales_order").replace("purchaseorder", "purchase_order")
 
 
+def infer_qb_doc_type_for_order(
+    order_type: str,
+    external_order_number: str | None,
+) -> str | None:
+    """Infer QB doc type for legacy orders without an explicit qb_doc_type."""
+    if not external_order_number or not str(external_order_number).strip():
+        return None
+    if order_type == OrderType.VOID.value:
+        return None
+    if order_type == OrderType.INCOMING.value:
+        return "purchase_order"
+    ref = str(external_order_number).strip()
+    try:
+        if int(ref) > INVOICE_QB_NUMBER_THRESHOLD:
+            return "invoice"
+    except ValueError:
+        pass
+    return "sales_order"
+
+
+def find_order_by_external_ref(
+    db,
+    external_number: str,
+    qb_doc_type: str,
+) -> Order | None:
+    normalized = normalize_qb_doc_type(qb_doc_type)
+    ref = external_number.strip()
+    return db.execute(
+        select(Order).where(
+            Order.external_order_number == ref,
+            Order.qb_doc_type == normalized,
+        )
+    ).scalar_one_or_none()
+
+
+def find_orders_by_external_ref(db, external_number: str) -> list[Order]:
+    ref = external_number.strip()
+    return list(
+        db.scalars(
+            select(Order)
+            .where(Order.external_order_number == ref)
+            .order_by(Order.id)
+        ).all()
+    )
+
+
+def assert_external_ref_available(
+    db,
+    external_number: str,
+    qb_doc_type: str,
+    *,
+    exclude_order_id: int | None = None,
+) -> None:
+    existing = find_order_by_external_ref(db, external_number, qb_doc_type)
+    if existing and existing.id != exclude_order_id:
+        normalized = normalize_qb_doc_type(qb_doc_type)
+        raise DuplicateResourceError(
+            "Order",
+            "external_order_number and qb_doc_type",
+            f"{external_number.strip()} ({normalized})",
+        )
+
+
 def qb_doc_type_from_slip(slip: str | int) -> str:
-    """Slip below 20000 is a sales_order; at or above 20000 is an invoice."""
-    return "sales_order" if int(slip) < 20000 else "invoice"
+    """Slip at or below 2000 is a sales_order; above 2000 is an invoice."""
+    return "sales_order" if int(slip) <= INVOICE_QB_NUMBER_THRESHOLD else "invoice"
 
 
 def validate_qb_doc_type(qb_doc_type: str) -> str:
@@ -206,14 +278,11 @@ def create_order_from_qb_record(
     description_override: str | None = None,
 ) -> CreateOrderFromQBResult:
     reference_number = reference_number.strip()
+    normalized_doc_type = validate_qb_doc_type(qb_doc_type)
 
-    existing_order = db.execute(
-        select(Order).where(Order.external_order_number == reference_number)
-    ).scalar_one_or_none()
-    if existing_order:
-        raise DuplicateResourceError("Order", "external_order_number", reference_number)
+    assert_external_ref_available(db, reference_number, normalized_doc_type)
 
-    line_items, metadata, entity_type = fetch_qb_order_data(reference_number, qb_doc_type)
+    line_items, metadata, entity_type = fetch_qb_order_data(reference_number, normalized_doc_type)
     is_purchase_order = entity_type in ("purchase_order", "purchaseorder")
 
     customer = None
@@ -279,6 +348,7 @@ def create_order_from_qb_record(
         supplier_id=supplier.id if supplier else None,
         warehouse_id=warehouse_id,
         external_order_number=reference_number,
+        qb_doc_type=normalized_doc_type,
         description=description_override or default_description,
         status=OrderStatus.PENDING.value,
         eta=eta_value,

@@ -16,6 +16,11 @@ from database.models import (
     TransactionState,
 )
 from app.api.validation import validate_pagination, ValidationError, sanitize_search_string
+from app.services.qb_order_service import (
+    find_order_by_external_ref,
+    find_orders_by_external_ref,
+    validate_qb_doc_type,
+)
 
 
 
@@ -88,7 +93,12 @@ def _serialize_batch(batch: ConversionBatch, conversions_total: int | None = Non
     return payload
 
 
-def _resolve_order(db, order_id: int | None = None, external_ref: str | None = None) -> tuple[int | None, str | None, str | None, int | None]:
+def _resolve_order(
+    db,
+    order_id: int | None = None,
+    external_ref: str | None = None,
+    qb_doc_type: str | None = None,
+) -> tuple[int | None, str | None, str | None, int | None]:
     """
     Resolve order_id and external_ref from the provided parameters.
     
@@ -96,6 +106,7 @@ def _resolve_order(db, order_id: int | None = None, external_ref: str | None = N
         db: Database session for querying orders
         order_id: Optional integer ID of the order
         external_ref: Optional string representing the external order number to look up
+        qb_doc_type: Optional QuickBooks document type to disambiguate external_ref
     
     Returns:
         Tuple of (resolved_order_id, resolved_external_ref, error_message, error_status_code)
@@ -114,12 +125,27 @@ def _resolve_order(db, order_id: int | None = None, external_ref: str | None = N
         return order_id, None, None, None
     
     if external_ref is not None:
-        order = db.execute(
-            select(Order).where(Order.external_order_number == external_ref)
-        ).scalar_one_or_none()
-        if not order:
+        ref = external_ref.strip()
+        if qb_doc_type:
+            normalized = validate_qb_doc_type(qb_doc_type)
+            order = find_order_by_external_ref(db, ref, normalized)
+            if not order:
+                return None, None, "Order not found by external order number and qb_doc_type", 404
+            return order.id, ref, None, None
+
+        matches = find_orders_by_external_ref(db, ref)
+        if not matches:
             return None, None, "Order not found by external order number", 404
-        return order.id, external_ref, None, None
+        if len(matches) > 1:
+            doc_types = sorted({o.qb_doc_type for o in matches if o.qb_doc_type})
+            hint = ", ".join(doc_types) if doc_types else "sales_order, invoice, purchase_order, estimate"
+            return (
+                None,
+                None,
+                f"Multiple orders match external order number '{ref}'. Specify qb_doc_type ({hint}).",
+                409,
+            )
+        return matches[0].id, ref, None, None
     
     # Neither provided - this is valid (order_id can be None)
     return None, None, None, None
@@ -323,7 +349,10 @@ def create_conversion_batch():
     # Resolve order_id and external_ref
     order_id_input = data.get("order_id")
     external_ref_input = data.get("external_ref")
-    resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(db, order_id_input, external_ref_input)
+    qb_doc_type_input = data.get("qb_doc_type")
+    resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(
+        db, order_id_input, external_ref_input, qb_doc_type_input
+    )
     if error:
         return jsonify({"error": error}), error_code
 
@@ -560,16 +589,19 @@ def update_conversion_batch(batch_id: int):
 
     # Handle order_id and external_ref updates
     # Note: external_ref and order_id should be kept in sync - external_ref is for reference only
-    if "order_id" in data or "external_ref" in data:
+    if "order_id" in data or "external_ref" in data or "qb_doc_type" in data:
         # Determine which parameter(s) were provided
         has_order_id = "order_id" in data
         has_external_ref = "external_ref" in data
+        qb_doc_type_input = data.get("qb_doc_type") if "qb_doc_type" in data else None
         
         if has_order_id and has_external_ref:
             # Both provided - validate they don't conflict
             order_id_input = data.get("order_id")
             external_ref_input = data.get("external_ref")
-            resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(db, order_id_input, external_ref_input)
+            resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(
+                db, order_id_input, external_ref_input, qb_doc_type_input
+            )
             if error:
                 return jsonify({"error": error}), error_code
             batch.order_id = resolved_order_id
@@ -582,14 +614,13 @@ def update_conversion_batch(batch_id: int):
                 batch.order_id = None
                 batch.external_ref = None
             else:
-                # Look up order by external_ref
-                order = db.execute(
-                    select(Order).where(Order.external_order_number == external_ref_input)
-                ).scalar_one_or_none()
-                if not order:
-                    return jsonify({"error": "Order not found by external order number"}), 404
-                batch.order_id = order.id
-                batch.external_ref = external_ref_input
+                resolved_order_id, resolved_external_ref, error, error_code = _resolve_order(
+                    db, None, external_ref_input, qb_doc_type_input
+                )
+                if error:
+                    return jsonify({"error": error}), error_code
+                batch.order_id = resolved_order_id
+                batch.external_ref = resolved_external_ref
         else:
             # Only order_id provided - set order_id and clear external_ref
             order_id_input = data.get("order_id")
