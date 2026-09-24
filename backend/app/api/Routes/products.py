@@ -80,6 +80,7 @@ def _serialize_product_detail(db, product: Product, warehouse_id: int) -> dict:
         "category": category,
         "reference_id": product.reference_id,
         "default_no_stock_deduction": product.default_no_stock_deduction,
+        "unit_price": product.unit_price,
         "details": details,
         "quantity": quantity,
         "child_products": child_products_data,
@@ -127,6 +128,7 @@ def get_products():
             "id": p.id,
             "category": category,
             "reference_id": p.reference_id,
+            "unit_price": p.unit_price,
             "details": details,
             "quantity": quantity
         })
@@ -208,6 +210,7 @@ def get_product(id):
         "category": category,
         "reference_id": product.reference_id,
         "default_no_stock_deduction": product.default_no_stock_deduction,
+        "unit_price": product.unit_price,
         "details": details,
         "quantity": quantity,
         "child_products": child_products_data
@@ -231,6 +234,17 @@ def patch_product(id):
             return jsonify({"error": "default_no_stock_deduction must be a boolean"}), 400
         product.default_no_stock_deduction = value
 
+    if "unit_price" in data:
+        value = data["unit_price"]
+        if value is None:
+            product.unit_price = None
+        elif isinstance(value, bool) or not isinstance(value, (int, float)):
+            return jsonify({"error": "unit_price must be a number or null"}), 400
+        elif value < 0:
+            return jsonify({"error": "unit_price cannot be negative"}), 400
+        else:
+            product.unit_price = round(float(value), 2)
+
     error = safe_commit(db)
     if error:
         from app.api.error_handling import handle_database_error
@@ -239,6 +253,7 @@ def patch_product(id):
     return jsonify({
         "id": product.id,
         "default_no_stock_deduction": product.default_no_stock_deduction,
+        "unit_price": product.unit_price,
     }), 200
 
 

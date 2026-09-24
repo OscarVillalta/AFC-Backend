@@ -216,6 +216,7 @@ def search_media():
         Media.width,
         Media.unit_of_measure,
         Product.id.label("product_id"),
+        Product.unit_price,
         Supplier.name.label("supplier_name"),
         MediaCategory.name.label("media_category"),
     ]

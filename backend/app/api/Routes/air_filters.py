@@ -217,6 +217,7 @@ def search_air_filters():
         AirFilter.width,
         AirFilter.depth,
         Product.id.label("product_id"),
+        Product.unit_price,
         Supplier.name.label("supplier_name"),
         AirFilterCategory.name.label("filter_category"),
     ]

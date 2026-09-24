@@ -238,6 +238,7 @@ def search_stock_items():
         StockItem.name,
         StockItem.description,
         Product.id.label("product_id"),
+        Product.unit_price,
         Supplier.name.label("supplier_name"),
         StockItemCategory.name.label("category_name"),
     ]
