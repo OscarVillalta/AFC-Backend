@@ -339,6 +339,8 @@ class Product(Base, SerializerMixin):
 
     category: Mapped["ProductCategory"] = relationship("ProductCategory", back_populates="products")
 
+    unit_price: Mapped[float] = mapped_column(Float, nullable=True)
+
     air_filter: Mapped[Optional["AirFilter"]] = relationship(
         "AirFilter",
         primaryjoin=lambda: Product.reference_id == foreign(AirFilter.id),
