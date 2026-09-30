@@ -6,7 +6,7 @@ from marshmallow import ValidationError
 from app.api.Schemas.air_filters_schema import AirFilterSchema
 from app.api.Schemas.air_filter_category_schema import AirFilterCategorySchema
 from app.api.filters import _parse_stock_param, stock_level_filter
-from app.api.tokens import permission_required
+from app.api.tokens import permission_required, strip_unit_price_unless_permitted
 
 air_filter_bp = Blueprint("air_filters", __name__)
 air_filter_schema = AirFilterSchema()
@@ -381,5 +381,5 @@ def search_air_filters():
         "limit": limit,
         "count": len(parent_results),
         "total": total,
-        "results": parent_results
+        "results": strip_unit_price_unless_permitted(parent_results)
     }), 200

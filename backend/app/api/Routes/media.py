@@ -5,7 +5,7 @@ from database.models import Media, MediaCategory, Supplier, Product, ProductCate
 from marshmallow import ValidationError
 from app.api.Schemas.media_schema import MediaSchema, MediaCategorySchema
 from app.api.filters import _parse_stock_param, stock_level_filter
-from app.api.tokens import permission_required
+from app.api.tokens import permission_required, strip_unit_price_unless_permitted
 
 media_bp = Blueprint("media", __name__)
 media_schema = MediaSchema()
@@ -377,5 +377,5 @@ def search_media():
         "limit": limit,
         "count": len(parent_results),
         "total": total,
-        "results": parent_results
+        "results": strip_unit_price_unless_permitted(parent_results)
     }), 200

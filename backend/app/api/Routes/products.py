@@ -10,7 +10,12 @@ from database.models import (
 from app.api.Schemas.product_schema import ProductSchema
 from app.api.Schemas.product_migration_schema import ProductMigrationSchema
 from app.api.Schemas.product_absorption_schema import ProductAbsorptionSchema
-from app.api.tokens import permission_required
+from app.api.tokens import (
+    PRICE_MANAGE_PERMISSION,
+    has_permission,
+    permission_required,
+    strip_unit_price_unless_permitted,
+)
 from app.api.error_handling import (
     safe_commit,
     ResourceNotFoundError,
@@ -75,7 +80,7 @@ def _serialize_product_detail(db, product: Product, warehouse_id: int) -> dict:
             "details": child_details,
         })
 
-    return {
+    serialized = {
         "id": product.id,
         "category": category,
         "reference_id": product.reference_id,
@@ -85,6 +90,8 @@ def _serialize_product_detail(db, product: Product, warehouse_id: int) -> dict:
         "quantity": quantity,
         "child_products": child_products_data,
     }
+    strip_unit_price_unless_permitted([serialized])
+    return serialized
 
 # =====================================================
 # 🔹 GET all products (joined data: Air + Misc + Quantity)
@@ -133,7 +140,7 @@ def get_products():
             "quantity": quantity
         })
 
-    return jsonify(response), 200
+    return jsonify(strip_unit_price_unless_permitted(response)), 200
 
 
 # =====================================================
@@ -205,7 +212,7 @@ def get_product(id):
                 "details": child_details
             })
 
-    return jsonify({
+    payload = {
         "id": product.id,
         "category": category,
         "reference_id": product.reference_id,
@@ -214,7 +221,9 @@ def get_product(id):
         "details": details,
         "quantity": quantity,
         "child_products": child_products_data
-    }), 200
+    }
+    strip_unit_price_unless_permitted([payload])
+    return jsonify(payload), 200
 
 
 @product_bp.route("/products/<int:id>", methods=["PATCH"])
@@ -235,6 +244,8 @@ def patch_product(id):
         product.default_no_stock_deduction = value
 
     if "unit_price" in data:
+        if not has_permission(PRICE_MANAGE_PERMISSION):
+            return jsonify({"error": "Forbidden: insufficient permissions"}), 403
         value = data["unit_price"]
         if value is None:
             product.unit_price = None
@@ -250,11 +261,13 @@ def patch_product(id):
         from app.api.error_handling import handle_database_error
         return handle_database_error(error)
 
-    return jsonify({
+    payload = {
         "id": product.id,
         "default_no_stock_deduction": product.default_no_stock_deduction,
         "unit_price": product.unit_price,
-    }), 200
+    }
+    strip_unit_price_unless_permitted([payload])
+    return jsonify(payload), 200
 
 
 @product_bp.route("/products/<int:id>/migrate", methods=["POST"])

@@ -6,7 +6,7 @@ from database.models import StockItem, StockItemCategory, Supplier, Product, Qua
 from app.api.Schemas.stock_item_schema import StockItemSchema
 from app.api.Schemas.stock_item_category_schema import StockItemCategorySchema
 from app.api.filters import _parse_stock_param, stock_level_filter
-from app.api.tokens import permission_required
+from app.api.tokens import permission_required, strip_unit_price_unless_permitted
 
 stock_item_bp = Blueprint("stock_items", __name__)
 stock_item_schema = StockItemSchema()
@@ -388,5 +388,5 @@ def search_stock_items():
         "limit": limit,
         "count": len(parent_results),
         "total": total,
-        "results": parent_results
+        "results": strip_unit_price_unless_permitted(parent_results)
     }), 200
