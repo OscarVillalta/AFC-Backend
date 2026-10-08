@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 from flask import g, jsonify, request, Blueprint
-from sqlalchemy import func, select, case, desc, or_
-from sqlalchemy.orm import selectinload
-from database.models import Product, Quantity, AirFilter, StockItem, Media, ProductCategory
+from flask_jwt_extended import get_jwt, verify_jwt_in_request
+from sqlalchemy import and_, case, desc, func, select
+from sqlalchemy.orm import aliased, selectinload
+from database.models import AirFilter, Media, Product, Quantity, StockItem, Supplier
+from app.api.tokens import PRICE_MANAGE_PERMISSION
 
 
 inventory_stats_bp = Blueprint("inventory_stats", __name__)
@@ -187,3 +191,312 @@ def get_top_items():
         "top_items": top_items,
         "all_others": int(all_others_sum)
     }), 200
+
+
+_AIR_FILTER_CATEGORY_ID = 1
+_STOCK_ITEM_CATEGORY_ID = 3
+_MEDIA_CATEGORY_ID = 4
+_MAX_VALUE_GROUPS = 200
+_GROUP_BY_ALIASES = {
+    "": None,
+    "total": None,
+    "all": None,
+    "supplier": "supplier",
+    "suppliers": "supplier",
+    "provider": "supplier",
+    "providers": "supplier",
+    "product": "product",
+    "products": "product",
+}
+
+
+def _as_int(value) -> int:
+    if value is None:
+        return 0
+    return int(value)
+
+
+def _as_money(value) -> float:
+    if value is None:
+        return 0.0
+    return round(float(value), 2)
+
+
+def _as_price(value):
+    if value is None:
+        return None
+    return round(float(value), 2)
+
+
+def _contains_pattern(text: str) -> str:
+    escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
+def _parse_positive_int(name: str):
+    raw = request.args.get(name, default=None, type=str)
+    if raw is None or raw.strip() == "":
+        return None, None
+    try:
+        value = int(raw.strip())
+    except ValueError:
+        return None, f"{name} must be an integer"
+    if value < 1:
+        return None, f"{name} must be a positive integer"
+    return value, None
+
+
+def _inventory_value_permitted() -> bool:
+    """Anonymous callers match /inventory/stats.
+
+    A valid token must include price:manage. Invalid tokens are rejected by
+    verify_jwt_in_request and never reach this check.
+    """
+    verify_jwt_in_request(optional=True)
+    claims = get_jwt() or {}
+    if not claims:
+        return True
+    return PRICE_MANAGE_PERMISSION in (claims.get("permissions") or [])
+
+
+def _restricted_value_payload():
+    return {
+        "restricted": True,
+        "gross_total": None,
+        "on_hand_units": None,
+        "sku_count": None,
+        "unpriced_skus": None,
+        "supplier_id": None,
+        "product_id": None,
+        "group_by": None,
+        "groups": [],
+        "groups_truncated": False,
+    }
+
+
+def _inventory_lines(warehouse_id: int):
+    """One row per quantity in the warehouse.
+
+    Gross value is on-hand times unit price. A missing unit price contributes
+    zero and is reported separately. Child products share the parent quantity
+    row, so they are not added again.
+    """
+    supplier_for_air = aliased(Supplier)
+    supplier_for_stock = aliased(Supplier)
+    supplier_for_media = aliased(Supplier)
+
+    return (
+        select(
+            Product.id.label("product_id"),
+            func.coalesce(
+                AirFilter.part_number,
+                StockItem.name,
+                Media.part_number,
+                func.concat("Product ", Product.id),
+            ).label("product_name"),
+            func.coalesce(
+                AirFilter.supplier_id,
+                StockItem.supplier_id,
+                Media.supplier_id,
+            ).label("supplier_id"),
+            func.coalesce(
+                supplier_for_air.name,
+                supplier_for_stock.name,
+                supplier_for_media.name,
+            ).label("supplier_name"),
+            func.coalesce(Quantity.on_hand, 0).label("on_hand"),
+            Product.unit_price.label("unit_price"),
+            (
+                func.coalesce(Quantity.on_hand, 0) * func.coalesce(Product.unit_price, 0.0)
+            ).label("gross"),
+        )
+        .select_from(Quantity)
+        .join(Product, Product.id == Quantity.product_id)
+        .outerjoin(
+            AirFilter,
+            and_(Product.category_id == _AIR_FILTER_CATEGORY_ID, Product.reference_id == AirFilter.id),
+        )
+        .outerjoin(supplier_for_air, AirFilter.supplier_id == supplier_for_air.id)
+        .outerjoin(
+            StockItem,
+            and_(Product.category_id == _STOCK_ITEM_CATEGORY_ID, Product.reference_id == StockItem.id),
+        )
+        .outerjoin(supplier_for_stock, StockItem.supplier_id == supplier_for_stock.id)
+        .outerjoin(
+            Media,
+            and_(Product.category_id == _MEDIA_CATEGORY_ID, Product.reference_id == Media.id),
+        )
+        .outerjoin(supplier_for_media, Media.supplier_id == supplier_for_media.id)
+        .where(Quantity.warehouse_id == warehouse_id)
+    )
+
+
+def build_inventory_value(
+    db,
+    warehouse_id: int,
+    *,
+    supplier_id: int | None = None,
+    product_id: int | None = None,
+    group_by: str | None = None,
+    q: str | None = None,
+    limit: int = 100,
+) -> dict:
+    lines = _inventory_lines(warehouse_id).subquery("inventory_lines")
+    filters = []
+    if supplier_id is not None:
+        filters.append(lines.c.supplier_id == supplier_id)
+    if product_id is not None:
+        filters.append(lines.c.product_id == product_id)
+    if q:
+        filters.append(lines.c.product_name.ilike(_contains_pattern(q), escape="\\"))
+
+    unpriced = func.coalesce(
+        func.sum(
+            case(
+                (and_(lines.c.unit_price.is_(None), lines.c.on_hand != 0), 1),
+                else_=0,
+            )
+        ),
+        0,
+    )
+    totals = select(
+        func.coalesce(func.sum(lines.c.gross), 0).label("gross_total"),
+        func.coalesce(func.sum(lines.c.on_hand), 0).label("on_hand_units"),
+        func.count(lines.c.product_id).label("sku_count"),
+        unpriced.label("unpriced_skus"),
+    ).select_from(lines)
+    if filters:
+        totals = totals.where(and_(*filters))
+
+    row = db.execute(totals).mappings().one()
+
+    groups = []
+    truncated = False
+    if group_by == "supplier":
+        gross_sum = func.coalesce(func.sum(lines.c.gross), 0)
+        grouped = (
+            select(
+                lines.c.supplier_id,
+                lines.c.supplier_name,
+                gross_sum.label("gross_total"),
+                func.coalesce(func.sum(lines.c.on_hand), 0).label("on_hand_units"),
+                func.count(lines.c.product_id).label("sku_count"),
+            )
+            .select_from(lines)
+            .group_by(lines.c.supplier_id, lines.c.supplier_name)
+            .order_by(desc(gross_sum), lines.c.supplier_name)
+        )
+        if filters:
+            grouped = grouped.where(and_(*filters))
+        found = db.execute(grouped.limit(limit + 1)).mappings().all()
+        truncated = len(found) > limit
+        groups = [
+            {
+                "supplier_id": item["supplier_id"],
+                "supplier_name": item["supplier_name"] or "Unknown provider",
+                "product_id": None,
+                "product_name": None,
+                "unit_price": None,
+                "on_hand_units": _as_int(item["on_hand_units"]),
+                "sku_count": _as_int(item["sku_count"]),
+                "gross_total": _as_money(item["gross_total"]),
+            }
+            for item in found[:limit]
+        ]
+    elif group_by == "product":
+        gross_sum = func.coalesce(func.sum(lines.c.gross), 0)
+        grouped = (
+            select(
+                lines.c.product_id,
+                lines.c.product_name,
+                lines.c.supplier_id,
+                lines.c.supplier_name,
+                func.max(lines.c.unit_price).label("unit_price"),
+                func.coalesce(func.sum(lines.c.on_hand), 0).label("on_hand_units"),
+                func.count(lines.c.product_id).label("sku_count"),
+                gross_sum.label("gross_total"),
+            )
+            .select_from(lines)
+            .group_by(
+                lines.c.product_id,
+                lines.c.product_name,
+                lines.c.supplier_id,
+                lines.c.supplier_name,
+            )
+            .order_by(desc(gross_sum), lines.c.product_name)
+        )
+        if filters:
+            grouped = grouped.where(and_(*filters))
+        found = db.execute(grouped.limit(limit + 1)).mappings().all()
+        truncated = len(found) > limit
+        groups = [
+            {
+                "supplier_id": item["supplier_id"],
+                "supplier_name": item["supplier_name"] or "Unknown provider",
+                "product_id": item["product_id"],
+                "product_name": item["product_name"] or f"Product {item['product_id']}",
+                "unit_price": _as_price(item["unit_price"]),
+                "on_hand_units": _as_int(item["on_hand_units"]),
+                "sku_count": _as_int(item["sku_count"]),
+                "gross_total": _as_money(item["gross_total"]),
+            }
+            for item in found[:limit]
+        ]
+
+    return {
+        "restricted": False,
+        "gross_total": _as_money(row["gross_total"]),
+        "on_hand_units": _as_int(row["on_hand_units"]),
+        "sku_count": _as_int(row["sku_count"]),
+        "unpriced_skus": _as_int(row["unpriced_skus"]),
+        "supplier_id": supplier_id,
+        "product_id": product_id,
+        "group_by": group_by,
+        "groups": groups,
+        "groups_truncated": truncated,
+    }
+
+
+@inventory_stats_bp.route("/inventory/value", methods=["GET"])
+def get_inventory_value():
+    """Sum of gross inventory value (on-hand x unit price) for the active warehouse."""
+    if not _inventory_value_permitted():
+        return jsonify(_restricted_value_payload()), 200
+
+    supplier_id, supplier_error = _parse_positive_int("supplier_id")
+    if supplier_error:
+        return jsonify({"error": supplier_error}), 400
+    product_id, product_error = _parse_positive_int("product_id")
+    if product_error:
+        return jsonify({"error": product_error}), 400
+
+    group_raw = (request.args.get("group_by") or "").strip().lower()
+    if group_raw not in _GROUP_BY_ALIASES:
+        return jsonify({"error": "group_by must be supplier or product"}), 400
+    group_by = _GROUP_BY_ALIASES[group_raw]
+
+    limit = 100
+    if group_by:
+        limit, limit_error = _parse_positive_int("limit")
+        if limit_error:
+            return jsonify({"error": limit_error}), 400
+        if limit is None:
+            limit = 100
+        if limit > _MAX_VALUE_GROUPS:
+            return jsonify({"error": f"limit must be between 1 and {_MAX_VALUE_GROUPS}"}), 400
+
+    q = (request.args.get("q") or "").strip()
+    if len(q) > 80:
+        q = q[:80]
+
+    warehouse_id = g.active_warehouse_id
+    payload = build_inventory_value(
+        g.db,
+        warehouse_id,
+        supplier_id=supplier_id,
+        product_id=product_id,
+        group_by=group_by,
+        q=q or None,
+        limit=limit,
+    )
+    return jsonify(payload), 200
