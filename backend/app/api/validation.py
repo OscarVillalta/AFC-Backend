@@ -8,6 +8,8 @@ from typing import Any, Optional, Union
 from datetime import datetime
 import re
 
+from app.utils.time import local_now
+
 
 class ValidationError(Exception):
     """Custom exception for validation errors."""
@@ -149,7 +151,7 @@ def validate_date(
     else:
         raise ValidationError(f"{field_name} must be a date string or datetime object")
     
-    now = datetime.now()
+    now = local_now()
     if not allow_future and parsed_date > now:
         raise ValidationError(f"{field_name} cannot be in the future")
     

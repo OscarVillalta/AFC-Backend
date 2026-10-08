@@ -6,7 +6,7 @@ from marshmallow import ValidationError
 from app.api.Schemas.air_filters_schema import AirFilterSchema
 from app.api.Schemas.air_filter_category_schema import AirFilterCategorySchema
 from app.api.filters import _parse_stock_param, stock_level_filter
-from app.api.tokens import permission_required, strip_unit_price_unless_permitted
+from app.api.tokens import permission_required, price_filters, strip_unit_price_unless_permitted
 
 air_filter_bp = Blueprint("air_filters", __name__)
 air_filter_schema = AirFilterSchema()
@@ -269,6 +269,7 @@ def search_air_filters():
         qty_filters.append(stock_level_filter(q_backordered, back_ordered, back_ordered_cmp))
     if min_backordered is not None:
         qty_filters.append(q_backordered >= min_backordered)
+    qty_filters.extend(price_filters(q_on_hand, Product.unit_price))
     if has_orders:
         order_item_exists = select(OrderItem.id).where(
             OrderItem.product_id == Product.id

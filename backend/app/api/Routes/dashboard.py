@@ -3,6 +3,7 @@ from sqlalchemy import select, func, desc, and_, or_
 from sqlalchemy.orm import selectinload
 from flask_jwt_extended import jwt_required
 from datetime import datetime, timedelta, timezone
+from app.utils.time import utc_iso
 from typing import Optional
 
 from database.models import (
@@ -59,7 +60,7 @@ def _transaction_feed_entry(t: Transaction) -> dict:
         "id": t.id,
         "quantity_delta": t.quantity_delta,
         "reason": t.reason,
-        "created_at": t.created_at.isoformat() if t.created_at else None,
+        "created_at": utc_iso(t.created_at),
         "order_id": t.order_id,
         "order_number": order_number,
         "external_order_number": external_order_number,
@@ -144,7 +145,7 @@ def get_dashboard_stats():
             "external_order_number": o.external_order_number,
             "qb_doc_type": o.qb_doc_type,
             "type": o.type,
-            "completed_at": o.completed_at.isoformat() if o.completed_at else None,
+            "completed_at": utc_iso(o.completed_at),
         }
         for o in recent_ords
     ]

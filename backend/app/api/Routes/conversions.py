@@ -16,6 +16,13 @@ from database.models import (
     TransactionState,
 )
 from app.api.validation import validate_pagination, ValidationError, sanitize_search_string
+from app.utils.time import (
+    is_date_only,
+    local_day_end_utc,
+    local_day_start_utc,
+    parse_utc_instant,
+    utc_iso,
+)
 from app.services.qb_order_service import (
     find_order_by_external_ref,
     find_orders_by_external_ref,
@@ -25,6 +32,20 @@ from app.services.qb_order_service import (
 
 
 conversion_bp = Blueprint("conversions", __name__)
+
+
+def _created_at_range_filters(column, date_from, date_to):
+    """Date-only bounds are Los Angeles calendar days (inclusive); full timestamps are exact."""
+    filters = []
+    if date_from:
+        bound = local_day_start_utc(date_from) if is_date_only(date_from) else parse_utc_instant(date_from)
+        filters.append(column >= bound)
+    if date_to:
+        if is_date_only(date_to):
+            filters.append(column < local_day_end_utc(date_to))
+        else:
+            filters.append(column <= parse_utc_instant(date_to))
+    return filters
 
 
 class InsufficientStockError(Exception):
@@ -58,7 +79,7 @@ def _serialize_conversion(conversion: Conversion) -> dict:
         "batch_id": conversion.batch_id,
         "warehouse_id": conversion.warehouse_id,
         "note": conversion.note,
-        "created_at": conversion.created_at.isoformat(),
+        "created_at": utc_iso(conversion.created_at),
         "state": _derive_state(conversion),
         "decreases": [
             {
@@ -85,7 +106,7 @@ def _serialize_batch(batch: ConversionBatch, conversions_total: int | None = Non
         "warehouse_id": batch.warehouse_id,
         "note": batch.note,
         "created_by": batch.created_by,
-        "created_at": batch.created_at.isoformat(),
+        "created_at": utc_iso(batch.created_at),
         "external_ref": batch.external_ref,
     }
     if conversions_total is not None:
@@ -458,22 +479,10 @@ def search_conversion_batches():
         except ValueError:
             pass
 
-    if date_from:
-        try:
-            parsed_from = datetime.fromisoformat(date_from)
-            if parsed_from.tzinfo is None:
-                parsed_from = parsed_from.replace(tzinfo=timezone.utc)
-            filters.append(ConversionBatch.created_at >= parsed_from)
-        except ValueError:
-            return jsonify({"error": "Invalid date_from format."}), 400
-    if date_to:
-        try:
-            parsed_to = datetime.fromisoformat(date_to)
-            if parsed_to.tzinfo is None:
-                parsed_to = parsed_to.replace(tzinfo=timezone.utc)
-            filters.append(ConversionBatch.created_at <= parsed_to)
-        except ValueError:
-            return jsonify({"error": "Invalid date_to format."}), 400
+    try:
+        filters.extend(_created_at_range_filters(ConversionBatch.created_at, date_from, date_to))
+    except ValueError:
+        return jsonify({"error": "Invalid date_from/date_to format."}), 400
 
     counts_subquery = (
         select(Conversion.batch_id, func.count(Conversion.id).label("conv_count"))
@@ -1112,23 +1121,10 @@ def search_conversions():
         )
 
     # Date range filters
-    if date_from:
-        try:
-            parsed_from = datetime.fromisoformat(date_from)
-            if parsed_from.tzinfo is None:
-                parsed_from = parsed_from.replace(tzinfo=timezone.utc)
-            filters.append(Conversion.created_at >= parsed_from)
-        except ValueError:
-            return jsonify({"error": "Invalid date_from format. Use ISO 8601 format."}), 400
-
-    if date_to:
-        try:
-            parsed_to = datetime.fromisoformat(date_to)
-            if parsed_to.tzinfo is None:
-                parsed_to = parsed_to.replace(tzinfo=timezone.utc)
-            filters.append(Conversion.created_at <= parsed_to)
-        except ValueError:
-            return jsonify({"error": "Invalid date_to format. Use ISO 8601 format."}), 400
+    try:
+        filters.extend(_created_at_range_filters(Conversion.created_at, date_from, date_to))
+    except ValueError:
+        return jsonify({"error": "Invalid date_from/date_to format. Use ISO 8601 format."}), 400
 
     conversions = (
         db.execute(

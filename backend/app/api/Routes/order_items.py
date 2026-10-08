@@ -2,6 +2,7 @@ from flask import Blueprint, g, jsonify, request
 from sqlalchemy import select, func, update
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.api.Schemas.order_item_schema import OrderItemSchema
+from app.utils.time import utc_iso
 from database.models import OrderItem, Order, Product, ChildProduct, Transaction, TransactionState, OrderType, OrderItemType, Quantity, OUTGOING_TYPES
 from marshmallow import ValidationError
 from typing import Tuple, Any
@@ -660,7 +661,7 @@ def get_order_item_transactions(item_id):
             "reason": t.reason,
             "state": t.state,
             "note": t.note,
-            "created_at": t.created_at.isoformat(),
+            "created_at": utc_iso(t.created_at),
         }
         for t in txns
     ]), 200
@@ -767,7 +768,7 @@ def create_order_item_transaction(order_item_id):
         "quantity": quantity,
         "reason": txn.reason,
         "note": txn.note,
-        "created_at": txn.created_at.isoformat(),
+        "created_at": utc_iso(txn.created_at),
     }), 201
 
 @order_item_bp.route("/order_items/<int:item_id>", methods=["DELETE"])

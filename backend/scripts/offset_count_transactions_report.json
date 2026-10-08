@@ -1,0 +1,2508 @@
+{
+  "generated_at": "2026-10-06T14:26:20.378675+00:00",
+  "dry_run": false,
+  "filters": {
+    "customer_contains": "eisenhower",
+    "product_name_contains": "ZLP",
+    "local_date": "2026-10-05",
+    "timezone": "America/Los_Angeles",
+    "utc_window": [
+      "2026-10-05T07:00:00",
+      "2026-10-06T07:00:00"
+    ]
+  },
+  "matching_committed_transactions": 245,
+  "offset": 245,
+  "skipped_already_offset": 0,
+  "on_hand_restored_total": 947,
+  "on_hand_restored_by_product": {
+    "ZLP-SPECIAL": 1,
+    "ZLP12122": 1,
+    "ZLP12241": 2,
+    "ZLP12242": 26,
+    "ZLP12244": 28,
+    "ZLP14241": 6,
+    "ZLP14252": 19,
+    "ZLP14261SP": 1,
+    "ZLP14271": 3,
+    "ZLP14301": 6,
+    "ZLP15202": 38,
+    "ZLP16162": 56,
+    "ZLP16182SP": 4,
+    "ZLP16201": 10,
+    "ZLP16202": 67,
+    "ZLP16221": 4,
+    "ZLP16242": 6,
+    "ZLP16251": 2,
+    "ZLP16252": 58,
+    "ZLP18182": 2,
+    "ZLP18201": 2,
+    "ZLP18202": 2,
+    "ZLP18242": 2,
+    "ZLP18244": 2,
+    "ZLP20201": 7,
+    "ZLP20202": 113,
+    "ZLP20221": 4,
+    "ZLP20242": 13,
+    "ZLP20244": 3,
+    "ZLP20251": 9,
+    "ZLP20252": 84,
+    "ZLP20301": 7,
+    "ZLP20302": 2,
+    "ZLP24242": 110,
+    "ZLP24244": 247
+  },
+  "skipped_txn_ids": [],
+  "offsets": [
+    {
+      "original_txn_id": 8876,
+      "order_number": "AFC-003097",
+      "product_name": "ZLP20242",
+      "warehouse_id": 1,
+      "original_delta": -3,
+      "offset_delta": 3,
+      "on_hand_before": 2219,
+      "on_hand_after": 2222
+    },
+    {
+      "original_txn_id": 8882,
+      "order_number": "AFC-003097",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -15,
+      "offset_delta": 15,
+      "on_hand_before": 214,
+      "on_hand_after": 229
+    },
+    {
+      "original_txn_id": 8878,
+      "order_number": "AFC-003097",
+      "product_name": "ZLP12242",
+      "warehouse_id": 1,
+      "original_delta": -3,
+      "offset_delta": 3,
+      "on_hand_before": 850,
+      "on_hand_after": 853
+    },
+    {
+      "original_txn_id": 8881,
+      "order_number": "AFC-003097",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -3,
+      "offset_delta": 3,
+      "on_hand_before": 229,
+      "on_hand_after": 232
+    },
+    {
+      "original_txn_id": 8883,
+      "order_number": "AFC-003097",
+      "product_name": "ZLP12242",
+      "warehouse_id": 1,
+      "original_delta": -3,
+      "offset_delta": 3,
+      "on_hand_before": 853,
+      "on_hand_after": 856
+    },
+    {
+      "original_txn_id": 8877,
+      "order_number": "AFC-003097",
+      "product_name": "ZLP12122",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 142,
+      "on_hand_after": 143
+    },
+    {
+      "original_txn_id": 8879,
+      "order_number": "AFC-003097",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 232,
+      "on_hand_after": 234
+    },
+    {
+      "original_txn_id": 8880,
+      "order_number": "AFC-003097",
+      "product_name": "ZLP14271",
+      "warehouse_id": 1,
+      "original_delta": -3,
+      "offset_delta": 3,
+      "on_hand_before": 9,
+      "on_hand_after": 12
+    },
+    {
+      "original_txn_id": 9334,
+      "order_number": "AFC-003144",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 876,
+      "on_hand_after": 877
+    },
+    {
+      "original_txn_id": 9331,
+      "order_number": "AFC-003144",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 877,
+      "on_hand_after": 878
+    },
+    {
+      "original_txn_id": 9333,
+      "order_number": "AFC-003144",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 878,
+      "on_hand_after": 879
+    },
+    {
+      "original_txn_id": 9336,
+      "order_number": "AFC-003144",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 879,
+      "on_hand_after": 880
+    },
+    {
+      "original_txn_id": 9330,
+      "order_number": "AFC-003144",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 880,
+      "on_hand_after": 881
+    },
+    {
+      "original_txn_id": 9335,
+      "order_number": "AFC-003144",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 881,
+      "on_hand_after": 882
+    },
+    {
+      "original_txn_id": 9332,
+      "order_number": "AFC-003144",
+      "product_name": "ZLP20251",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 638,
+      "on_hand_after": 639
+    },
+    {
+      "original_txn_id": 9340,
+      "order_number": "AFC-003146",
+      "product_name": "ZLP12242",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 856,
+      "on_hand_after": 860
+    },
+    {
+      "original_txn_id": 9339,
+      "order_number": "AFC-003146",
+      "product_name": "ZLP20242",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 2222,
+      "on_hand_after": 2224
+    },
+    {
+      "original_txn_id": 9337,
+      "order_number": "AFC-003146",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -8,
+      "offset_delta": 8,
+      "on_hand_before": 234,
+      "on_hand_after": 242
+    },
+    {
+      "original_txn_id": 9349,
+      "order_number": "AFC-003154",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 471,
+      "on_hand_after": 475
+    },
+    {
+      "original_txn_id": 9351,
+      "order_number": "AFC-003154",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 475,
+      "on_hand_after": 479
+    },
+    {
+      "original_txn_id": 9347,
+      "order_number": "AFC-003154",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 852,
+      "on_hand_after": 856
+    },
+    {
+      "original_txn_id": 9348,
+      "order_number": "AFC-003154",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1642,
+      "on_hand_after": 1644
+    },
+    {
+      "original_txn_id": 9346,
+      "order_number": "AFC-003154",
+      "product_name": "ZLP20251",
+      "warehouse_id": 1,
+      "original_delta": -5,
+      "offset_delta": 5,
+      "on_hand_before": 639,
+      "on_hand_after": 644
+    },
+    {
+      "original_txn_id": 9350,
+      "order_number": "AFC-003154",
+      "product_name": "ZLP16251",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 490,
+      "on_hand_after": 491
+    },
+    {
+      "original_txn_id": 9352,
+      "order_number": "AFC-003154",
+      "product_name": "ZLP20301",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 135,
+      "on_hand_after": 136
+    },
+    {
+      "original_txn_id": 9353,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 470,
+      "on_hand_after": 471
+    },
+    {
+      "original_txn_id": 9356,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 658,
+      "on_hand_after": 660
+    },
+    {
+      "original_txn_id": 9391,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 471,
+      "on_hand_after": 472
+    },
+    {
+      "original_txn_id": 9361,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 660,
+      "on_hand_after": 662
+    },
+    {
+      "original_txn_id": 9355,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 882,
+      "on_hand_after": 886
+    },
+    {
+      "original_txn_id": 9354,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 472,
+      "on_hand_after": 473
+    },
+    {
+      "original_txn_id": 9367,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 662,
+      "on_hand_after": 664
+    },
+    {
+      "original_txn_id": 9369,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 473,
+      "on_hand_after": 474
+    },
+    {
+      "original_txn_id": 9365,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 664,
+      "on_hand_after": 666
+    },
+    {
+      "original_txn_id": 9377,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 474,
+      "on_hand_after": 475
+    },
+    {
+      "original_txn_id": 9393,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 666,
+      "on_hand_after": 668
+    },
+    {
+      "original_txn_id": 9364,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 475,
+      "on_hand_after": 476
+    },
+    {
+      "original_txn_id": 9395,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 668,
+      "on_hand_after": 670
+    },
+    {
+      "original_txn_id": 9360,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 476,
+      "on_hand_after": 477
+    },
+    {
+      "original_txn_id": 9374,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 670,
+      "on_hand_after": 672
+    },
+    {
+      "original_txn_id": 9405,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 477,
+      "on_hand_after": 478
+    },
+    {
+      "original_txn_id": 9371,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 672,
+      "on_hand_after": 674
+    },
+    {
+      "original_txn_id": 9359,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 478,
+      "on_hand_after": 479
+    },
+    {
+      "original_txn_id": 9363,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 674,
+      "on_hand_after": 676
+    },
+    {
+      "original_txn_id": 9362,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 479,
+      "on_hand_after": 480
+    },
+    {
+      "original_txn_id": 9370,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 676,
+      "on_hand_after": 678
+    },
+    {
+      "original_txn_id": 9386,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 480,
+      "on_hand_after": 481
+    },
+    {
+      "original_txn_id": 9387,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 678,
+      "on_hand_after": 680
+    },
+    {
+      "original_txn_id": 9366,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 481,
+      "on_hand_after": 482
+    },
+    {
+      "original_txn_id": 9382,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 680,
+      "on_hand_after": 682
+    },
+    {
+      "original_txn_id": 9379,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 482,
+      "on_hand_after": 483
+    },
+    {
+      "original_txn_id": 9372,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 682,
+      "on_hand_after": 684
+    },
+    {
+      "original_txn_id": 9392,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 483,
+      "on_hand_after": 484
+    },
+    {
+      "original_txn_id": 9398,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 684,
+      "on_hand_after": 686
+    },
+    {
+      "original_txn_id": 9384,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 484,
+      "on_hand_after": 485
+    },
+    {
+      "original_txn_id": 9404,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 686,
+      "on_hand_after": 688
+    },
+    {
+      "original_txn_id": 9402,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 485,
+      "on_hand_after": 486
+    },
+    {
+      "original_txn_id": 9388,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 688,
+      "on_hand_after": 690
+    },
+    {
+      "original_txn_id": 9400,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 486,
+      "on_hand_after": 487
+    },
+    {
+      "original_txn_id": 9378,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 690,
+      "on_hand_after": 692
+    },
+    {
+      "original_txn_id": 9396,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 487,
+      "on_hand_after": 488
+    },
+    {
+      "original_txn_id": 9401,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 692,
+      "on_hand_after": 694
+    },
+    {
+      "original_txn_id": 9357,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP14252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 488,
+      "on_hand_after": 489
+    },
+    {
+      "original_txn_id": 9373,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP15202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 694,
+      "on_hand_after": 696
+    },
+    {
+      "original_txn_id": 9389,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP20301",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 136,
+      "on_hand_after": 138
+    },
+    {
+      "original_txn_id": 9399,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP20201",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 533,
+      "on_hand_after": 534
+    },
+    {
+      "original_txn_id": 9390,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP16201",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 554,
+      "on_hand_after": 555
+    },
+    {
+      "original_txn_id": 9394,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP16201",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 555,
+      "on_hand_after": 556
+    },
+    {
+      "original_txn_id": 9406,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP20301",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 138,
+      "on_hand_after": 139
+    },
+    {
+      "original_txn_id": 9381,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP20301",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 139,
+      "on_hand_after": 140
+    },
+    {
+      "original_txn_id": 9383,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP16221",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 52,
+      "on_hand_after": 53
+    },
+    {
+      "original_txn_id": 9368,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP20221",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 92,
+      "on_hand_after": 93
+    },
+    {
+      "original_txn_id": 9376,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP16221",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 53,
+      "on_hand_after": 54
+    },
+    {
+      "original_txn_id": 9358,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP20221",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 93,
+      "on_hand_after": 94
+    },
+    {
+      "original_txn_id": 9403,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP16221",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 54,
+      "on_hand_after": 55
+    },
+    {
+      "original_txn_id": 9397,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP20221",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 94,
+      "on_hand_after": 95
+    },
+    {
+      "original_txn_id": 9385,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP16221",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 55,
+      "on_hand_after": 56
+    },
+    {
+      "original_txn_id": 9375,
+      "order_number": "AFC-003137",
+      "product_name": "ZLP20221",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 95,
+      "on_hand_after": 96
+    },
+    {
+      "original_txn_id": 8887,
+      "order_number": "AFC-003096",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -20,
+      "offset_delta": 20,
+      "on_hand_before": 242,
+      "on_hand_after": 262
+    },
+    {
+      "original_txn_id": 8885,
+      "order_number": "AFC-003096",
+      "product_name": "ZLP12242",
+      "warehouse_id": 1,
+      "original_delta": -8,
+      "offset_delta": 8,
+      "on_hand_before": 860,
+      "on_hand_after": 868
+    },
+    {
+      "original_txn_id": 8886,
+      "order_number": "AFC-003096",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -16,
+      "offset_delta": 16,
+      "on_hand_before": 262,
+      "on_hand_after": 278
+    },
+    {
+      "original_txn_id": 8884,
+      "order_number": "AFC-003096",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -9,
+      "offset_delta": 9,
+      "on_hand_before": 1169,
+      "on_hand_after": 1178
+    },
+    {
+      "original_txn_id": 8808,
+      "order_number": "AFC-003103",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -6,
+      "offset_delta": 6,
+      "on_hand_before": 324,
+      "on_hand_after": 330
+    },
+    {
+      "original_txn_id": 8809,
+      "order_number": "AFC-003103",
+      "product_name": "ZLP12244",
+      "warehouse_id": 1,
+      "original_delta": -3,
+      "offset_delta": 3,
+      "on_hand_before": 530,
+      "on_hand_after": 533
+    },
+    {
+      "original_txn_id": 8810,
+      "order_number": "AFC-003103",
+      "product_name": "ZLP18201",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 190,
+      "on_hand_after": 192
+    },
+    {
+      "original_txn_id": 8768,
+      "order_number": "AFC-003109",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -20,
+      "offset_delta": 20,
+      "on_hand_before": 479,
+      "on_hand_after": 499
+    },
+    {
+      "original_txn_id": 8765,
+      "order_number": "AFC-003109",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -12,
+      "offset_delta": 12,
+      "on_hand_before": 499,
+      "on_hand_after": 511
+    },
+    {
+      "original_txn_id": 8766,
+      "order_number": "AFC-003109",
+      "product_name": "ZLP16242",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 534,
+      "on_hand_after": 538
+    },
+    {
+      "original_txn_id": 8767,
+      "order_number": "AFC-003109",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 856,
+      "on_hand_after": 860
+    },
+    {
+      "original_txn_id": 8788,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -18,
+      "offset_delta": 18,
+      "on_hand_before": 886,
+      "on_hand_after": 904
+    },
+    {
+      "original_txn_id": 8779,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -9,
+      "offset_delta": 9,
+      "on_hand_before": 1178,
+      "on_hand_after": 1187
+    },
+    {
+      "original_txn_id": 8780,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -8,
+      "offset_delta": 8,
+      "on_hand_before": 511,
+      "on_hand_after": 519
+    },
+    {
+      "original_txn_id": 8777,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -10,
+      "offset_delta": 10,
+      "on_hand_before": 904,
+      "on_hand_after": 914
+    },
+    {
+      "original_txn_id": 8784,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 519,
+      "on_hand_after": 521
+    },
+    {
+      "original_txn_id": 8791,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 914,
+      "on_hand_after": 918
+    },
+    {
+      "original_txn_id": 8785,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP12244",
+      "warehouse_id": 1,
+      "original_delta": -9,
+      "offset_delta": 9,
+      "on_hand_before": 533,
+      "on_hand_after": 542
+    },
+    {
+      "original_txn_id": 8781,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -20,
+      "offset_delta": 20,
+      "on_hand_before": 330,
+      "on_hand_after": 350
+    },
+    {
+      "original_txn_id": 8793,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP14301",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 54,
+      "on_hand_after": 58
+    },
+    {
+      "original_txn_id": 8786,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP14241",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 54,
+      "on_hand_after": 58
+    },
+    {
+      "original_txn_id": 8783,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -30,
+      "offset_delta": 30,
+      "on_hand_before": 350,
+      "on_hand_after": 380
+    },
+    {
+      "original_txn_id": 8790,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP14301",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 58,
+      "on_hand_after": 59
+    },
+    {
+      "original_txn_id": 8782,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP16242",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 538,
+      "on_hand_after": 540
+    },
+    {
+      "original_txn_id": 8795,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1187,
+      "on_hand_after": 1189
+    },
+    {
+      "original_txn_id": 8787,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 521,
+      "on_hand_after": 523
+    },
+    {
+      "original_txn_id": 8794,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP14301",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 59,
+      "on_hand_after": 60
+    },
+    {
+      "original_txn_id": 8792,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP18182",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 182,
+      "on_hand_after": 184
+    },
+    {
+      "original_txn_id": 8799,
+      "order_number": "AFC-003106",
+      "product_name": "ZLP12242",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 868,
+      "on_hand_after": 870
+    },
+    {
+      "original_txn_id": 8796,
+      "order_number": "AFC-003106",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -6,
+      "offset_delta": 6,
+      "on_hand_before": 278,
+      "on_hand_after": 284
+    },
+    {
+      "original_txn_id": 8800,
+      "order_number": "AFC-003106",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 1189,
+      "on_hand_after": 1193
+    },
+    {
+      "original_txn_id": 8797,
+      "order_number": "AFC-003106",
+      "product_name": "ZLP20302",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 190,
+      "on_hand_after": 192
+    },
+    {
+      "original_txn_id": 8801,
+      "order_number": "AFC-003106",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -12,
+      "offset_delta": 12,
+      "on_hand_before": 1644,
+      "on_hand_after": 1656
+    },
+    {
+      "original_txn_id": 8798,
+      "order_number": "AFC-003106",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -12,
+      "offset_delta": 12,
+      "on_hand_before": 918,
+      "on_hand_after": 930
+    },
+    {
+      "original_txn_id": 8805,
+      "order_number": "AFC-003105",
+      "product_name": "ZLP12242",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 870,
+      "on_hand_after": 872
+    },
+    {
+      "original_txn_id": 8804,
+      "order_number": "AFC-003105",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 284,
+      "on_hand_after": 286
+    },
+    {
+      "original_txn_id": 8817,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP-SPECIAL",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 42,
+      "on_hand_after": 43
+    },
+    {
+      "original_txn_id": 8813,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16251",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 491,
+      "on_hand_after": 492
+    },
+    {
+      "original_txn_id": 8819,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1193,
+      "on_hand_after": 1195
+    },
+    {
+      "original_txn_id": 8814,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 1656,
+      "on_hand_after": 1657
+    },
+    {
+      "original_txn_id": 8811,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 523,
+      "on_hand_after": 525
+    },
+    {
+      "original_txn_id": 8827,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 930,
+      "on_hand_after": 931
+    },
+    {
+      "original_txn_id": 8812,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1195,
+      "on_hand_after": 1197
+    },
+    {
+      "original_txn_id": 8815,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 1657,
+      "on_hand_after": 1658
+    },
+    {
+      "original_txn_id": 8834,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 525,
+      "on_hand_after": 527
+    },
+    {
+      "original_txn_id": 8824,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 931,
+      "on_hand_after": 932
+    },
+    {
+      "original_txn_id": 8826,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1197,
+      "on_hand_after": 1199
+    },
+    {
+      "original_txn_id": 8821,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 1658,
+      "on_hand_after": 1659
+    },
+    {
+      "original_txn_id": 8818,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 527,
+      "on_hand_after": 529
+    },
+    {
+      "original_txn_id": 8830,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 932,
+      "on_hand_after": 933
+    },
+    {
+      "original_txn_id": 8833,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1199,
+      "on_hand_after": 1201
+    },
+    {
+      "original_txn_id": 8831,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 1659,
+      "on_hand_after": 1660
+    },
+    {
+      "original_txn_id": 8829,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 529,
+      "on_hand_after": 531
+    },
+    {
+      "original_txn_id": 8832,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 933,
+      "on_hand_after": 934
+    },
+    {
+      "original_txn_id": 8825,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1201,
+      "on_hand_after": 1203
+    },
+    {
+      "original_txn_id": 8828,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 1660,
+      "on_hand_after": 1661
+    },
+    {
+      "original_txn_id": 8835,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 531,
+      "on_hand_after": 533
+    },
+    {
+      "original_txn_id": 8836,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 934,
+      "on_hand_after": 935
+    },
+    {
+      "original_txn_id": 8822,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1203,
+      "on_hand_after": 1205
+    },
+    {
+      "original_txn_id": 8823,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1661,
+      "on_hand_after": 1663
+    },
+    {
+      "original_txn_id": 8843,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 533,
+      "on_hand_after": 535
+    },
+    {
+      "original_txn_id": 8839,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 935,
+      "on_hand_after": 937
+    },
+    {
+      "original_txn_id": 8820,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1205,
+      "on_hand_after": 1207
+    },
+    {
+      "original_txn_id": 8841,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1663,
+      "on_hand_after": 1665
+    },
+    {
+      "original_txn_id": 8842,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 535,
+      "on_hand_after": 537
+    },
+    {
+      "original_txn_id": 8837,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 937,
+      "on_hand_after": 939
+    },
+    {
+      "original_txn_id": 8858,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 1207,
+      "on_hand_after": 1208
+    },
+    {
+      "original_txn_id": 8846,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -3,
+      "offset_delta": 3,
+      "on_hand_before": 1665,
+      "on_hand_after": 1668
+    },
+    {
+      "original_txn_id": 8838,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 537,
+      "on_hand_after": 538
+    },
+    {
+      "original_txn_id": 8849,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -3,
+      "offset_delta": 3,
+      "on_hand_before": 939,
+      "on_hand_after": 942
+    },
+    {
+      "original_txn_id": 8816,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1208,
+      "on_hand_after": 1210
+    },
+    {
+      "original_txn_id": 8845,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1210,
+      "on_hand_after": 1212
+    },
+    {
+      "original_txn_id": 8844,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 538,
+      "on_hand_after": 540
+    },
+    {
+      "original_txn_id": 8854,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 942,
+      "on_hand_after": 944
+    },
+    {
+      "original_txn_id": 8852,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1212,
+      "on_hand_after": 1214
+    },
+    {
+      "original_txn_id": 8853,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1668,
+      "on_hand_after": 1670
+    },
+    {
+      "original_txn_id": 8847,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 540,
+      "on_hand_after": 542
+    },
+    {
+      "original_txn_id": 8840,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 944,
+      "on_hand_after": 946
+    },
+    {
+      "original_txn_id": 8856,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1214,
+      "on_hand_after": 1216
+    },
+    {
+      "original_txn_id": 8848,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1670,
+      "on_hand_after": 1672
+    },
+    {
+      "original_txn_id": 8851,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 542,
+      "on_hand_after": 544
+    },
+    {
+      "original_txn_id": 8857,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 946,
+      "on_hand_after": 948
+    },
+    {
+      "original_txn_id": 8855,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP20242",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 2224,
+      "on_hand_after": 2228
+    },
+    {
+      "original_txn_id": 8859,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -12,
+      "offset_delta": 12,
+      "on_hand_before": 286,
+      "on_hand_after": 298
+    },
+    {
+      "original_txn_id": 8850,
+      "order_number": "AFC-003102",
+      "product_name": "ZLP12241",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 58,
+      "on_hand_after": 59
+    },
+    {
+      "original_txn_id": 8870,
+      "order_number": "AFC-003099",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 380,
+      "on_hand_after": 384
+    },
+    {
+      "original_txn_id": 8868,
+      "order_number": "AFC-003099",
+      "product_name": "ZLP18244",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 202,
+      "on_hand_after": 204
+    },
+    {
+      "original_txn_id": 8869,
+      "order_number": "AFC-003099",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -10,
+      "offset_delta": 10,
+      "on_hand_before": 384,
+      "on_hand_after": 394
+    },
+    {
+      "original_txn_id": 8872,
+      "order_number": "AFC-003099",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -10,
+      "offset_delta": 10,
+      "on_hand_before": 394,
+      "on_hand_after": 404
+    },
+    {
+      "original_txn_id": 8873,
+      "order_number": "AFC-003099",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -10,
+      "offset_delta": 10,
+      "on_hand_before": 404,
+      "on_hand_after": 414
+    },
+    {
+      "original_txn_id": 8871,
+      "order_number": "AFC-003099",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 298,
+      "on_hand_after": 300
+    },
+    {
+      "original_txn_id": 9407,
+      "order_number": "AFC-003145",
+      "product_name": "ZLP12244",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 542,
+      "on_hand_after": 546
+    },
+    {
+      "original_txn_id": 9409,
+      "order_number": "AFC-003145",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -3,
+      "offset_delta": 3,
+      "on_hand_before": 414,
+      "on_hand_after": 417
+    },
+    {
+      "original_txn_id": 9410,
+      "order_number": "AFC-003145",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 300,
+      "on_hand_after": 301
+    },
+    {
+      "original_txn_id": 9408,
+      "order_number": "AFC-003145",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -8,
+      "offset_delta": 8,
+      "on_hand_before": 417,
+      "on_hand_after": 425
+    },
+    {
+      "original_txn_id": 9411,
+      "order_number": "AFC-003145",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 301,
+      "on_hand_after": 302
+    },
+    {
+      "original_txn_id": 9413,
+      "order_number": "AFC-003143",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -8,
+      "offset_delta": 8,
+      "on_hand_before": 544,
+      "on_hand_after": 552
+    },
+    {
+      "original_txn_id": 9412,
+      "order_number": "AFC-003143",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -18,
+      "offset_delta": 18,
+      "on_hand_before": 425,
+      "on_hand_after": 443
+    },
+    {
+      "original_txn_id": 9414,
+      "order_number": "AFC-003142",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 948,
+      "on_hand_after": 952
+    },
+    {
+      "original_txn_id": 9416,
+      "order_number": "AFC-003142",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 552,
+      "on_hand_after": 556
+    },
+    {
+      "original_txn_id": 9418,
+      "order_number": "AFC-003142",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 952,
+      "on_hand_after": 956
+    },
+    {
+      "original_txn_id": 9419,
+      "order_number": "AFC-003142",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -8,
+      "offset_delta": 8,
+      "on_hand_before": 556,
+      "on_hand_after": 564
+    },
+    {
+      "original_txn_id": 9417,
+      "order_number": "AFC-003142",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 1216,
+      "on_hand_after": 1220
+    },
+    {
+      "original_txn_id": 9423,
+      "order_number": "AFC-003142",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -8,
+      "offset_delta": 8,
+      "on_hand_before": 564,
+      "on_hand_after": 572
+    },
+    {
+      "original_txn_id": 9415,
+      "order_number": "AFC-003142",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 1220,
+      "on_hand_after": 1224
+    },
+    {
+      "original_txn_id": 9420,
+      "order_number": "AFC-003142",
+      "product_name": "ZLP20252",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 956,
+      "on_hand_after": 960
+    },
+    {
+      "original_txn_id": 9421,
+      "order_number": "AFC-003142",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 572,
+      "on_hand_after": 576
+    },
+    {
+      "original_txn_id": 9424,
+      "order_number": "AFC-003142",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 1672,
+      "on_hand_after": 1676
+    },
+    {
+      "original_txn_id": 9425,
+      "order_number": "AFC-003142",
+      "product_name": "ZLP20202",
+      "warehouse_id": 1,
+      "original_delta": -8,
+      "offset_delta": 8,
+      "on_hand_before": 576,
+      "on_hand_after": 584
+    },
+    {
+      "original_txn_id": 9422,
+      "order_number": "AFC-003142",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -18,
+      "offset_delta": 18,
+      "on_hand_before": 443,
+      "on_hand_after": 461
+    },
+    {
+      "original_txn_id": 9427,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 860,
+      "on_hand_after": 864
+    },
+    {
+      "original_txn_id": 9428,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 864,
+      "on_hand_after": 868
+    },
+    {
+      "original_txn_id": 9426,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 868,
+      "on_hand_after": 872
+    },
+    {
+      "original_txn_id": 9430,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 872,
+      "on_hand_after": 876
+    },
+    {
+      "original_txn_id": 9429,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 876,
+      "on_hand_after": 880
+    },
+    {
+      "original_txn_id": 9432,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 880,
+      "on_hand_after": 884
+    },
+    {
+      "original_txn_id": 9436,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 884,
+      "on_hand_after": 888
+    },
+    {
+      "original_txn_id": 9437,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 888,
+      "on_hand_after": 892
+    },
+    {
+      "original_txn_id": 9433,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 892,
+      "on_hand_after": 896
+    },
+    {
+      "original_txn_id": 9439,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 896,
+      "on_hand_after": 900
+    },
+    {
+      "original_txn_id": 9431,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1676,
+      "on_hand_after": 1678
+    },
+    {
+      "original_txn_id": 9441,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1678,
+      "on_hand_after": 1680
+    },
+    {
+      "original_txn_id": 9434,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 900,
+      "on_hand_after": 904
+    },
+    {
+      "original_txn_id": 9435,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1680,
+      "on_hand_after": 1682
+    },
+    {
+      "original_txn_id": 9438,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1682,
+      "on_hand_after": 1684
+    },
+    {
+      "original_txn_id": 9442,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1684,
+      "on_hand_after": 1686
+    },
+    {
+      "original_txn_id": 9440,
+      "order_number": "AFC-003152",
+      "product_name": "ZLP16162",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 904,
+      "on_hand_after": 908
+    },
+    {
+      "original_txn_id": 9443,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -10,
+      "offset_delta": 10,
+      "on_hand_before": 461,
+      "on_hand_after": 471
+    },
+    {
+      "original_txn_id": 9448,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -10,
+      "offset_delta": 10,
+      "on_hand_before": 471,
+      "on_hand_after": 481
+    },
+    {
+      "original_txn_id": 9444,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP12244",
+      "warehouse_id": 1,
+      "original_delta": -9,
+      "offset_delta": 9,
+      "on_hand_before": 546,
+      "on_hand_after": 555
+    },
+    {
+      "original_txn_id": 9445,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP20244",
+      "warehouse_id": 1,
+      "original_delta": -3,
+      "offset_delta": 3,
+      "on_hand_before": 123,
+      "on_hand_after": 126
+    },
+    {
+      "original_txn_id": 9447,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -10,
+      "offset_delta": 10,
+      "on_hand_before": 481,
+      "on_hand_after": 491
+    },
+    {
+      "original_txn_id": 9446,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -10,
+      "offset_delta": 10,
+      "on_hand_before": 491,
+      "on_hand_after": 501
+    },
+    {
+      "original_txn_id": 9450,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -20,
+      "offset_delta": 20,
+      "on_hand_before": 501,
+      "on_hand_after": 521
+    },
+    {
+      "original_txn_id": 9461,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -20,
+      "offset_delta": 20,
+      "on_hand_before": 521,
+      "on_hand_after": 541
+    },
+    {
+      "original_txn_id": 9452,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -10,
+      "offset_delta": 10,
+      "on_hand_before": 541,
+      "on_hand_after": 551
+    },
+    {
+      "original_txn_id": 9455,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -10,
+      "offset_delta": 10,
+      "on_hand_before": 302,
+      "on_hand_after": 312
+    },
+    {
+      "original_txn_id": 9464,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 551,
+      "on_hand_after": 552
+    },
+    {
+      "original_txn_id": 9451,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -6,
+      "offset_delta": 6,
+      "on_hand_before": 552,
+      "on_hand_after": 558
+    },
+    {
+      "original_txn_id": 9463,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP12244",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 555,
+      "on_hand_after": 557
+    },
+    {
+      "original_txn_id": 9457,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 558,
+      "on_hand_after": 562
+    },
+    {
+      "original_txn_id": 9456,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP14241",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 58,
+      "on_hand_after": 60
+    },
+    {
+      "original_txn_id": 9449,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP20251",
+      "warehouse_id": 1,
+      "original_delta": -3,
+      "offset_delta": 3,
+      "on_hand_before": 644,
+      "on_hand_after": 647
+    },
+    {
+      "original_txn_id": 9453,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1224,
+      "on_hand_after": 1226
+    },
+    {
+      "original_txn_id": 9458,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1226,
+      "on_hand_after": 1228
+    },
+    {
+      "original_txn_id": 9460,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP12244",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 557,
+      "on_hand_after": 558
+    },
+    {
+      "original_txn_id": 9466,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP16201",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 556,
+      "on_hand_after": 560
+    },
+    {
+      "original_txn_id": 9454,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP12242",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 872,
+      "on_hand_after": 874
+    },
+    {
+      "original_txn_id": 9470,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP12242",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 874,
+      "on_hand_after": 876
+    },
+    {
+      "original_txn_id": 9462,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP18202",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 310,
+      "on_hand_after": 312
+    },
+    {
+      "original_txn_id": 9468,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP18242",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 286,
+      "on_hand_after": 288
+    },
+    {
+      "original_txn_id": 9467,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP20201",
+      "warehouse_id": 1,
+      "original_delta": -3,
+      "offset_delta": 3,
+      "on_hand_before": 534,
+      "on_hand_after": 537
+    },
+    {
+      "original_txn_id": 9465,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP12241",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 59,
+      "on_hand_after": 60
+    },
+    {
+      "original_txn_id": 9469,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP16201",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 560,
+      "on_hand_after": 562
+    },
+    {
+      "original_txn_id": 9459,
+      "order_number": "AFC-003147",
+      "product_name": "ZLP16201",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 562,
+      "on_hand_after": 564
+    },
+    {
+      "original_txn_id": 8789,
+      "order_number": "AFC-003107",
+      "product_name": "ZLP14261SP",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 0,
+      "on_hand_after": 1
+    },
+    {
+      "original_txn_id": 8861,
+      "order_number": "AFC-003101",
+      "product_name": "ZLP20301",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 140,
+      "on_hand_after": 142
+    },
+    {
+      "original_txn_id": 8864,
+      "order_number": "AFC-003101",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -2,
+      "offset_delta": 2,
+      "on_hand_before": 1686,
+      "on_hand_after": 1688
+    },
+    {
+      "original_txn_id": 8862,
+      "order_number": "AFC-003101",
+      "product_name": "ZLP20201",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 537,
+      "on_hand_after": 538
+    },
+    {
+      "original_txn_id": 8860,
+      "order_number": "AFC-003101",
+      "product_name": "ZLP20201",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 538,
+      "on_hand_after": 539
+    },
+    {
+      "original_txn_id": 8863,
+      "order_number": "AFC-003101",
+      "product_name": "ZLP20201",
+      "warehouse_id": 1,
+      "original_delta": -1,
+      "offset_delta": 1,
+      "on_hand_before": 539,
+      "on_hand_after": 540
+    },
+    {
+      "original_txn_id": 8866,
+      "order_number": "AFC-003100",
+      "product_name": "ZLP16202",
+      "warehouse_id": 1,
+      "original_delta": -8,
+      "offset_delta": 8,
+      "on_hand_before": 1228,
+      "on_hand_after": 1236
+    },
+    {
+      "original_txn_id": 8867,
+      "order_number": "AFC-003100",
+      "product_name": "ZLP16182SP",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 20,
+      "on_hand_after": 24
+    },
+    {
+      "original_txn_id": 8865,
+      "order_number": "AFC-003100",
+      "product_name": "ZLP16252",
+      "warehouse_id": 1,
+      "original_delta": -12,
+      "offset_delta": 12,
+      "on_hand_before": 1688,
+      "on_hand_after": 1700
+    },
+    {
+      "original_txn_id": 8144,
+      "order_number": "AFC-002979",
+      "product_name": "ZLP20242",
+      "warehouse_id": 1,
+      "original_delta": -4,
+      "offset_delta": 4,
+      "on_hand_before": 2228,
+      "on_hand_after": 2232
+    },
+    {
+      "original_txn_id": 8146,
+      "order_number": "AFC-002979",
+      "product_name": "ZLP24242",
+      "warehouse_id": 1,
+      "original_delta": -12,
+      "offset_delta": 12,
+      "on_hand_before": 312,
+      "on_hand_after": 324
+    },
+    {
+      "original_txn_id": 8151,
+      "order_number": "AFC-002979",
+      "product_name": "ZLP24244",
+      "warehouse_id": 1,
+      "original_delta": -9,
+      "offset_delta": 9,
+      "on_hand_before": 562,
+      "on_hand_after": 571
+    }
+  ]
+}

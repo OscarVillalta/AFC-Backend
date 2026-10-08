@@ -17,6 +17,7 @@ import requests
 
 from app.config import Config
 from app.api.tokens import permission_required
+from app.utils.time import to_local
 from app.api.validation import (
     validate_positive_integer,
     validate_string,
@@ -202,7 +203,7 @@ def get_order(order_id: int) -> Tuple[Any, int]:
             "description": order.description,
             "created_at": order.created_at.strftime(Config.DATE_FORMAT),
             "completed_at": (
-                order.completed_at.strftime(Config.DATE_FORMAT)
+                to_local(order.completed_at).strftime(Config.DATE_FORMAT)
                 if order.completed_at else None
             ),
             "eta": (
@@ -538,7 +539,7 @@ def complete_order_manual(order_id: int) -> Tuple[Any, int]:
             "message": "Order marked as completed.",
             "status": order.status,
             "completed_at": (
-                order.completed_at.strftime(Config.DATE_FORMAT)
+                to_local(order.completed_at).strftime(Config.DATE_FORMAT)
                 if order.completed_at else None
             ),
             "can_manual_complete": False,
@@ -607,7 +608,7 @@ def force_order_no_stock(order_id: int) -> Tuple[Any, int]:
             "message": "Order line items set to no stock deduction and marked completed.",
             "status": order.status,
             "completed_at": (
-                order.completed_at.strftime(Config.DATE_FORMAT)
+                to_local(order.completed_at).strftime(Config.DATE_FORMAT)
                 if order.completed_at else None
             ),
             "can_manual_complete": False,
@@ -904,7 +905,7 @@ def patch_order(order_id):
         "description": order.description,
         "created_at": order.created_at.strftime("%Y-%m-%d"),
         "completed_at": (
-            order.completed_at.strftime("%Y-%m-%d")
+            to_local(order.completed_at).strftime("%Y-%m-%d")
             if order.completed_at else None
         ),
         "eta": (

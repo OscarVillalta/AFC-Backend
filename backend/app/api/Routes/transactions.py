@@ -21,6 +21,7 @@ from database.models import (
 from datetime import datetime, timezone
 from app.api.Schemas.transaction_schema import TransactionSchema
 from app.api.tokens import permission_required
+from app.utils.time import local_day_end_utc, local_day_start_utc, utc_iso
 
 class InventoryConflictError(Exception):
     pass
@@ -28,6 +29,39 @@ class InventoryConflictError(Exception):
 transaction_bp = Blueprint("transactions", __name__)
 txn_schema = TransactionSchema()
 txn_list_schema = TransactionSchema(many=True)
+
+
+def _date_range_filters(column, start=None, end=None, before=None, after=None):
+    """Build inclusive date filters for a timestamp column.
+
+    Dates are Los Angeles calendar days; end/before bounds cover the whole selected
+    day. Raises ValueError on bad dates.
+    """
+    if start and end:
+        return [column >= local_day_start_utc(start), column < local_day_end_utc(end)]
+    if before:
+        return [column < local_day_end_utc(before)]
+    if after:
+        return [column >= local_day_start_utc(after)]
+    return []
+
+
+def _request_date_filters():
+    """Created/last-updated date filters shared by the search and summary endpoints."""
+    args = request.args
+    return _date_range_filters(
+        Transaction.created_at,
+        args.get("start_date"),
+        args.get("end_date"),
+        args.get("before_date"),
+        args.get("after_date"),
+    ) + _date_range_filters(
+        Transaction.last_updated_at,
+        args.get("updated_start_date"),
+        args.get("updated_end_date"),
+        args.get("updated_before_date"),
+        args.get("updated_after_date"),
+    )
 
 
 def validate_product_or_child_product_exclusive(data):
@@ -164,10 +198,6 @@ def get_transaction_summary():
     state = request.args.get("state")
     reason = request.args.get("reason", type=str)
     note = request.args.get("note", type=str)
-    start_date = request.args.get("start_date", type=str)
-    end_date = request.args.get("end_date", type=str)
-    before_date = request.args.get("before_date", type=str)
-    after_date = request.args.get("after_date", type=str)
 
     filters = []
 
@@ -203,13 +233,7 @@ def get_transaction_summary():
         filters.append(Transaction.note.ilike(f"%{note}%"))
 
     try:
-        if start_date and end_date:
-            filters.append(Transaction.created_at >= datetime.fromisoformat(start_date))
-            filters.append(Transaction.created_at <= datetime.fromisoformat(end_date))
-        elif before_date:
-            filters.append(Transaction.created_at <= datetime.fromisoformat(before_date))
-        elif after_date:
-            filters.append(Transaction.created_at >= datetime.fromisoformat(after_date))
+        filters.extend(_request_date_filters())
     except ValueError:
         return jsonify({"error": "Invalid date format. Use ISO format (YYYY-MM-DD)."}), 400
 
@@ -261,12 +285,6 @@ def filter_transactions():
     state = request.args.get("state")
     reason = request.args.get("reason", type=str)
     note = request.args.get("note", type=str)
-    
-    # Date filters
-    start_date = request.args.get("start_date", type=str)
-    end_date = request.args.get("end_date", type=str)
-    before_date = request.args.get("before_date", type=str)
-    after_date = request.args.get("after_date", type=str)
 
     # --- Pagination
     page = request.args.get("page", default=1, type=int)
@@ -325,16 +343,7 @@ def filter_transactions():
     
     # Date filters
     try:
-        if start_date and end_date:
-            # Between two dates (inclusive)
-            filters.append(Transaction.created_at >= datetime.fromisoformat(start_date))
-            filters.append(Transaction.created_at <= datetime.fromisoformat(end_date))
-        elif before_date:
-            # Before a specific date (inclusive)
-            filters.append(Transaction.created_at <= datetime.fromisoformat(before_date))
-        elif after_date:
-            # After a specific date (inclusive)
-            filters.append(Transaction.created_at >= datetime.fromisoformat(after_date))
+        filters.extend(_request_date_filters())
     except ValueError:
         return jsonify({"error": "Invalid date format. Use ISO format (YYYY-MM-DD)."}), 400
 
@@ -486,8 +495,8 @@ def create_transaction():
         "quantity_delta": txn.quantity_delta,
         "reason": txn.reason,
         "note": txn.note,
-        "created_at": txn.created_at.isoformat(),
-        "last_updated_at": txn.last_updated_at.isoformat(),
+        "created_at": utc_iso(txn.created_at),
+        "last_updated_at": utc_iso(txn.last_updated_at),
         "ledger_sequence": txn.ledger_sequence,
     }), 201
 
@@ -644,7 +653,7 @@ def produce_product():
             ],
             "increase_txn_id": conversion.increase_txn_id,
             "state": conversion.state,
-            "created_at": conversion.created_at.isoformat(),
+            "created_at": utc_iso(conversion.created_at),
             "note": conversion.note,
         },
         "source_on_hand": source_quantity.on_hand,
@@ -1097,7 +1106,7 @@ def get_bulk_projections():
                 "quantity_delta": txn.quantity_delta,
                 "projected_stock": running_stock,
                 "eta": txn.eta.isoformat() if txn.eta else None,
-                "created_at": txn.created_at.isoformat() if txn.created_at else None
+                "created_at": utc_iso(txn.created_at)
             })
         
         results.append({

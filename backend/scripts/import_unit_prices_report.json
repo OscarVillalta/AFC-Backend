@@ -1,0 +1,4817 @@
+{
+  "generated_at": "2026-10-02T19:10:21.647950+00:00",
+  "dry_run": false,
+  "file": "C:\\Users\\AFCadmin2\\Desktop\\Master\\AFC Backend\\AFC-Backend\\pricingmanual.xlsx",
+  "sheet": "Sheet1",
+  "rows_with_numeric_price": 793,
+  "rows_not_numeric_skipped": 167,
+  "rows_blank_price_skipped": 685,
+  "updated": 793,
+  "unchanged": 0,
+  "product_ids_not_found": [],
+  "problems": [],
+  "not_numeric": [
+    {
+      "row": 2,
+      "id": 28338,
+      "value": "AFC"
+    },
+    {
+      "row": 3,
+      "id": 28339,
+      "value": "AFC"
+    },
+    {
+      "row": 4,
+      "id": 27008,
+      "value": "AFC"
+    },
+    {
+      "row": 12,
+      "id": 27031,
+      "value": "AFC"
+    },
+    {
+      "row": 13,
+      "id": 27034,
+      "value": "AFC"
+    },
+    {
+      "row": 18,
+      "id": 27039,
+      "value": "AFC"
+    },
+    {
+      "row": 21,
+      "id": 27041,
+      "value": "AFC"
+    },
+    {
+      "row": 29,
+      "id": 27049,
+      "value": "AFC"
+    },
+    {
+      "row": 31,
+      "id": 27056,
+      "value": "AFC"
+    },
+    {
+      "row": 33,
+      "id": 27055,
+      "value": "AFC"
+    },
+    {
+      "row": 36,
+      "id": 27057,
+      "value": "AFC"
+    },
+    {
+      "row": 38,
+      "id": 27051,
+      "value": "AFC"
+    },
+    {
+      "row": 41,
+      "id": 28408,
+      "value": "AFC"
+    },
+    {
+      "row": 42,
+      "id": 27059,
+      "value": "AFC"
+    },
+    {
+      "row": 59,
+      "id": 27075,
+      "value": "AFC"
+    },
+    {
+      "row": 63,
+      "id": 27079,
+      "value": "AFC"
+    },
+    {
+      "row": 67,
+      "id": 27082,
+      "value": "AFC"
+    },
+    {
+      "row": 86,
+      "id": 27101,
+      "value": "AFC"
+    },
+    {
+      "row": 98,
+      "id": 27113,
+      "value": "AFC"
+    },
+    {
+      "row": 113,
+      "id": 28409,
+      "value": "AFC"
+    },
+    {
+      "row": 116,
+      "id": 28416,
+      "value": "AFC"
+    },
+    {
+      "row": 117,
+      "id": 27131,
+      "value": "AFC"
+    },
+    {
+      "row": 120,
+      "id": 27134,
+      "value": "AFC"
+    },
+    {
+      "row": 121,
+      "id": 27135,
+      "value": "AFC"
+    },
+    {
+      "row": 123,
+      "id": 27140,
+      "value": "AFC"
+    },
+    {
+      "row": 124,
+      "id": 27139,
+      "value": "AFC"
+    },
+    {
+      "row": 150,
+      "id": 27161,
+      "value": "AFC"
+    },
+    {
+      "row": 162,
+      "id": 27172,
+      "value": "AFC"
+    },
+    {
+      "row": 163,
+      "id": 27173,
+      "value": "AFC"
+    },
+    {
+      "row": 172,
+      "id": 27182,
+      "value": "AFC"
+    },
+    {
+      "row": 174,
+      "id": 27183,
+      "value": "AFC"
+    },
+    {
+      "row": 175,
+      "id": 27185,
+      "value": "AFC"
+    },
+    {
+      "row": 178,
+      "id": 28424,
+      "value": "AFC"
+    },
+    {
+      "row": 179,
+      "id": 28420,
+      "value": "AFC"
+    },
+    {
+      "row": 180,
+      "id": 28423,
+      "value": "AFC"
+    },
+    {
+      "row": 181,
+      "id": 28425,
+      "value": "AFC"
+    },
+    {
+      "row": 182,
+      "id": 27187,
+      "value": "AFC"
+    },
+    {
+      "row": 183,
+      "id": 27188,
+      "value": "AFC"
+    },
+    {
+      "row": 184,
+      "id": 28426,
+      "value": "AFC"
+    },
+    {
+      "row": 185,
+      "id": 27189,
+      "value": "AFC"
+    },
+    {
+      "row": 187,
+      "id": 27191,
+      "value": "AFC"
+    },
+    {
+      "row": 188,
+      "id": 27192,
+      "value": "AFC"
+    },
+    {
+      "row": 191,
+      "id": 27193,
+      "value": "AFC"
+    },
+    {
+      "row": 194,
+      "id": 27198,
+      "value": "AFC"
+    },
+    {
+      "row": 195,
+      "id": 28427,
+      "value": "AFC"
+    },
+    {
+      "row": 212,
+      "id": 27213,
+      "value": "AFC"
+    },
+    {
+      "row": 219,
+      "id": 27219,
+      "value": "AFC"
+    },
+    {
+      "row": 228,
+      "id": 29311,
+      "value": "AFC"
+    },
+    {
+      "row": 229,
+      "id": 29312,
+      "value": "AFC"
+    },
+    {
+      "row": 231,
+      "id": 27227,
+      "value": "AFC"
+    },
+    {
+      "row": 234,
+      "id": 27228,
+      "value": "AFC"
+    },
+    {
+      "row": 236,
+      "id": 27230,
+      "value": "AFC"
+    },
+    {
+      "row": 238,
+      "id": 28444,
+      "value": "AFC"
+    },
+    {
+      "row": 239,
+      "id": 27232,
+      "value": "AFC"
+    },
+    {
+      "row": 240,
+      "id": 28442,
+      "value": "AFC"
+    },
+    {
+      "row": 241,
+      "id": 27233,
+      "value": "AFC"
+    },
+    {
+      "row": 242,
+      "id": 28449,
+      "value": "AFC"
+    },
+    {
+      "row": 243,
+      "id": 27234,
+      "value": "AFC"
+    },
+    {
+      "row": 244,
+      "id": 28451,
+      "value": "AFC"
+    },
+    {
+      "row": 245,
+      "id": 27235,
+      "value": "AFC"
+    },
+    {
+      "row": 251,
+      "id": 28446,
+      "value": "AFC"
+    },
+    {
+      "row": 252,
+      "id": 27240,
+      "value": "AFC"
+    },
+    {
+      "row": 260,
+      "id": 27250,
+      "value": "AFC"
+    },
+    {
+      "row": 261,
+      "id": 27249,
+      "value": "AFC"
+    },
+    {
+      "row": 264,
+      "id": 27253,
+      "value": "AFC"
+    },
+    {
+      "row": 267,
+      "id": 27255,
+      "value": "AFC"
+    },
+    {
+      "row": 269,
+      "id": 27257,
+      "value": "AFC"
+    },
+    {
+      "row": 270,
+      "id": 27258,
+      "value": "AFC"
+    },
+    {
+      "row": 331,
+      "id": 28574,
+      "value": "AFC"
+    },
+    {
+      "row": 337,
+      "id": 28576,
+      "value": "AFC"
+    },
+    {
+      "row": 338,
+      "id": 28578,
+      "value": "AFC"
+    },
+    {
+      "row": 339,
+      "id": 28577,
+      "value": "AFC"
+    },
+    {
+      "row": 340,
+      "id": 28579,
+      "value": "AFC"
+    },
+    {
+      "row": 345,
+      "id": 28588,
+      "value": "AFC"
+    },
+    {
+      "row": 368,
+      "id": 27350,
+      "value": "AFC"
+    },
+    {
+      "row": 373,
+      "id": 27354,
+      "value": "AFC"
+    },
+    {
+      "row": 376,
+      "id": 27356,
+      "value": "AFC"
+    },
+    {
+      "row": 394,
+      "id": 27374,
+      "value": "AFC"
+    },
+    {
+      "row": 402,
+      "id": 27381,
+      "value": "AFC"
+    },
+    {
+      "row": 433,
+      "id": 28715,
+      "value": "AFC"
+    },
+    {
+      "row": 434,
+      "id": 28718,
+      "value": "AFC"
+    },
+    {
+      "row": 435,
+      "id": 28717,
+      "value": "AFC"
+    },
+    {
+      "row": 440,
+      "id": 28727,
+      "value": "AFC"
+    },
+    {
+      "row": 441,
+      "id": 29329,
+      "value": "AFC"
+    },
+    {
+      "row": 442,
+      "id": 28724,
+      "value": "AFC"
+    },
+    {
+      "row": 446,
+      "id": 28730,
+      "value": "AFC"
+    },
+    {
+      "row": 458,
+      "id": 29256,
+      "value": "AFC"
+    },
+    {
+      "row": 498,
+      "id": 27450,
+      "value": "AFC"
+    },
+    {
+      "row": 563,
+      "id": 28782,
+      "value": "AFC"
+    },
+    {
+      "row": 564,
+      "id": 28786,
+      "value": "AFC"
+    },
+    {
+      "row": 565,
+      "id": 27499,
+      "value": "AFC"
+    },
+    {
+      "row": 566,
+      "id": 28785,
+      "value": "AFC"
+    },
+    {
+      "row": 567,
+      "id": 28787,
+      "value": "AFC"
+    },
+    {
+      "row": 568,
+      "id": 27500,
+      "value": "AFC"
+    },
+    {
+      "row": 569,
+      "id": 27502,
+      "value": "AFC"
+    },
+    {
+      "row": 570,
+      "id": 27501,
+      "value": "AFC"
+    },
+    {
+      "row": 571,
+      "id": 27503,
+      "value": "AFC"
+    },
+    {
+      "row": 572,
+      "id": 27504,
+      "value": "AFC"
+    },
+    {
+      "row": 573,
+      "id": 27505,
+      "value": "AFC"
+    },
+    {
+      "row": 574,
+      "id": 27508,
+      "value": "AFC"
+    },
+    {
+      "row": 587,
+      "id": 27511,
+      "value": "AFC"
+    },
+    {
+      "row": 608,
+      "id": 29309,
+      "value": "AFC"
+    },
+    {
+      "row": 610,
+      "id": 28815,
+      "value": "AFC"
+    },
+    {
+      "row": 619,
+      "id": 28833,
+      "value": "AFC"
+    },
+    {
+      "row": 627,
+      "id": 28852,
+      "value": "AFC"
+    },
+    {
+      "row": 635,
+      "id": 27539,
+      "value": "AFC"
+    },
+    {
+      "row": 636,
+      "id": 27540,
+      "value": "AFC"
+    },
+    {
+      "row": 639,
+      "id": 27543,
+      "value": "AFC"
+    },
+    {
+      "row": 642,
+      "id": 27546,
+      "value": "AFC"
+    },
+    {
+      "row": 646,
+      "id": 29307,
+      "value": "AFC"
+    },
+    {
+      "row": 652,
+      "id": 27553,
+      "value": "AFC"
+    },
+    {
+      "row": 656,
+      "id": 29289,
+      "value": "AFC"
+    },
+    {
+      "row": 671,
+      "id": 29306,
+      "value": "AFC"
+    },
+    {
+      "row": 672,
+      "id": 27570,
+      "value": "AFC"
+    },
+    {
+      "row": 687,
+      "id": 27584,
+      "value": "AFC"
+    },
+    {
+      "row": 688,
+      "id": 27586,
+      "value": "AFC"
+    },
+    {
+      "row": 697,
+      "id": 27591,
+      "value": "AFC"
+    },
+    {
+      "row": 734,
+      "id": 27625,
+      "value": "AFC"
+    },
+    {
+      "row": 750,
+      "id": 29305,
+      "value": "AFC"
+    },
+    {
+      "row": 760,
+      "id": 27650,
+      "value": "AFC"
+    },
+    {
+      "row": 762,
+      "id": 27652,
+      "value": "AFC"
+    },
+    {
+      "row": 765,
+      "id": 27655,
+      "value": "AFC"
+    },
+    {
+      "row": 769,
+      "id": 27658,
+      "value": "AFC"
+    },
+    {
+      "row": 770,
+      "id": 27659,
+      "value": "AFC"
+    },
+    {
+      "row": 795,
+      "id": 27683,
+      "value": "AFC"
+    },
+    {
+      "row": 796,
+      "id": 27684,
+      "value": "AFC"
+    },
+    {
+      "row": 807,
+      "id": 27692,
+      "value": "AFC"
+    },
+    {
+      "row": 810,
+      "id": 27695,
+      "value": "AFC"
+    },
+    {
+      "row": 813,
+      "id": 29308,
+      "value": "AFC"
+    },
+    {
+      "row": 814,
+      "id": 29303,
+      "value": "AFC"
+    },
+    {
+      "row": 826,
+      "id": 27706,
+      "value": "AFC"
+    },
+    {
+      "row": 827,
+      "id": 27707,
+      "value": "AFC"
+    },
+    {
+      "row": 836,
+      "id": 28851,
+      "value": "AFC"
+    },
+    {
+      "row": 837,
+      "id": 27714,
+      "value": "AFC"
+    },
+    {
+      "row": 838,
+      "id": 28853,
+      "value": "AFC"
+    },
+    {
+      "row": 887,
+      "id": 28907,
+      "value": "AFC"
+    },
+    {
+      "row": 924,
+      "id": 29258,
+      "value": "AFC"
+    },
+    {
+      "row": 1109,
+      "id": 28932,
+      "value": "AFC"
+    },
+    {
+      "row": 1176,
+      "id": 28961,
+      "value": "AFC"
+    },
+    {
+      "row": 1212,
+      "id": 29078,
+      "value": "AFC"
+    },
+    {
+      "row": 1218,
+      "id": 29121,
+      "value": "AFC"
+    },
+    {
+      "row": 1257,
+      "id": 29310,
+      "value": "AFC"
+    },
+    {
+      "row": 1319,
+      "id": 29185,
+      "value": "AFC"
+    },
+    {
+      "row": 1320,
+      "id": 29184,
+      "value": "AFC"
+    },
+    {
+      "row": 1321,
+      "id": 29187,
+      "value": "AFC"
+    },
+    {
+      "row": 1322,
+      "id": 29189,
+      "value": "AFC"
+    },
+    {
+      "row": 1323,
+      "id": 29188,
+      "value": "AFC"
+    },
+    {
+      "row": 1330,
+      "id": 29201,
+      "value": "AFC"
+    },
+    {
+      "row": 1331,
+      "id": 29196,
+      "value": "AFC"
+    },
+    {
+      "row": 1332,
+      "id": 29197,
+      "value": "AFC"
+    },
+    {
+      "row": 1333,
+      "id": 29199,
+      "value": "AFC"
+    },
+    {
+      "row": 1334,
+      "id": 29198,
+      "value": "AFC"
+    },
+    {
+      "row": 1335,
+      "id": 29200,
+      "value": "AFC"
+    },
+    {
+      "row": 1336,
+      "id": 29204,
+      "value": "AFC"
+    },
+    {
+      "row": 1337,
+      "id": 29206,
+      "value": "AFC"
+    },
+    {
+      "row": 1338,
+      "id": 29205,
+      "value": "AFC"
+    },
+    {
+      "row": 1339,
+      "id": 29207,
+      "value": "AFC"
+    },
+    {
+      "row": 1340,
+      "id": 29210,
+      "value": "AFC"
+    },
+    {
+      "row": 1341,
+      "id": 29209,
+      "value": "AFC"
+    },
+    {
+      "row": 1342,
+      "id": 29211,
+      "value": "AFC"
+    },
+    {
+      "row": 1343,
+      "id": 29335,
+      "value": "AFC"
+    },
+    {
+      "row": 1344,
+      "id": 29208,
+      "value": "AFC"
+    },
+    {
+      "row": 1353,
+      "id": 28086,
+      "value": "AFC"
+    },
+    {
+      "row": 1358,
+      "id": 29217,
+      "value": "AFC"
+    },
+    {
+      "row": 1384,
+      "id": 29218,
+      "value": "AFC"
+    },
+    {
+      "row": 1390,
+      "id": 29219,
+      "value": "AFC"
+    },
+    {
+      "row": 1590,
+      "id": 29224,
+      "value": "AFC"
+    }
+  ],
+  "changes": [
+    {
+      "product_id": 27025,
+      "unit_price_before": null,
+      "unit_price_after": 3.32
+    },
+    {
+      "product_id": 27026,
+      "unit_price_before": null,
+      "unit_price_after": 3.99
+    },
+    {
+      "product_id": 27028,
+      "unit_price_before": null,
+      "unit_price_after": 3.7
+    },
+    {
+      "product_id": 27029,
+      "unit_price_before": null,
+      "unit_price_after": 4.43
+    },
+    {
+      "product_id": 27032,
+      "unit_price_before": null,
+      "unit_price_after": 6.74
+    },
+    {
+      "product_id": 27035,
+      "unit_price_before": null,
+      "unit_price_after": 3.17
+    },
+    {
+      "product_id": 27037,
+      "unit_price_before": null,
+      "unit_price_after": 3.67
+    },
+    {
+      "product_id": 27045,
+      "unit_price_before": null,
+      "unit_price_after": 4.35
+    },
+    {
+      "product_id": 27048,
+      "unit_price_before": null,
+      "unit_price_after": 4.32
+    },
+    {
+      "product_id": 28401,
+      "unit_price_before": null,
+      "unit_price_after": 5.93
+    },
+    {
+      "product_id": 27050,
+      "unit_price_before": null,
+      "unit_price_after": 8.36
+    },
+    {
+      "product_id": 28407,
+      "unit_price_before": null,
+      "unit_price_after": 14.22
+    },
+    {
+      "product_id": 27060,
+      "unit_price_before": null,
+      "unit_price_after": 3.74
+    },
+    {
+      "product_id": 27061,
+      "unit_price_before": null,
+      "unit_price_after": 4.49
+    },
+    {
+      "product_id": 27062,
+      "unit_price_before": null,
+      "unit_price_after": 3.74
+    },
+    {
+      "product_id": 27067,
+      "unit_price_before": null,
+      "unit_price_after": 3.69
+    },
+    {
+      "product_id": 27068,
+      "unit_price_before": null,
+      "unit_price_after": 3.56
+    },
+    {
+      "product_id": 27069,
+      "unit_price_before": null,
+      "unit_price_after": 3.6
+    },
+    {
+      "product_id": 27070,
+      "unit_price_before": null,
+      "unit_price_after": 4.11
+    },
+    {
+      "product_id": 27072,
+      "unit_price_before": null,
+      "unit_price_after": 4.43
+    },
+    {
+      "product_id": 27073,
+      "unit_price_before": null,
+      "unit_price_after": 4.4
+    },
+    {
+      "product_id": 27076,
+      "unit_price_before": null,
+      "unit_price_after": 4.76
+    },
+    {
+      "product_id": 27078,
+      "unit_price_before": null,
+      "unit_price_after": 4.9
+    },
+    {
+      "product_id": 28410,
+      "unit_price_before": null,
+      "unit_price_after": 5.08
+    },
+    {
+      "product_id": 27080,
+      "unit_price_before": null,
+      "unit_price_after": 5.95
+    },
+    {
+      "product_id": 27081,
+      "unit_price_before": null,
+      "unit_price_after": 7.3
+    },
+    {
+      "product_id": 27083,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 27084,
+      "unit_price_before": null,
+      "unit_price_after": 3.83
+    },
+    {
+      "product_id": 27086,
+      "unit_price_before": null,
+      "unit_price_after": 4.96
+    },
+    {
+      "product_id": 27087,
+      "unit_price_before": null,
+      "unit_price_after": 6.41
+    },
+    {
+      "product_id": 27089,
+      "unit_price_before": null,
+      "unit_price_after": 6.04
+    },
+    {
+      "product_id": 27093,
+      "unit_price_before": null,
+      "unit_price_after": 5.09
+    },
+    {
+      "product_id": 27095,
+      "unit_price_before": null,
+      "unit_price_after": 6.46
+    },
+    {
+      "product_id": 27104,
+      "unit_price_before": null,
+      "unit_price_after": 3.91
+    },
+    {
+      "product_id": 27105,
+      "unit_price_before": null,
+      "unit_price_after": 3.78
+    },
+    {
+      "product_id": 27108,
+      "unit_price_before": null,
+      "unit_price_after": 3.83
+    },
+    {
+      "product_id": 27110,
+      "unit_price_before": null,
+      "unit_price_after": 5.08
+    },
+    {
+      "product_id": 27111,
+      "unit_price_before": null,
+      "unit_price_after": 3.97
+    },
+    {
+      "product_id": 27114,
+      "unit_price_before": null,
+      "unit_price_after": 4.55
+    },
+    {
+      "product_id": 27117,
+      "unit_price_before": null,
+      "unit_price_after": 4.91
+    },
+    {
+      "product_id": 27118,
+      "unit_price_before": null,
+      "unit_price_after": 4.62
+    },
+    {
+      "product_id": 27120,
+      "unit_price_before": null,
+      "unit_price_after": 5.7
+    },
+    {
+      "product_id": 27122,
+      "unit_price_before": null,
+      "unit_price_after": 4.67
+    },
+    {
+      "product_id": 27123,
+      "unit_price_before": null,
+      "unit_price_after": 6.46
+    },
+    {
+      "product_id": 27124,
+      "unit_price_before": null,
+      "unit_price_after": 6.87
+    },
+    {
+      "product_id": 27127,
+      "unit_price_before": null,
+      "unit_price_after": 7.09
+    },
+    {
+      "product_id": 27128,
+      "unit_price_before": null,
+      "unit_price_after": 7.08
+    },
+    {
+      "product_id": 27129,
+      "unit_price_before": null,
+      "unit_price_after": 7.83
+    },
+    {
+      "product_id": 27130,
+      "unit_price_before": null,
+      "unit_price_after": 9.61
+    },
+    {
+      "product_id": 27133,
+      "unit_price_before": null,
+      "unit_price_after": 10.92
+    },
+    {
+      "product_id": 28412,
+      "unit_price_before": null,
+      "unit_price_after": 16.3
+    },
+    {
+      "product_id": 27144,
+      "unit_price_before": null,
+      "unit_price_after": 5.19
+    },
+    {
+      "product_id": 27147,
+      "unit_price_before": null,
+      "unit_price_after": 5.34
+    },
+    {
+      "product_id": 27149,
+      "unit_price_before": null,
+      "unit_price_after": 6.05
+    },
+    {
+      "product_id": 27153,
+      "unit_price_before": null,
+      "unit_price_after": 8.23
+    },
+    {
+      "product_id": 28415,
+      "unit_price_before": null,
+      "unit_price_after": 9.3
+    },
+    {
+      "product_id": 27162,
+      "unit_price_before": null,
+      "unit_price_after": 4.64
+    },
+    {
+      "product_id": 27163,
+      "unit_price_before": null,
+      "unit_price_after": 5.58
+    },
+    {
+      "product_id": 27165,
+      "unit_price_before": null,
+      "unit_price_after": 4.86
+    },
+    {
+      "product_id": 27166,
+      "unit_price_before": null,
+      "unit_price_after": 4.74
+    },
+    {
+      "product_id": 27167,
+      "unit_price_before": null,
+      "unit_price_after": 5.27
+    },
+    {
+      "product_id": 27170,
+      "unit_price_before": null,
+      "unit_price_after": 5.72
+    },
+    {
+      "product_id": 27171,
+      "unit_price_before": null,
+      "unit_price_after": 5.35
+    },
+    {
+      "product_id": 27174,
+      "unit_price_before": null,
+      "unit_price_after": 5.27
+    },
+    {
+      "product_id": 27177,
+      "unit_price_before": null,
+      "unit_price_after": 6.54
+    },
+    {
+      "product_id": 27178,
+      "unit_price_before": null,
+      "unit_price_after": 7.68
+    },
+    {
+      "product_id": 27180,
+      "unit_price_before": null,
+      "unit_price_after": 5.78
+    },
+    {
+      "product_id": 27181,
+      "unit_price_before": null,
+      "unit_price_after": 7.9
+    },
+    {
+      "product_id": 28432,
+      "unit_price_before": null,
+      "unit_price_after": 35.65
+    },
+    {
+      "product_id": 27202,
+      "unit_price_before": null,
+      "unit_price_after": 5.76
+    },
+    {
+      "product_id": 27203,
+      "unit_price_before": null,
+      "unit_price_after": 6.3
+    },
+    {
+      "product_id": 27224,
+      "unit_price_before": null,
+      "unit_price_after": 5.8
+    },
+    {
+      "product_id": 27222,
+      "unit_price_before": null,
+      "unit_price_after": 6.36
+    },
+    {
+      "product_id": 28440,
+      "unit_price_before": null,
+      "unit_price_after": 37.5
+    },
+    {
+      "product_id": 28443,
+      "unit_price_before": null,
+      "unit_price_after": 10.75
+    },
+    {
+      "product_id": 27241,
+      "unit_price_before": null,
+      "unit_price_after": 6.61
+    },
+    {
+      "product_id": 27242,
+      "unit_price_before": null,
+      "unit_price_after": 6.53
+    },
+    {
+      "product_id": 27243,
+      "unit_price_before": null,
+      "unit_price_after": 6.74
+    },
+    {
+      "product_id": 27261,
+      "unit_price_before": null,
+      "unit_price_after": 11.13
+    },
+    {
+      "product_id": 27264,
+      "unit_price_before": null,
+      "unit_price_after": 2.89
+    },
+    {
+      "product_id": 27262,
+      "unit_price_before": null,
+      "unit_price_after": 3.58
+    },
+    {
+      "product_id": 27265,
+      "unit_price_before": null,
+      "unit_price_after": 3.69
+    },
+    {
+      "product_id": 27263,
+      "unit_price_before": null,
+      "unit_price_after": 4.04
+    },
+    {
+      "product_id": 27267,
+      "unit_price_before": null,
+      "unit_price_after": 4.72
+    },
+    {
+      "product_id": 28448,
+      "unit_price_before": null,
+      "unit_price_after": 14.2
+    },
+    {
+      "product_id": 27278,
+      "unit_price_before": null,
+      "unit_price_after": 16.36
+    },
+    {
+      "product_id": 27282,
+      "unit_price_before": null,
+      "unit_price_after": 17.86
+    },
+    {
+      "product_id": 27285,
+      "unit_price_before": null,
+      "unit_price_after": 3.51
+    },
+    {
+      "product_id": 28532,
+      "unit_price_before": null,
+      "unit_price_after": 5.13
+    },
+    {
+      "product_id": 27291,
+      "unit_price_before": null,
+      "unit_price_after": 10.04
+    },
+    {
+      "product_id": 27288,
+      "unit_price_before": null,
+      "unit_price_after": 11.2
+    },
+    {
+      "product_id": 27315,
+      "unit_price_before": null,
+      "unit_price_after": 40.0
+    },
+    {
+      "product_id": 27319,
+      "unit_price_before": null,
+      "unit_price_after": 23.5
+    },
+    {
+      "product_id": 27318,
+      "unit_price_before": null,
+      "unit_price_after": 26.5
+    },
+    {
+      "product_id": 27349,
+      "unit_price_before": null,
+      "unit_price_after": 43.44
+    },
+    {
+      "product_id": 27355,
+      "unit_price_before": null,
+      "unit_price_after": 44.99
+    },
+    {
+      "product_id": 27372,
+      "unit_price_before": null,
+      "unit_price_after": 43.44
+    },
+    {
+      "product_id": 27376,
+      "unit_price_before": null,
+      "unit_price_after": 51.2
+    },
+    {
+      "product_id": 27377,
+      "unit_price_before": null,
+      "unit_price_after": 52.75
+    },
+    {
+      "product_id": 27380,
+      "unit_price_before": null,
+      "unit_price_after": 43.68
+    },
+    {
+      "product_id": 27382,
+      "unit_price_before": null,
+      "unit_price_after": 52.21
+    },
+    {
+      "product_id": 27384,
+      "unit_price_before": null,
+      "unit_price_after": 54.3
+    },
+    {
+      "product_id": 27383,
+      "unit_price_before": null,
+      "unit_price_after": 52.71
+    },
+    {
+      "product_id": 27386,
+      "unit_price_before": null,
+      "unit_price_after": 54.22
+    },
+    {
+      "product_id": 27401,
+      "unit_price_before": null,
+      "unit_price_after": 18.82
+    },
+    {
+      "product_id": 27402,
+      "unit_price_before": null,
+      "unit_price_after": 23.91
+    },
+    {
+      "product_id": 27403,
+      "unit_price_before": null,
+      "unit_price_after": 24.1
+    },
+    {
+      "product_id": 27404,
+      "unit_price_before": null,
+      "unit_price_after": 16.81
+    },
+    {
+      "product_id": 27409,
+      "unit_price_before": null,
+      "unit_price_after": 29.74
+    },
+    {
+      "product_id": 27410,
+      "unit_price_before": null,
+      "unit_price_after": 31.23
+    },
+    {
+      "product_id": 27411,
+      "unit_price_before": null,
+      "unit_price_after": 31.23
+    },
+    {
+      "product_id": 27416,
+      "unit_price_before": null,
+      "unit_price_after": 30.18
+    },
+    {
+      "product_id": 27415,
+      "unit_price_before": null,
+      "unit_price_after": 35.04
+    },
+    {
+      "product_id": 27419,
+      "unit_price_before": null,
+      "unit_price_after": 33.33
+    },
+    {
+      "product_id": 27422,
+      "unit_price_before": null,
+      "unit_price_after": 46.99
+    },
+    {
+      "product_id": 27426,
+      "unit_price_before": null,
+      "unit_price_after": 32.02
+    },
+    {
+      "product_id": 27425,
+      "unit_price_before": null,
+      "unit_price_after": 42.55
+    },
+    {
+      "product_id": 27427,
+      "unit_price_before": null,
+      "unit_price_after": 35.37
+    },
+    {
+      "product_id": 27429,
+      "unit_price_before": null,
+      "unit_price_after": 36.32
+    },
+    {
+      "product_id": 27449,
+      "unit_price_before": null,
+      "unit_price_after": 76.83
+    },
+    {
+      "product_id": 27451,
+      "unit_price_before": null,
+      "unit_price_after": 28.99
+    },
+    {
+      "product_id": 27452,
+      "unit_price_before": null,
+      "unit_price_after": 46.98
+    },
+    {
+      "product_id": 27453,
+      "unit_price_before": null,
+      "unit_price_after": 55.61
+    },
+    {
+      "product_id": 27454,
+      "unit_price_before": null,
+      "unit_price_after": 49.06
+    },
+    {
+      "product_id": 27455,
+      "unit_price_before": null,
+      "unit_price_after": 44.9
+    },
+    {
+      "product_id": 27456,
+      "unit_price_before": null,
+      "unit_price_after": 46.98
+    },
+    {
+      "product_id": 27460,
+      "unit_price_before": null,
+      "unit_price_after": 52.9
+    },
+    {
+      "product_id": 27459,
+      "unit_price_before": null,
+      "unit_price_after": 55.61
+    },
+    {
+      "product_id": 27458,
+      "unit_price_before": null,
+      "unit_price_after": 54.75
+    },
+    {
+      "product_id": 27463,
+      "unit_price_before": null,
+      "unit_price_after": 52.08
+    },
+    {
+      "product_id": 27465,
+      "unit_price_before": null,
+      "unit_price_after": 62.6
+    },
+    {
+      "product_id": 27467,
+      "unit_price_before": null,
+      "unit_price_after": 62.6
+    },
+    {
+      "product_id": 27476,
+      "unit_price_before": null,
+      "unit_price_after": 99.72
+    },
+    {
+      "product_id": 27479,
+      "unit_price_before": null,
+      "unit_price_after": 83.3
+    },
+    {
+      "product_id": 27477,
+      "unit_price_before": null,
+      "unit_price_after": 105.24
+    },
+    {
+      "product_id": 27497,
+      "unit_price_before": null,
+      "unit_price_after": 69.5
+    },
+    {
+      "product_id": 27510,
+      "unit_price_before": null,
+      "unit_price_after": 144.0
+    },
+    {
+      "product_id": 27512,
+      "unit_price_before": null,
+      "unit_price_after": 121.09
+    },
+    {
+      "product_id": 27514,
+      "unit_price_before": null,
+      "unit_price_after": 121.83
+    },
+    {
+      "product_id": 27517,
+      "unit_price_before": null,
+      "unit_price_after": 138.24
+    },
+    {
+      "product_id": 27516,
+      "unit_price_before": null,
+      "unit_price_after": 135.92
+    },
+    {
+      "product_id": 27523,
+      "unit_price_before": null,
+      "unit_price_after": 135.92
+    },
+    {
+      "product_id": 27526,
+      "unit_price_before": null,
+      "unit_price_after": 23.81
+    },
+    {
+      "product_id": 27533,
+      "unit_price_before": null,
+      "unit_price_after": 3.09
+    },
+    {
+      "product_id": 27534,
+      "unit_price_before": null,
+      "unit_price_after": 6.01
+    },
+    {
+      "product_id": 27535,
+      "unit_price_before": null,
+      "unit_price_after": 7.2
+    },
+    {
+      "product_id": 29287,
+      "unit_price_before": null,
+      "unit_price_after": 6.01
+    },
+    {
+      "product_id": 27536,
+      "unit_price_before": null,
+      "unit_price_after": 3.26
+    },
+    {
+      "product_id": 27537,
+      "unit_price_before": null,
+      "unit_price_after": 3.87
+    },
+    {
+      "product_id": 27538,
+      "unit_price_before": null,
+      "unit_price_after": 4.05
+    },
+    {
+      "product_id": 27541,
+      "unit_price_before": null,
+      "unit_price_after": 5.56
+    },
+    {
+      "product_id": 27542,
+      "unit_price_before": null,
+      "unit_price_after": 19.57
+    },
+    {
+      "product_id": 27544,
+      "unit_price_before": null,
+      "unit_price_after": 5.69
+    },
+    {
+      "product_id": 27545,
+      "unit_price_before": null,
+      "unit_price_after": 6.01
+    },
+    {
+      "product_id": 29295,
+      "unit_price_before": null,
+      "unit_price_after": 8.82
+    },
+    {
+      "product_id": 27547,
+      "unit_price_before": null,
+      "unit_price_after": 9.92
+    },
+    {
+      "product_id": 27548,
+      "unit_price_before": null,
+      "unit_price_after": 11.02
+    },
+    {
+      "product_id": 27549,
+      "unit_price_before": null,
+      "unit_price_after": 8.82
+    },
+    {
+      "product_id": 27550,
+      "unit_price_before": null,
+      "unit_price_after": 3.95
+    },
+    {
+      "product_id": 27551,
+      "unit_price_before": null,
+      "unit_price_after": 4.04
+    },
+    {
+      "product_id": 27552,
+      "unit_price_before": null,
+      "unit_price_after": 4.24
+    },
+    {
+      "product_id": 27554,
+      "unit_price_before": null,
+      "unit_price_after": 7.21
+    },
+    {
+      "product_id": 27555,
+      "unit_price_before": null,
+      "unit_price_after": 3.34
+    },
+    {
+      "product_id": 27556,
+      "unit_price_before": null,
+      "unit_price_after": 4.1
+    },
+    {
+      "product_id": 27558,
+      "unit_price_before": null,
+      "unit_price_after": 4.29
+    },
+    {
+      "product_id": 27557,
+      "unit_price_before": null,
+      "unit_price_after": 8.82
+    },
+    {
+      "product_id": 27559,
+      "unit_price_before": null,
+      "unit_price_after": 3.43
+    },
+    {
+      "product_id": 27560,
+      "unit_price_before": null,
+      "unit_price_after": 3.63
+    },
+    {
+      "product_id": 27561,
+      "unit_price_before": null,
+      "unit_price_after": 3.86
+    },
+    {
+      "product_id": 27562,
+      "unit_price_before": null,
+      "unit_price_after": 4.03
+    },
+    {
+      "product_id": 27564,
+      "unit_price_before": null,
+      "unit_price_after": 6.71
+    },
+    {
+      "product_id": 27563,
+      "unit_price_before": null,
+      "unit_price_after": 7.02
+    },
+    {
+      "product_id": 27566,
+      "unit_price_before": null,
+      "unit_price_after": 27.22
+    },
+    {
+      "product_id": 27565,
+      "unit_price_before": null,
+      "unit_price_after": 3.67
+    },
+    {
+      "product_id": 27567,
+      "unit_price_before": null,
+      "unit_price_after": 11.61
+    },
+    {
+      "product_id": 27568,
+      "unit_price_before": null,
+      "unit_price_after": 5.69
+    },
+    {
+      "product_id": 27569,
+      "unit_price_before": null,
+      "unit_price_after": 11.61
+    },
+    {
+      "product_id": 29304,
+      "unit_price_before": null,
+      "unit_price_after": 9.92
+    },
+    {
+      "product_id": 27571,
+      "unit_price_before": null,
+      "unit_price_after": 9.92
+    },
+    {
+      "product_id": 27572,
+      "unit_price_before": null,
+      "unit_price_after": 11.02
+    },
+    {
+      "product_id": 27573,
+      "unit_price_before": null,
+      "unit_price_after": 11.81
+    },
+    {
+      "product_id": 27574,
+      "unit_price_before": null,
+      "unit_price_after": 9.92
+    },
+    {
+      "product_id": 27575,
+      "unit_price_before": null,
+      "unit_price_after": 8.82
+    },
+    {
+      "product_id": 29293,
+      "unit_price_before": null,
+      "unit_price_after": 11.81
+    },
+    {
+      "product_id": 29301,
+      "unit_price_before": null,
+      "unit_price_after": 8.0
+    },
+    {
+      "product_id": 27576,
+      "unit_price_before": null,
+      "unit_price_after": 4.08
+    },
+    {
+      "product_id": 27577,
+      "unit_price_before": null,
+      "unit_price_after": 8.0
+    },
+    {
+      "product_id": 27578,
+      "unit_price_before": null,
+      "unit_price_after": 3.49
+    },
+    {
+      "product_id": 27579,
+      "unit_price_before": null,
+      "unit_price_after": 3.93
+    },
+    {
+      "product_id": 27580,
+      "unit_price_before": null,
+      "unit_price_after": 5.65
+    },
+    {
+      "product_id": 27581,
+      "unit_price_before": null,
+      "unit_price_after": 3.75
+    },
+    {
+      "product_id": 27582,
+      "unit_price_before": null,
+      "unit_price_after": 4.3
+    },
+    {
+      "product_id": 27583,
+      "unit_price_before": null,
+      "unit_price_after": 6.15
+    },
+    {
+      "product_id": 27585,
+      "unit_price_before": null,
+      "unit_price_after": 11.02
+    },
+    {
+      "product_id": 27587,
+      "unit_price_before": null,
+      "unit_price_after": 11.81
+    },
+    {
+      "product_id": 27588,
+      "unit_price_before": null,
+      "unit_price_after": 13.84
+    },
+    {
+      "product_id": 29290,
+      "unit_price_before": null,
+      "unit_price_after": 9.36
+    },
+    {
+      "product_id": 27589,
+      "unit_price_before": null,
+      "unit_price_after": 3.46
+    },
+    {
+      "product_id": 27590,
+      "unit_price_before": null,
+      "unit_price_after": 4.06
+    },
+    {
+      "product_id": 27592,
+      "unit_price_before": null,
+      "unit_price_after": 9.92
+    },
+    {
+      "product_id": 29286,
+      "unit_price_before": null,
+      "unit_price_after": 9.92
+    },
+    {
+      "product_id": 27593,
+      "unit_price_before": null,
+      "unit_price_after": 11.02
+    },
+    {
+      "product_id": 27594,
+      "unit_price_before": null,
+      "unit_price_after": 12.9
+    },
+    {
+      "product_id": 27595,
+      "unit_price_before": null,
+      "unit_price_after": 12.9
+    },
+    {
+      "product_id": 27596,
+      "unit_price_before": null,
+      "unit_price_after": 7.09
+    },
+    {
+      "product_id": 27597,
+      "unit_price_before": null,
+      "unit_price_after": 8.82
+    },
+    {
+      "product_id": 29298,
+      "unit_price_before": null,
+      "unit_price_after": 10.3
+    },
+    {
+      "product_id": 27598,
+      "unit_price_before": null,
+      "unit_price_after": 5.05
+    },
+    {
+      "product_id": 27599,
+      "unit_price_before": null,
+      "unit_price_after": 5.34
+    },
+    {
+      "product_id": 27600,
+      "unit_price_before": null,
+      "unit_price_after": 5.23
+    },
+    {
+      "product_id": 27601,
+      "unit_price_before": null,
+      "unit_price_after": 5.48
+    },
+    {
+      "product_id": 27602,
+      "unit_price_before": null,
+      "unit_price_after": 8.82
+    },
+    {
+      "product_id": 27603,
+      "unit_price_before": null,
+      "unit_price_after": 3.52
+    },
+    {
+      "product_id": 27604,
+      "unit_price_before": null,
+      "unit_price_after": 3.9
+    },
+    {
+      "product_id": 27605,
+      "unit_price_before": null,
+      "unit_price_after": 4.1
+    },
+    {
+      "product_id": 27606,
+      "unit_price_before": null,
+      "unit_price_after": 6.7
+    },
+    {
+      "product_id": 27607,
+      "unit_price_before": null,
+      "unit_price_after": 7.02
+    },
+    {
+      "product_id": 27608,
+      "unit_price_before": null,
+      "unit_price_after": 9.92
+    },
+    {
+      "product_id": 27609,
+      "unit_price_before": null,
+      "unit_price_after": 4.9
+    },
+    {
+      "product_id": 27611,
+      "unit_price_before": null,
+      "unit_price_after": 5.18
+    },
+    {
+      "product_id": 27610,
+      "unit_price_before": null,
+      "unit_price_after": 5.0
+    },
+    {
+      "product_id": 27612,
+      "unit_price_before": null,
+      "unit_price_after": 5.23
+    },
+    {
+      "product_id": 27614,
+      "unit_price_before": null,
+      "unit_price_after": 22.07
+    },
+    {
+      "product_id": 27613,
+      "unit_price_before": null,
+      "unit_price_after": 3.69
+    },
+    {
+      "product_id": 27615,
+      "unit_price_before": null,
+      "unit_price_after": 4.5
+    },
+    {
+      "product_id": 27616,
+      "unit_price_before": null,
+      "unit_price_after": 6.79
+    },
+    {
+      "product_id": 27617,
+      "unit_price_before": null,
+      "unit_price_after": 7.81
+    },
+    {
+      "product_id": 27618,
+      "unit_price_before": null,
+      "unit_price_after": 8.17
+    },
+    {
+      "product_id": 27619,
+      "unit_price_before": null,
+      "unit_price_after": 6.15
+    },
+    {
+      "product_id": 27620,
+      "unit_price_before": null,
+      "unit_price_after": 6.5
+    },
+    {
+      "product_id": 27621,
+      "unit_price_before": null,
+      "unit_price_after": 12.9
+    },
+    {
+      "product_id": 27623,
+      "unit_price_before": null,
+      "unit_price_after": 24.52
+    },
+    {
+      "product_id": 27622,
+      "unit_price_before": null,
+      "unit_price_after": 11.02
+    },
+    {
+      "product_id": 29285,
+      "unit_price_before": null,
+      "unit_price_after": 11.81
+    },
+    {
+      "product_id": 27624,
+      "unit_price_before": null,
+      "unit_price_after": 13.84
+    },
+    {
+      "product_id": 29283,
+      "unit_price_before": null,
+      "unit_price_after": 11.81
+    },
+    {
+      "product_id": 27626,
+      "unit_price_before": null,
+      "unit_price_after": 11.81
+    },
+    {
+      "product_id": 27627,
+      "unit_price_before": null,
+      "unit_price_after": 11.02
+    },
+    {
+      "product_id": 27628,
+      "unit_price_before": null,
+      "unit_price_after": 13.84
+    },
+    {
+      "product_id": 27629,
+      "unit_price_before": null,
+      "unit_price_after": 8.82
+    },
+    {
+      "product_id": 27630,
+      "unit_price_before": null,
+      "unit_price_after": 12.9
+    },
+    {
+      "product_id": 29302,
+      "unit_price_before": null,
+      "unit_price_after": 13.84
+    },
+    {
+      "product_id": 27631,
+      "unit_price_before": null,
+      "unit_price_after": 11.81
+    },
+    {
+      "product_id": 27632,
+      "unit_price_before": null,
+      "unit_price_after": 11.81
+    },
+    {
+      "product_id": 27633,
+      "unit_price_before": null,
+      "unit_price_after": 11.61
+    },
+    {
+      "product_id": 27634,
+      "unit_price_before": null,
+      "unit_price_after": 5.69
+    },
+    {
+      "product_id": 27635,
+      "unit_price_before": null,
+      "unit_price_after": 6.5
+    },
+    {
+      "product_id": 27637,
+      "unit_price_before": null,
+      "unit_price_after": 11.61
+    },
+    {
+      "product_id": 27636,
+      "unit_price_before": null,
+      "unit_price_after": 5.2
+    },
+    {
+      "product_id": 27638,
+      "unit_price_before": null,
+      "unit_price_after": 5.36
+    },
+    {
+      "product_id": 27639,
+      "unit_price_before": null,
+      "unit_price_after": 5.62
+    },
+    {
+      "product_id": 27640,
+      "unit_price_before": null,
+      "unit_price_after": 11.61
+    },
+    {
+      "product_id": 27641,
+      "unit_price_before": null,
+      "unit_price_after": 9.92
+    },
+    {
+      "product_id": 27642,
+      "unit_price_before": null,
+      "unit_price_after": 11.61
+    },
+    {
+      "product_id": 27643,
+      "unit_price_before": null,
+      "unit_price_after": 4.28
+    },
+    {
+      "product_id": 27644,
+      "unit_price_before": null,
+      "unit_price_after": 5.2
+    },
+    {
+      "product_id": 27645,
+      "unit_price_before": null,
+      "unit_price_after": 5.44
+    },
+    {
+      "product_id": 27646,
+      "unit_price_before": null,
+      "unit_price_after": 8.55
+    },
+    {
+      "product_id": 27648,
+      "unit_price_before": null,
+      "unit_price_after": 4.27
+    },
+    {
+      "product_id": 27647,
+      "unit_price_before": null,
+      "unit_price_after": 5.59
+    },
+    {
+      "product_id": 27649,
+      "unit_price_before": null,
+      "unit_price_after": 5.87
+    },
+    {
+      "product_id": 27654,
+      "unit_price_before": null,
+      "unit_price_after": 11.81
+    },
+    {
+      "product_id": 27651,
+      "unit_price_before": null,
+      "unit_price_after": 6.79
+    },
+    {
+      "product_id": 27653,
+      "unit_price_before": null,
+      "unit_price_after": 13.84
+    },
+    {
+      "product_id": 27656,
+      "unit_price_before": null,
+      "unit_price_after": 12.71
+    },
+    {
+      "product_id": 27657,
+      "unit_price_before": null,
+      "unit_price_after": 9.92
+    },
+    {
+      "product_id": 29292,
+      "unit_price_before": null,
+      "unit_price_after": 11.61
+    },
+    {
+      "product_id": 27661,
+      "unit_price_before": null,
+      "unit_price_after": 3.74
+    },
+    {
+      "product_id": 27660,
+      "unit_price_before": null,
+      "unit_price_after": 3.95
+    },
+    {
+      "product_id": 27662,
+      "unit_price_before": null,
+      "unit_price_after": 4.61
+    },
+    {
+      "product_id": 27663,
+      "unit_price_before": null,
+      "unit_price_after": 4.82
+    },
+    {
+      "product_id": 27664,
+      "unit_price_before": null,
+      "unit_price_after": 4.61
+    },
+    {
+      "product_id": 27665,
+      "unit_price_before": null,
+      "unit_price_after": 8.38
+    },
+    {
+      "product_id": 27666,
+      "unit_price_before": null,
+      "unit_price_after": 32.45
+    },
+    {
+      "product_id": 27668,
+      "unit_price_before": null,
+      "unit_price_after": 5.69
+    },
+    {
+      "product_id": 27667,
+      "unit_price_before": null,
+      "unit_price_after": 4.24
+    },
+    {
+      "product_id": 27669,
+      "unit_price_before": null,
+      "unit_price_after": 5.41
+    },
+    {
+      "product_id": 29291,
+      "unit_price_before": null,
+      "unit_price_after": 5.41
+    },
+    {
+      "product_id": 27670,
+      "unit_price_before": null,
+      "unit_price_after": 5.67
+    },
+    {
+      "product_id": 27671,
+      "unit_price_before": null,
+      "unit_price_after": 7.99
+    },
+    {
+      "product_id": 27672,
+      "unit_price_before": null,
+      "unit_price_after": 8.38
+    },
+    {
+      "product_id": 27673,
+      "unit_price_before": null,
+      "unit_price_after": 9.47
+    },
+    {
+      "product_id": 27674,
+      "unit_price_before": null,
+      "unit_price_after": 4.15
+    },
+    {
+      "product_id": 27677,
+      "unit_price_before": null,
+      "unit_price_after": 4.39
+    },
+    {
+      "product_id": 27675,
+      "unit_price_before": null,
+      "unit_price_after": 5.31
+    },
+    {
+      "product_id": 27676,
+      "unit_price_before": null,
+      "unit_price_after": 5.56
+    },
+    {
+      "product_id": 27678,
+      "unit_price_before": null,
+      "unit_price_after": 8.89
+    },
+    {
+      "product_id": 27679,
+      "unit_price_before": null,
+      "unit_price_after": 9.31
+    },
+    {
+      "product_id": 27680,
+      "unit_price_before": null,
+      "unit_price_after": 5.6
+    },
+    {
+      "product_id": 27681,
+      "unit_price_before": null,
+      "unit_price_after": 7.98
+    },
+    {
+      "product_id": 27682,
+      "unit_price_before": null,
+      "unit_price_after": 8.36
+    },
+    {
+      "product_id": 29284,
+      "unit_price_before": null,
+      "unit_price_after": 12.71
+    },
+    {
+      "product_id": 29300,
+      "unit_price_before": null,
+      "unit_price_after": 12.71
+    },
+    {
+      "product_id": 27686,
+      "unit_price_before": null,
+      "unit_price_after": 11.02
+    },
+    {
+      "product_id": 27685,
+      "unit_price_before": null,
+      "unit_price_after": 11.81
+    },
+    {
+      "product_id": 27687,
+      "unit_price_before": null,
+      "unit_price_after": 6.33
+    },
+    {
+      "product_id": 29296,
+      "unit_price_before": null,
+      "unit_price_after": 14.87
+    },
+    {
+      "product_id": 27688,
+      "unit_price_before": null,
+      "unit_price_after": 26.31
+    },
+    {
+      "product_id": 27689,
+      "unit_price_before": null,
+      "unit_price_after": 4.85
+    },
+    {
+      "product_id": 27690,
+      "unit_price_before": null,
+      "unit_price_after": 6.01
+    },
+    {
+      "product_id": 27691,
+      "unit_price_before": null,
+      "unit_price_after": 6.3
+    },
+    {
+      "product_id": 27693,
+      "unit_price_before": null,
+      "unit_price_after": 10.12
+    },
+    {
+      "product_id": 27694,
+      "unit_price_before": null,
+      "unit_price_after": 10.59
+    },
+    {
+      "product_id": 27696,
+      "unit_price_before": null,
+      "unit_price_after": 41.09
+    },
+    {
+      "product_id": 27697,
+      "unit_price_before": null,
+      "unit_price_after": 7.5
+    },
+    {
+      "product_id": 27700,
+      "unit_price_before": null,
+      "unit_price_after": 5.21
+    },
+    {
+      "product_id": 27698,
+      "unit_price_before": null,
+      "unit_price_after": 7.07
+    },
+    {
+      "product_id": 27701,
+      "unit_price_before": null,
+      "unit_price_after": 9.66
+    },
+    {
+      "product_id": 27699,
+      "unit_price_before": null,
+      "unit_price_after": 13.46
+    },
+    {
+      "product_id": 29299,
+      "unit_price_before": null,
+      "unit_price_after": 10.3
+    },
+    {
+      "product_id": 27702,
+      "unit_price_before": null,
+      "unit_price_after": 33.13
+    },
+    {
+      "product_id": 29297,
+      "unit_price_before": null,
+      "unit_price_after": 33.13
+    },
+    {
+      "product_id": 27704,
+      "unit_price_before": null,
+      "unit_price_after": 33.13
+    },
+    {
+      "product_id": 27703,
+      "unit_price_before": null,
+      "unit_price_after": 6.01
+    },
+    {
+      "product_id": 29294,
+      "unit_price_before": null,
+      "unit_price_after": 7.21
+    },
+    {
+      "product_id": 27705,
+      "unit_price_before": null,
+      "unit_price_after": 7.09
+    },
+    {
+      "product_id": 27708,
+      "unit_price_before": null,
+      "unit_price_after": 8.0
+    },
+    {
+      "product_id": 27710,
+      "unit_price_before": null,
+      "unit_price_after": 8.0
+    },
+    {
+      "product_id": 29288,
+      "unit_price_before": null,
+      "unit_price_after": 11.81
+    },
+    {
+      "product_id": 27709,
+      "unit_price_before": null,
+      "unit_price_after": 6.01
+    },
+    {
+      "product_id": 27711,
+      "unit_price_before": null,
+      "unit_price_after": 3.86
+    },
+    {
+      "product_id": 27712,
+      "unit_price_before": null,
+      "unit_price_after": 11.02
+    },
+    {
+      "product_id": 27713,
+      "unit_price_before": null,
+      "unit_price_after": 5.36
+    },
+    {
+      "product_id": 27715,
+      "unit_price_before": null,
+      "unit_price_after": 30.11
+    },
+    {
+      "product_id": 28904,
+      "unit_price_before": null,
+      "unit_price_after": 216.89
+    },
+    {
+      "product_id": 28905,
+      "unit_price_before": null,
+      "unit_price_after": 330.03
+    },
+    {
+      "product_id": 27724,
+      "unit_price_before": null,
+      "unit_price_after": 5.14
+    },
+    {
+      "product_id": 27725,
+      "unit_price_before": null,
+      "unit_price_after": 5.32
+    },
+    {
+      "product_id": 27728,
+      "unit_price_before": null,
+      "unit_price_after": 9.28
+    },
+    {
+      "product_id": 27727,
+      "unit_price_before": null,
+      "unit_price_after": 9.64
+    },
+    {
+      "product_id": 27726,
+      "unit_price_before": null,
+      "unit_price_after": 7.98
+    },
+    {
+      "product_id": 27729,
+      "unit_price_before": null,
+      "unit_price_after": 5.21
+    },
+    {
+      "product_id": 27730,
+      "unit_price_before": null,
+      "unit_price_after": 5.42
+    },
+    {
+      "product_id": 27731,
+      "unit_price_before": null,
+      "unit_price_after": 9.11
+    },
+    {
+      "product_id": 27732,
+      "unit_price_before": null,
+      "unit_price_after": 6.7
+    },
+    {
+      "product_id": 27733,
+      "unit_price_before": null,
+      "unit_price_after": 32.58
+    },
+    {
+      "product_id": 27734,
+      "unit_price_before": null,
+      "unit_price_after": 6.03
+    },
+    {
+      "product_id": 27735,
+      "unit_price_before": null,
+      "unit_price_after": 6.25
+    },
+    {
+      "product_id": 27736,
+      "unit_price_before": null,
+      "unit_price_after": 10.6
+    },
+    {
+      "product_id": 27738,
+      "unit_price_before": null,
+      "unit_price_after": 11.63
+    },
+    {
+      "product_id": 27737,
+      "unit_price_before": null,
+      "unit_price_after": 6.14
+    },
+    {
+      "product_id": 27739,
+      "unit_price_before": null,
+      "unit_price_after": 6.36
+    },
+    {
+      "product_id": 27740,
+      "unit_price_before": null,
+      "unit_price_after": 10.86
+    },
+    {
+      "product_id": 27743,
+      "unit_price_before": null,
+      "unit_price_after": 7.23
+    },
+    {
+      "product_id": 27741,
+      "unit_price_before": null,
+      "unit_price_after": 7.49
+    },
+    {
+      "product_id": 27742,
+      "unit_price_before": null,
+      "unit_price_after": 12.67
+    },
+    {
+      "product_id": 27744,
+      "unit_price_before": null,
+      "unit_price_after": 7.09
+    },
+    {
+      "product_id": 27745,
+      "unit_price_before": null,
+      "unit_price_after": 7.35
+    },
+    {
+      "product_id": 28906,
+      "unit_price_before": null,
+      "unit_price_after": 12.46
+    },
+    {
+      "product_id": 27746,
+      "unit_price_before": null,
+      "unit_price_after": 9.28
+    },
+    {
+      "product_id": 27748,
+      "unit_price_before": null,
+      "unit_price_after": 8.03
+    },
+    {
+      "product_id": 27747,
+      "unit_price_before": null,
+      "unit_price_after": 8.34
+    },
+    {
+      "product_id": 27750,
+      "unit_price_before": null,
+      "unit_price_after": 14.17
+    },
+    {
+      "product_id": 27749,
+      "unit_price_before": null,
+      "unit_price_after": 14.71
+    },
+    {
+      "product_id": 27751,
+      "unit_price_before": null,
+      "unit_price_after": 9.31
+    },
+    {
+      "product_id": 27752,
+      "unit_price_before": null,
+      "unit_price_after": 4.77
+    },
+    {
+      "product_id": 27753,
+      "unit_price_before": null,
+      "unit_price_after": 10.01
+    },
+    {
+      "product_id": 27754,
+      "unit_price_before": null,
+      "unit_price_after": 11.86
+    },
+    {
+      "product_id": 27755,
+      "unit_price_before": null,
+      "unit_price_after": 14.52
+    },
+    {
+      "product_id": 27756,
+      "unit_price_before": null,
+      "unit_price_after": 5.03
+    },
+    {
+      "product_id": 27757,
+      "unit_price_before": null,
+      "unit_price_after": 6.22
+    },
+    {
+      "product_id": 27758,
+      "unit_price_before": null,
+      "unit_price_after": 7.36
+    },
+    {
+      "product_id": 27759,
+      "unit_price_before": null,
+      "unit_price_after": 14.7
+    },
+    {
+      "product_id": 27760,
+      "unit_price_before": null,
+      "unit_price_after": 17.99
+    },
+    {
+      "product_id": 27761,
+      "unit_price_before": null,
+      "unit_price_after": 7.43
+    },
+    {
+      "product_id": 27762,
+      "unit_price_before": null,
+      "unit_price_after": 16.53
+    },
+    {
+      "product_id": 27763,
+      "unit_price_before": null,
+      "unit_price_after": 4.8
+    },
+    {
+      "product_id": 27764,
+      "unit_price_before": null,
+      "unit_price_after": 5.86
+    },
+    {
+      "product_id": 27765,
+      "unit_price_before": null,
+      "unit_price_after": 19.18
+    },
+    {
+      "product_id": 27767,
+      "unit_price_before": null,
+      "unit_price_after": 5.18
+    },
+    {
+      "product_id": 27766,
+      "unit_price_before": null,
+      "unit_price_after": 6.6
+    },
+    {
+      "product_id": 27768,
+      "unit_price_before": null,
+      "unit_price_after": 4.74
+    },
+    {
+      "product_id": 27769,
+      "unit_price_before": null,
+      "unit_price_after": 6.27
+    },
+    {
+      "product_id": 27770,
+      "unit_price_before": null,
+      "unit_price_after": 11.34
+    },
+    {
+      "product_id": 27771,
+      "unit_price_before": null,
+      "unit_price_after": 5.06
+    },
+    {
+      "product_id": 27772,
+      "unit_price_before": null,
+      "unit_price_after": 7.43
+    },
+    {
+      "product_id": 27773,
+      "unit_price_before": null,
+      "unit_price_after": 4.56
+    },
+    {
+      "product_id": 27774,
+      "unit_price_before": null,
+      "unit_price_after": 14.52
+    },
+    {
+      "product_id": 27775,
+      "unit_price_before": null,
+      "unit_price_after": 17.99
+    },
+    {
+      "product_id": 27776,
+      "unit_price_before": null,
+      "unit_price_after": 17.99
+    },
+    {
+      "product_id": 27778,
+      "unit_price_before": null,
+      "unit_price_after": 4.84
+    },
+    {
+      "product_id": 27777,
+      "unit_price_before": null,
+      "unit_price_after": 14.7
+    },
+    {
+      "product_id": 27780,
+      "unit_price_before": null,
+      "unit_price_after": 6.42
+    },
+    {
+      "product_id": 27779,
+      "unit_price_before": null,
+      "unit_price_after": 14.7
+    },
+    {
+      "product_id": 27782,
+      "unit_price_before": null,
+      "unit_price_after": 7.79
+    },
+    {
+      "product_id": 27783,
+      "unit_price_before": null,
+      "unit_price_after": 5.18
+    },
+    {
+      "product_id": 27781,
+      "unit_price_before": null,
+      "unit_price_after": 6.99
+    },
+    {
+      "product_id": 27784,
+      "unit_price_before": null,
+      "unit_price_after": 16.53
+    },
+    {
+      "product_id": 27785,
+      "unit_price_before": null,
+      "unit_price_after": 8.07
+    },
+    {
+      "product_id": 27787,
+      "unit_price_before": null,
+      "unit_price_after": 18.42
+    },
+    {
+      "product_id": 27786,
+      "unit_price_before": null,
+      "unit_price_after": 22.54
+    },
+    {
+      "product_id": 27788,
+      "unit_price_before": null,
+      "unit_price_after": 14.7
+    },
+    {
+      "product_id": 27789,
+      "unit_price_before": null,
+      "unit_price_after": 4.77
+    },
+    {
+      "product_id": 27790,
+      "unit_price_before": null,
+      "unit_price_after": 6.63
+    },
+    {
+      "product_id": 27791,
+      "unit_price_before": null,
+      "unit_price_after": 20.23
+    },
+    {
+      "product_id": 27792,
+      "unit_price_before": null,
+      "unit_price_after": 16.53
+    },
+    {
+      "product_id": 27793,
+      "unit_price_before": null,
+      "unit_price_after": 18.42
+    },
+    {
+      "product_id": 27794,
+      "unit_price_before": null,
+      "unit_price_after": 8.07
+    },
+    {
+      "product_id": 27795,
+      "unit_price_before": null,
+      "unit_price_after": 18.42
+    },
+    {
+      "product_id": 27796,
+      "unit_price_before": null,
+      "unit_price_after": 7.05
+    },
+    {
+      "product_id": 27799,
+      "unit_price_before": null,
+      "unit_price_after": 6.61
+    },
+    {
+      "product_id": 27797,
+      "unit_price_before": null,
+      "unit_price_after": 26.6
+    },
+    {
+      "product_id": 27798,
+      "unit_price_before": null,
+      "unit_price_after": 14.7
+    },
+    {
+      "product_id": 27800,
+      "unit_price_before": null,
+      "unit_price_after": 14.7
+    },
+    {
+      "product_id": 27802,
+      "unit_price_before": null,
+      "unit_price_after": 17.99
+    },
+    {
+      "product_id": 27801,
+      "unit_price_before": null,
+      "unit_price_after": 26.6
+    },
+    {
+      "product_id": 27804,
+      "unit_price_before": null,
+      "unit_price_after": 33.74
+    },
+    {
+      "product_id": 27803,
+      "unit_price_before": null,
+      "unit_price_after": 4.61
+    },
+    {
+      "product_id": 27805,
+      "unit_price_before": null,
+      "unit_price_after": 6.36
+    },
+    {
+      "product_id": 27806,
+      "unit_price_before": null,
+      "unit_price_after": 11.11
+    },
+    {
+      "product_id": 27807,
+      "unit_price_before": null,
+      "unit_price_after": 15.53
+    },
+    {
+      "product_id": 27808,
+      "unit_price_before": null,
+      "unit_price_after": 20.23
+    },
+    {
+      "product_id": 27809,
+      "unit_price_before": null,
+      "unit_price_after": 12.63
+    },
+    {
+      "product_id": 27810,
+      "unit_price_before": null,
+      "unit_price_after": 6.61
+    },
+    {
+      "product_id": 27812,
+      "unit_price_before": null,
+      "unit_price_after": 8.18
+    },
+    {
+      "product_id": 27811,
+      "unit_price_before": null,
+      "unit_price_after": 5.1
+    },
+    {
+      "product_id": 27814,
+      "unit_price_before": null,
+      "unit_price_after": 7.36
+    },
+    {
+      "product_id": 27813,
+      "unit_price_before": null,
+      "unit_price_after": 12.94
+    },
+    {
+      "product_id": 27815,
+      "unit_price_before": null,
+      "unit_price_after": 16.53
+    },
+    {
+      "product_id": 27816,
+      "unit_price_before": null,
+      "unit_price_after": 8.07
+    },
+    {
+      "product_id": 27817,
+      "unit_price_before": null,
+      "unit_price_after": 22.54
+    },
+    {
+      "product_id": 27818,
+      "unit_price_before": null,
+      "unit_price_after": 450.0
+    },
+    {
+      "product_id": 27819,
+      "unit_price_before": null,
+      "unit_price_after": 24.2
+    },
+    {
+      "product_id": 27820,
+      "unit_price_before": null,
+      "unit_price_after": 22.49
+    },
+    {
+      "product_id": 27821,
+      "unit_price_before": null,
+      "unit_price_after": 16.53
+    },
+    {
+      "product_id": 27822,
+      "unit_price_before": null,
+      "unit_price_after": 16.53
+    },
+    {
+      "product_id": 27823,
+      "unit_price_before": null,
+      "unit_price_after": 16.53
+    },
+    {
+      "product_id": 27824,
+      "unit_price_before": null,
+      "unit_price_after": 18.42
+    },
+    {
+      "product_id": 27825,
+      "unit_price_before": null,
+      "unit_price_after": 16.53
+    },
+    {
+      "product_id": 27827,
+      "unit_price_before": null,
+      "unit_price_after": 14.52
+    },
+    {
+      "product_id": 27826,
+      "unit_price_before": null,
+      "unit_price_after": 7.43
+    },
+    {
+      "product_id": 27828,
+      "unit_price_before": null,
+      "unit_price_after": 8.73
+    },
+    {
+      "product_id": 27829,
+      "unit_price_before": null,
+      "unit_price_after": 7.05
+    },
+    {
+      "product_id": 27830,
+      "unit_price_before": null,
+      "unit_price_after": 8.73
+    },
+    {
+      "product_id": 27832,
+      "unit_price_before": null,
+      "unit_price_after": 20.23
+    },
+    {
+      "product_id": 27831,
+      "unit_price_before": null,
+      "unit_price_after": 5.93
+    },
+    {
+      "product_id": 27833,
+      "unit_price_before": null,
+      "unit_price_after": 8.47
+    },
+    {
+      "product_id": 27835,
+      "unit_price_before": null,
+      "unit_price_after": 14.2
+    },
+    {
+      "product_id": 27834,
+      "unit_price_before": null,
+      "unit_price_after": 6.61
+    },
+    {
+      "product_id": 27836,
+      "unit_price_before": null,
+      "unit_price_after": 8.97
+    },
+    {
+      "product_id": 27837,
+      "unit_price_before": null,
+      "unit_price_after": 7.76
+    },
+    {
+      "product_id": 27838,
+      "unit_price_before": null,
+      "unit_price_after": 22.54
+    },
+    {
+      "product_id": 27839,
+      "unit_price_before": null,
+      "unit_price_after": 18.42
+    },
+    {
+      "product_id": 27840,
+      "unit_price_before": null,
+      "unit_price_after": 36.84
+    },
+    {
+      "product_id": 27841,
+      "unit_price_before": null,
+      "unit_price_after": 5.15
+    },
+    {
+      "product_id": 27843,
+      "unit_price_before": null,
+      "unit_price_after": 7.49
+    },
+    {
+      "product_id": 27844,
+      "unit_price_before": null,
+      "unit_price_after": 13.28
+    },
+    {
+      "product_id": 27842,
+      "unit_price_before": null,
+      "unit_price_after": 18.42
+    },
+    {
+      "product_id": 27845,
+      "unit_price_before": null,
+      "unit_price_after": 7.19
+    },
+    {
+      "product_id": 27846,
+      "unit_price_before": null,
+      "unit_price_after": 5.86
+    },
+    {
+      "product_id": 27847,
+      "unit_price_before": null,
+      "unit_price_after": 8.83
+    },
+    {
+      "product_id": 27848,
+      "unit_price_before": null,
+      "unit_price_after": 15.45
+    },
+    {
+      "product_id": 27849,
+      "unit_price_before": null,
+      "unit_price_after": 5.77
+    },
+    {
+      "product_id": 27850,
+      "unit_price_before": null,
+      "unit_price_after": 8.65
+    },
+    {
+      "product_id": 27851,
+      "unit_price_before": null,
+      "unit_price_after": 15.21
+    },
+    {
+      "product_id": 27852,
+      "unit_price_before": null,
+      "unit_price_after": 24.2
+    },
+    {
+      "product_id": 27853,
+      "unit_price_before": null,
+      "unit_price_after": 7.75
+    },
+    {
+      "product_id": 27854,
+      "unit_price_before": null,
+      "unit_price_after": 10.47
+    },
+    {
+      "product_id": 27856,
+      "unit_price_before": null,
+      "unit_price_after": 22.49
+    },
+    {
+      "product_id": 27855,
+      "unit_price_before": null,
+      "unit_price_after": 24.71
+    },
+    {
+      "product_id": 27859,
+      "unit_price_before": null,
+      "unit_price_after": 48.4
+    },
+    {
+      "product_id": 27858,
+      "unit_price_before": null,
+      "unit_price_after": 18.42
+    },
+    {
+      "product_id": 27857,
+      "unit_price_before": null,
+      "unit_price_after": 21.23
+    },
+    {
+      "product_id": 27860,
+      "unit_price_before": null,
+      "unit_price_after": 25.98
+    },
+    {
+      "product_id": 27861,
+      "unit_price_before": null,
+      "unit_price_after": 18.42
+    },
+    {
+      "product_id": 27862,
+      "unit_price_before": null,
+      "unit_price_after": 19.76
+    },
+    {
+      "product_id": 27863,
+      "unit_price_before": null,
+      "unit_price_after": 19.76
+    },
+    {
+      "product_id": 27864,
+      "unit_price_before": null,
+      "unit_price_after": 45.04
+    },
+    {
+      "product_id": 27865,
+      "unit_price_before": null,
+      "unit_price_after": 33.32
+    },
+    {
+      "product_id": 27866,
+      "unit_price_before": null,
+      "unit_price_after": 6.73
+    },
+    {
+      "product_id": 27867,
+      "unit_price_before": null,
+      "unit_price_after": 9.8
+    },
+    {
+      "product_id": 27868,
+      "unit_price_before": null,
+      "unit_price_after": 17.31
+    },
+    {
+      "product_id": 27869,
+      "unit_price_before": null,
+      "unit_price_after": 38.28
+    },
+    {
+      "product_id": 27870,
+      "unit_price_before": null,
+      "unit_price_after": 9.92
+    },
+    {
+      "product_id": 27871,
+      "unit_price_before": null,
+      "unit_price_after": 8.05
+    },
+    {
+      "product_id": 27872,
+      "unit_price_before": null,
+      "unit_price_after": 11.36
+    },
+    {
+      "product_id": 27873,
+      "unit_price_before": null,
+      "unit_price_after": 38.28
+    },
+    {
+      "product_id": 27874,
+      "unit_price_before": null,
+      "unit_price_after": 24.71
+    },
+    {
+      "product_id": 27875,
+      "unit_price_before": null,
+      "unit_price_after": 30.27
+    },
+    {
+      "product_id": 27876,
+      "unit_price_before": null,
+      "unit_price_after": 36.84
+    },
+    {
+      "product_id": 27877,
+      "unit_price_before": null,
+      "unit_price_after": 44.98
+    },
+    {
+      "product_id": 27878,
+      "unit_price_before": null,
+      "unit_price_after": 22.49
+    },
+    {
+      "product_id": 27879,
+      "unit_price_before": null,
+      "unit_price_after": 24.71
+    },
+    {
+      "product_id": 27880,
+      "unit_price_before": null,
+      "unit_price_after": 30.27
+    },
+    {
+      "product_id": 27882,
+      "unit_price_before": null,
+      "unit_price_after": 24.71
+    },
+    {
+      "product_id": 27881,
+      "unit_price_before": null,
+      "unit_price_after": 44.98
+    },
+    {
+      "product_id": 27883,
+      "unit_price_before": null,
+      "unit_price_after": 24.71
+    },
+    {
+      "product_id": 27884,
+      "unit_price_before": null,
+      "unit_price_after": 14.7
+    },
+    {
+      "product_id": 27885,
+      "unit_price_before": null,
+      "unit_price_after": 4.77
+    },
+    {
+      "product_id": 27886,
+      "unit_price_before": null,
+      "unit_price_after": 37.7
+    },
+    {
+      "product_id": 27889,
+      "unit_price_before": null,
+      "unit_price_after": 154.17
+    },
+    {
+      "product_id": 28910,
+      "unit_price_before": null,
+      "unit_price_after": 226.38
+    },
+    {
+      "product_id": 27891,
+      "unit_price_before": null,
+      "unit_price_after": 49.0
+    },
+    {
+      "product_id": 27893,
+      "unit_price_before": null,
+      "unit_price_after": 58.0
+    },
+    {
+      "product_id": 27894,
+      "unit_price_before": null,
+      "unit_price_after": 60.0
+    },
+    {
+      "product_id": 27895,
+      "unit_price_before": null,
+      "unit_price_after": 140.0
+    },
+    {
+      "product_id": 27896,
+      "unit_price_before": null,
+      "unit_price_after": 36.6
+    },
+    {
+      "product_id": 27900,
+      "unit_price_before": null,
+      "unit_price_after": 43.6
+    },
+    {
+      "product_id": 27901,
+      "unit_price_before": null,
+      "unit_price_after": 46.3
+    },
+    {
+      "product_id": 27903,
+      "unit_price_before": null,
+      "unit_price_after": 47.0
+    },
+    {
+      "product_id": 27924,
+      "unit_price_before": null,
+      "unit_price_after": 75.5
+    },
+    {
+      "product_id": 27932,
+      "unit_price_before": null,
+      "unit_price_after": 57.0
+    },
+    {
+      "product_id": 27937,
+      "unit_price_before": null,
+      "unit_price_after": 54.74
+    },
+    {
+      "product_id": 27944,
+      "unit_price_before": null,
+      "unit_price_after": 20.46
+    },
+    {
+      "product_id": 27955,
+      "unit_price_before": null,
+      "unit_price_after": 27.0
+    },
+    {
+      "product_id": 27963,
+      "unit_price_before": null,
+      "unit_price_after": 107.0
+    },
+    {
+      "product_id": 27966,
+      "unit_price_before": null,
+      "unit_price_after": 81.0
+    },
+    {
+      "product_id": 27968,
+      "unit_price_before": null,
+      "unit_price_after": 129.0
+    },
+    {
+      "product_id": 27970,
+      "unit_price_before": null,
+      "unit_price_after": 127.0
+    },
+    {
+      "product_id": 28012,
+      "unit_price_before": null,
+      "unit_price_after": 18.0
+    },
+    {
+      "product_id": 28017,
+      "unit_price_before": null,
+      "unit_price_after": 81.18
+    },
+    {
+      "product_id": 28019,
+      "unit_price_before": null,
+      "unit_price_after": 87.39
+    },
+    {
+      "product_id": 28020,
+      "unit_price_before": null,
+      "unit_price_after": 112.42
+    },
+    {
+      "product_id": 29092,
+      "unit_price_before": null,
+      "unit_price_after": 38.0
+    },
+    {
+      "product_id": 28023,
+      "unit_price_before": null,
+      "unit_price_after": 41.0
+    },
+    {
+      "product_id": 29095,
+      "unit_price_before": null,
+      "unit_price_after": 52.92
+    },
+    {
+      "product_id": 29094,
+      "unit_price_before": null,
+      "unit_price_after": 53.98
+    },
+    {
+      "product_id": 29096,
+      "unit_price_before": null,
+      "unit_price_after": 47.71
+    },
+    {
+      "product_id": 29097,
+      "unit_price_before": null,
+      "unit_price_after": 39.47
+    },
+    {
+      "product_id": 29098,
+      "unit_price_before": null,
+      "unit_price_after": 55.75
+    },
+    {
+      "product_id": 29100,
+      "unit_price_before": null,
+      "unit_price_after": 49.5
+    },
+    {
+      "product_id": 29120,
+      "unit_price_before": null,
+      "unit_price_after": 39.1
+    },
+    {
+      "product_id": 29129,
+      "unit_price_before": null,
+      "unit_price_after": 36.14
+    },
+    {
+      "product_id": 29130,
+      "unit_price_before": null,
+      "unit_price_after": 51.09
+    },
+    {
+      "product_id": 28024,
+      "unit_price_before": null,
+      "unit_price_after": 32.87
+    },
+    {
+      "product_id": 29136,
+      "unit_price_before": null,
+      "unit_price_after": 42.22
+    },
+    {
+      "product_id": 29132,
+      "unit_price_before": null,
+      "unit_price_after": 49.11
+    },
+    {
+      "product_id": 29137,
+      "unit_price_before": null,
+      "unit_price_after": 49.11
+    },
+    {
+      "product_id": 29139,
+      "unit_price_before": null,
+      "unit_price_after": 57.15
+    },
+    {
+      "product_id": 29142,
+      "unit_price_before": null,
+      "unit_price_after": 40.47
+    },
+    {
+      "product_id": 29147,
+      "unit_price_before": null,
+      "unit_price_after": 38.42
+    },
+    {
+      "product_id": 29155,
+      "unit_price_before": null,
+      "unit_price_after": 46.91
+    },
+    {
+      "product_id": 28041,
+      "unit_price_before": null,
+      "unit_price_after": 37.38
+    },
+    {
+      "product_id": 29170,
+      "unit_price_before": null,
+      "unit_price_after": 46.91
+    },
+    {
+      "product_id": 28053,
+      "unit_price_before": null,
+      "unit_price_after": 51.55
+    },
+    {
+      "product_id": 28056,
+      "unit_price_before": null,
+      "unit_price_after": 63.07
+    },
+    {
+      "product_id": 28061,
+      "unit_price_before": null,
+      "unit_price_after": 47.49
+    },
+    {
+      "product_id": 28060,
+      "unit_price_before": null,
+      "unit_price_after": 49.86
+    },
+    {
+      "product_id": 28065,
+      "unit_price_before": null,
+      "unit_price_after": 31.92
+    },
+    {
+      "product_id": 28064,
+      "unit_price_before": null,
+      "unit_price_after": 37.11
+    },
+    {
+      "product_id": 28066,
+      "unit_price_before": null,
+      "unit_price_after": 49.69
+    },
+    {
+      "product_id": 28079,
+      "unit_price_before": null,
+      "unit_price_after": 10.43
+    },
+    {
+      "product_id": 28089,
+      "unit_price_before": null,
+      "unit_price_after": 8.66
+    },
+    {
+      "product_id": 28088,
+      "unit_price_before": null,
+      "unit_price_after": 9.56
+    },
+    {
+      "product_id": 28090,
+      "unit_price_before": null,
+      "unit_price_after": 14.58
+    },
+    {
+      "product_id": 28096,
+      "unit_price_before": null,
+      "unit_price_after": 22.55
+    },
+    {
+      "product_id": 28091,
+      "unit_price_before": null,
+      "unit_price_after": 10.18
+    },
+    {
+      "product_id": 28092,
+      "unit_price_before": null,
+      "unit_price_after": 11.0
+    },
+    {
+      "product_id": 28097,
+      "unit_price_before": null,
+      "unit_price_after": 10.66
+    },
+    {
+      "product_id": 28094,
+      "unit_price_before": null,
+      "unit_price_after": 10.14
+    },
+    {
+      "product_id": 28101,
+      "unit_price_before": null,
+      "unit_price_after": 25.47
+    },
+    {
+      "product_id": 28095,
+      "unit_price_before": null,
+      "unit_price_after": 13.34
+    },
+    {
+      "product_id": 28098,
+      "unit_price_before": null,
+      "unit_price_after": 8.56
+    },
+    {
+      "product_id": 28093,
+      "unit_price_before": null,
+      "unit_price_after": 12.23
+    },
+    {
+      "product_id": 29220,
+      "unit_price_before": null,
+      "unit_price_after": 18.49
+    },
+    {
+      "product_id": 28100,
+      "unit_price_before": null,
+      "unit_price_after": 25.47
+    },
+    {
+      "product_id": 28099,
+      "unit_price_before": null,
+      "unit_price_after": 13.36
+    },
+    {
+      "product_id": 28102,
+      "unit_price_before": null,
+      "unit_price_after": 10.14
+    },
+    {
+      "product_id": 28103,
+      "unit_price_before": null,
+      "unit_price_after": 8.56
+    },
+    {
+      "product_id": 28104,
+      "unit_price_before": null,
+      "unit_price_after": 12.23
+    },
+    {
+      "product_id": 28105,
+      "unit_price_before": null,
+      "unit_price_after": 18.49
+    },
+    {
+      "product_id": 28106,
+      "unit_price_before": null,
+      "unit_price_after": 11.89
+    },
+    {
+      "product_id": 28107,
+      "unit_price_before": null,
+      "unit_price_after": 10.27
+    },
+    {
+      "product_id": 28109,
+      "unit_price_before": null,
+      "unit_price_after": 15.0
+    },
+    {
+      "product_id": 28108,
+      "unit_price_before": null,
+      "unit_price_after": 22.45
+    },
+    {
+      "product_id": 28110,
+      "unit_price_before": null,
+      "unit_price_after": 14.74
+    },
+    {
+      "product_id": 28111,
+      "unit_price_before": null,
+      "unit_price_after": 22.27
+    },
+    {
+      "product_id": 28113,
+      "unit_price_before": null,
+      "unit_price_after": 13.26
+    },
+    {
+      "product_id": 28116,
+      "unit_price_before": null,
+      "unit_price_after": 11.51
+    },
+    {
+      "product_id": 28112,
+      "unit_price_before": null,
+      "unit_price_after": 16.82
+    },
+    {
+      "product_id": 28115,
+      "unit_price_before": null,
+      "unit_price_after": 25.28
+    },
+    {
+      "product_id": 28114,
+      "unit_price_before": null,
+      "unit_price_after": 12.32
+    },
+    {
+      "product_id": 28117,
+      "unit_price_before": null,
+      "unit_price_after": 2.74
+    },
+    {
+      "product_id": 28118,
+      "unit_price_before": null,
+      "unit_price_after": 6.21
+    },
+    {
+      "product_id": 28119,
+      "unit_price_before": null,
+      "unit_price_after": 13.75
+    },
+    {
+      "product_id": 28120,
+      "unit_price_before": null,
+      "unit_price_after": 6.21
+    },
+    {
+      "product_id": 29277,
+      "unit_price_before": null,
+      "unit_price_after": 6.79
+    },
+    {
+      "product_id": 28121,
+      "unit_price_before": null,
+      "unit_price_after": 13.75
+    },
+    {
+      "product_id": 28122,
+      "unit_price_before": null,
+      "unit_price_after": 2.9
+    },
+    {
+      "product_id": 28123,
+      "unit_price_before": null,
+      "unit_price_after": 2.86
+    },
+    {
+      "product_id": 28127,
+      "unit_price_before": null,
+      "unit_price_after": 15.34
+    },
+    {
+      "product_id": 28129,
+      "unit_price_before": null,
+      "unit_price_after": 5.7
+    },
+    {
+      "product_id": 28125,
+      "unit_price_before": null,
+      "unit_price_after": 7.68
+    },
+    {
+      "product_id": 28130,
+      "unit_price_before": null,
+      "unit_price_after": 8.41
+    },
+    {
+      "product_id": 28124,
+      "unit_price_before": null,
+      "unit_price_after": 7.68
+    },
+    {
+      "product_id": 28128,
+      "unit_price_before": null,
+      "unit_price_after": 5.85
+    },
+    {
+      "product_id": 28126,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 29273,
+      "unit_price_before": null,
+      "unit_price_after": 8.64
+    },
+    {
+      "product_id": 28131,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 28132,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 28135,
+      "unit_price_before": null,
+      "unit_price_after": 12.92
+    },
+    {
+      "product_id": 28133,
+      "unit_price_before": null,
+      "unit_price_after": 6.21
+    },
+    {
+      "product_id": 29270,
+      "unit_price_before": null,
+      "unit_price_after": 6.21
+    },
+    {
+      "product_id": 28134,
+      "unit_price_before": null,
+      "unit_price_after": 15.34
+    },
+    {
+      "product_id": 28136,
+      "unit_price_before": null,
+      "unit_price_after": 7.68
+    },
+    {
+      "product_id": 28137,
+      "unit_price_before": null,
+      "unit_price_after": 8.41
+    },
+    {
+      "product_id": 28138,
+      "unit_price_before": null,
+      "unit_price_after": 15.34
+    },
+    {
+      "product_id": 28140,
+      "unit_price_before": null,
+      "unit_price_after": 3.52
+    },
+    {
+      "product_id": 28145,
+      "unit_price_before": null,
+      "unit_price_after": 3.83
+    },
+    {
+      "product_id": 28139,
+      "unit_price_before": null,
+      "unit_price_after": 12.17
+    },
+    {
+      "product_id": 28143,
+      "unit_price_before": null,
+      "unit_price_after": 6.21
+    },
+    {
+      "product_id": 28142,
+      "unit_price_before": null,
+      "unit_price_after": 6.79
+    },
+    {
+      "product_id": 28141,
+      "unit_price_before": null,
+      "unit_price_after": 2.98
+    },
+    {
+      "product_id": 28144,
+      "unit_price_before": null,
+      "unit_price_after": 3.05
+    },
+    {
+      "product_id": 28148,
+      "unit_price_before": null,
+      "unit_price_after": 2.9
+    },
+    {
+      "product_id": 28147,
+      "unit_price_before": null,
+      "unit_price_after": 2.94
+    },
+    {
+      "product_id": 28149,
+      "unit_price_before": null,
+      "unit_price_after": 4.85
+    },
+    {
+      "product_id": 28146,
+      "unit_price_before": null,
+      "unit_price_after": 3.1
+    },
+    {
+      "product_id": 28150,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 28151,
+      "unit_price_before": null,
+      "unit_price_after": 5.85
+    },
+    {
+      "product_id": 28152,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 29274,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 28155,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 29267,
+      "unit_price_before": null,
+      "unit_price_after": 11.3
+    },
+    {
+      "product_id": 29265,
+      "unit_price_before": null,
+      "unit_price_after": 22.6
+    },
+    {
+      "product_id": 28153,
+      "unit_price_before": null,
+      "unit_price_after": 14.49
+    },
+    {
+      "product_id": 28157,
+      "unit_price_before": null,
+      "unit_price_after": 7.68
+    },
+    {
+      "product_id": 29264,
+      "unit_price_before": null,
+      "unit_price_after": 8.64
+    },
+    {
+      "product_id": 28156,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 28154,
+      "unit_price_before": null,
+      "unit_price_after": 4.17
+    },
+    {
+      "product_id": 28158,
+      "unit_price_before": null,
+      "unit_price_after": 6.96
+    },
+    {
+      "product_id": 28163,
+      "unit_price_before": null,
+      "unit_price_after": 7.63
+    },
+    {
+      "product_id": 29268,
+      "unit_price_before": null,
+      "unit_price_after": 8.41
+    },
+    {
+      "product_id": 29272,
+      "unit_price_before": null,
+      "unit_price_after": 16.91
+    },
+    {
+      "product_id": 28161,
+      "unit_price_before": null,
+      "unit_price_after": 2.98
+    },
+    {
+      "product_id": 28159,
+      "unit_price_before": null,
+      "unit_price_after": 3.13
+    },
+    {
+      "product_id": 28160,
+      "unit_price_before": null,
+      "unit_price_after": 7.68
+    },
+    {
+      "product_id": 28162,
+      "unit_price_before": null,
+      "unit_price_after": 8.64
+    },
+    {
+      "product_id": 28164,
+      "unit_price_before": null,
+      "unit_price_after": 8.64
+    },
+    {
+      "product_id": 28165,
+      "unit_price_before": null,
+      "unit_price_after": 4.85
+    },
+    {
+      "product_id": 28166,
+      "unit_price_before": null,
+      "unit_price_after": 19.06
+    },
+    {
+      "product_id": 28169,
+      "unit_price_before": null,
+      "unit_price_after": 3.23
+    },
+    {
+      "product_id": 28167,
+      "unit_price_before": null,
+      "unit_price_after": 3.45
+    },
+    {
+      "product_id": 28170,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 28168,
+      "unit_price_before": null,
+      "unit_price_after": 8.64
+    },
+    {
+      "product_id": 28172,
+      "unit_price_before": null,
+      "unit_price_after": 8.64
+    },
+    {
+      "product_id": 28171,
+      "unit_price_before": null,
+      "unit_price_after": 6.31
+    },
+    {
+      "product_id": 28173,
+      "unit_price_before": null,
+      "unit_price_after": 10.52
+    },
+    {
+      "product_id": 29266,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 28174,
+      "unit_price_before": null,
+      "unit_price_after": 11.12
+    },
+    {
+      "product_id": 28175,
+      "unit_price_before": null,
+      "unit_price_after": 7.63
+    },
+    {
+      "product_id": 28178,
+      "unit_price_before": null,
+      "unit_price_after": 11.3
+    },
+    {
+      "product_id": 29262,
+      "unit_price_before": null,
+      "unit_price_after": 6.96
+    },
+    {
+      "product_id": 28177,
+      "unit_price_before": null,
+      "unit_price_after": 7.63
+    },
+    {
+      "product_id": 28180,
+      "unit_price_before": null,
+      "unit_price_after": 15.34
+    },
+    {
+      "product_id": 28179,
+      "unit_price_before": null,
+      "unit_price_after": 3.01
+    },
+    {
+      "product_id": 28176,
+      "unit_price_before": null,
+      "unit_price_after": 3.13
+    },
+    {
+      "product_id": 28181,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 28184,
+      "unit_price_before": null,
+      "unit_price_after": 8.64
+    },
+    {
+      "product_id": 28182,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 29271,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 29263,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 28183,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 28185,
+      "unit_price_before": null,
+      "unit_price_after": 10.52
+    },
+    {
+      "product_id": 28188,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 29275,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 28187,
+      "unit_price_before": null,
+      "unit_price_after": 8.41
+    },
+    {
+      "product_id": 28186,
+      "unit_price_before": null,
+      "unit_price_after": 8.64
+    },
+    {
+      "product_id": 28189,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 28191,
+      "unit_price_before": null,
+      "unit_price_after": 4.2
+    },
+    {
+      "product_id": 28190,
+      "unit_price_before": null,
+      "unit_price_after": 4.01
+    },
+    {
+      "product_id": 29282,
+      "unit_price_before": null,
+      "unit_price_after": 16.91
+    },
+    {
+      "product_id": 28193,
+      "unit_price_before": null,
+      "unit_price_after": 8.41
+    },
+    {
+      "product_id": 28194,
+      "unit_price_before": null,
+      "unit_price_after": 2.87
+    },
+    {
+      "product_id": 28192,
+      "unit_price_before": null,
+      "unit_price_after": 2.95
+    },
+    {
+      "product_id": 28195,
+      "unit_price_before": null,
+      "unit_price_after": 5.21
+    },
+    {
+      "product_id": 28197,
+      "unit_price_before": null,
+      "unit_price_after": 8.64
+    },
+    {
+      "product_id": 28196,
+      "unit_price_before": null,
+      "unit_price_after": 4.09
+    },
+    {
+      "product_id": 28199,
+      "unit_price_before": null,
+      "unit_price_after": 3.96
+    },
+    {
+      "product_id": 28200,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 28198,
+      "unit_price_before": null,
+      "unit_price_after": 6.78
+    },
+    {
+      "product_id": 28203,
+      "unit_price_before": null,
+      "unit_price_after": 3.15
+    },
+    {
+      "product_id": 28202,
+      "unit_price_before": null,
+      "unit_price_after": 3.36
+    },
+    {
+      "product_id": 28201,
+      "unit_price_before": null,
+      "unit_price_after": 5.6
+    },
+    {
+      "product_id": 28204,
+      "unit_price_before": null,
+      "unit_price_after": 8.64
+    },
+    {
+      "product_id": 28205,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 28206,
+      "unit_price_before": null,
+      "unit_price_after": 6.31
+    },
+    {
+      "product_id": 28208,
+      "unit_price_before": null,
+      "unit_price_after": 10.52
+    },
+    {
+      "product_id": 28207,
+      "unit_price_before": null,
+      "unit_price_after": 10.33
+    },
+    {
+      "product_id": 28210,
+      "unit_price_before": null,
+      "unit_price_after": 11.3
+    },
+    {
+      "product_id": 29278,
+      "unit_price_before": null,
+      "unit_price_after": 12.16
+    },
+    {
+      "product_id": 28209,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 28213,
+      "unit_price_before": null,
+      "unit_price_after": 8.64
+    },
+    {
+      "product_id": 28215,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 28214,
+      "unit_price_before": null,
+      "unit_price_after": 10.33
+    },
+    {
+      "product_id": 28211,
+      "unit_price_before": null,
+      "unit_price_after": 11.3
+    },
+    {
+      "product_id": 28212,
+      "unit_price_before": null,
+      "unit_price_after": 11.3
+    },
+    {
+      "product_id": 28216,
+      "unit_price_before": null,
+      "unit_price_after": 16.91
+    },
+    {
+      "product_id": 28217,
+      "unit_price_before": null,
+      "unit_price_after": 16.91
+    },
+    {
+      "product_id": 28218,
+      "unit_price_before": null,
+      "unit_price_after": 5.85
+    },
+    {
+      "product_id": 28221,
+      "unit_price_before": null,
+      "unit_price_after": 5.93
+    },
+    {
+      "product_id": 28220,
+      "unit_price_before": null,
+      "unit_price_after": 19.06
+    },
+    {
+      "product_id": 28219,
+      "unit_price_before": null,
+      "unit_price_after": 4.08
+    },
+    {
+      "product_id": 28224,
+      "unit_price_before": null,
+      "unit_price_after": 3.98
+    },
+    {
+      "product_id": 28225,
+      "unit_price_before": null,
+      "unit_price_after": 19.06
+    },
+    {
+      "product_id": 28222,
+      "unit_price_before": null,
+      "unit_price_after": 8.64
+    },
+    {
+      "product_id": 28223,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 28228,
+      "unit_price_before": null,
+      "unit_price_after": 3.91
+    },
+    {
+      "product_id": 28226,
+      "unit_price_before": null,
+      "unit_price_after": 3.87
+    },
+    {
+      "product_id": 28227,
+      "unit_price_before": null,
+      "unit_price_after": 6.46
+    },
+    {
+      "product_id": 28229,
+      "unit_price_before": null,
+      "unit_price_after": 3.81
+    },
+    {
+      "product_id": 28231,
+      "unit_price_before": null,
+      "unit_price_after": 4.18
+    },
+    {
+      "product_id": 28232,
+      "unit_price_before": null,
+      "unit_price_after": 6.98
+    },
+    {
+      "product_id": 28233,
+      "unit_price_before": null,
+      "unit_price_after": 11.3
+    },
+    {
+      "product_id": 28230,
+      "unit_price_before": null,
+      "unit_price_after": 11.3
+    },
+    {
+      "product_id": 28235,
+      "unit_price_before": null,
+      "unit_price_after": 11.12
+    },
+    {
+      "product_id": 29276,
+      "unit_price_before": null,
+      "unit_price_after": 11.3
+    },
+    {
+      "product_id": 28234,
+      "unit_price_before": null,
+      "unit_price_after": 11.3
+    },
+    {
+      "product_id": 28237,
+      "unit_price_before": null,
+      "unit_price_after": 10.52
+    },
+    {
+      "product_id": 28236,
+      "unit_price_before": null,
+      "unit_price_after": 10.33
+    },
+    {
+      "product_id": 28239,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 28238,
+      "unit_price_before": null,
+      "unit_price_after": 3.18
+    },
+    {
+      "product_id": 28240,
+      "unit_price_before": null,
+      "unit_price_after": 3.42
+    },
+    {
+      "product_id": 28242,
+      "unit_price_before": null,
+      "unit_price_after": 5.57
+    },
+    {
+      "product_id": 28241,
+      "unit_price_before": null,
+      "unit_price_after": 5.85
+    },
+    {
+      "product_id": 28244,
+      "unit_price_before": null,
+      "unit_price_after": 10.52
+    },
+    {
+      "product_id": 28248,
+      "unit_price_before": null,
+      "unit_price_after": 3.72
+    },
+    {
+      "product_id": 28243,
+      "unit_price_before": null,
+      "unit_price_after": 4.01
+    },
+    {
+      "product_id": 28245,
+      "unit_price_before": null,
+      "unit_price_after": 6.43
+    },
+    {
+      "product_id": 28246,
+      "unit_price_before": null,
+      "unit_price_after": 3.64
+    },
+    {
+      "product_id": 28247,
+      "unit_price_before": null,
+      "unit_price_after": 11.3
+    },
+    {
+      "product_id": 28249,
+      "unit_price_before": null,
+      "unit_price_after": 22.73
+    },
+    {
+      "product_id": 28250,
+      "unit_price_before": null,
+      "unit_price_after": 4.74
+    },
+    {
+      "product_id": 28253,
+      "unit_price_before": null,
+      "unit_price_after": 12.16
+    },
+    {
+      "product_id": 29280,
+      "unit_price_before": null,
+      "unit_price_after": 12.16
+    },
+    {
+      "product_id": 28251,
+      "unit_price_before": null,
+      "unit_price_after": 12.86
+    },
+    {
+      "product_id": 28252,
+      "unit_price_before": null,
+      "unit_price_after": 10.52
+    },
+    {
+      "product_id": 28254,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 28255,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 28256,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 28257,
+      "unit_price_before": null,
+      "unit_price_after": 11.3
+    },
+    {
+      "product_id": 28259,
+      "unit_price_before": null,
+      "unit_price_after": 6.52
+    },
+    {
+      "product_id": 28260,
+      "unit_price_before": null,
+      "unit_price_after": 10.52
+    },
+    {
+      "product_id": 28261,
+      "unit_price_before": null,
+      "unit_price_after": 10.33
+    },
+    {
+      "product_id": 28258,
+      "unit_price_before": null,
+      "unit_price_after": 11.3
+    },
+    {
+      "product_id": 29222,
+      "unit_price_before": null,
+      "unit_price_after": 10.33
+    },
+    {
+      "product_id": 29281,
+      "unit_price_before": null,
+      "unit_price_after": 24.3
+    },
+    {
+      "product_id": 28262,
+      "unit_price_before": null,
+      "unit_price_after": 4.12
+    },
+    {
+      "product_id": 28263,
+      "unit_price_before": null,
+      "unit_price_after": 4.35
+    },
+    {
+      "product_id": 28264,
+      "unit_price_before": null,
+      "unit_price_after": 7.32
+    },
+    {
+      "product_id": 29269,
+      "unit_price_before": null,
+      "unit_price_after": 11.12
+    },
+    {
+      "product_id": 28265,
+      "unit_price_before": null,
+      "unit_price_after": 12.16
+    },
+    {
+      "product_id": 28266,
+      "unit_price_before": null,
+      "unit_price_after": 12.16
+    },
+    {
+      "product_id": 28267,
+      "unit_price_before": null,
+      "unit_price_after": 7.7
+    },
+    {
+      "product_id": 28268,
+      "unit_price_before": null,
+      "unit_price_after": 4.62
+    },
+    {
+      "product_id": 28269,
+      "unit_price_before": null,
+      "unit_price_after": 5.27
+    },
+    {
+      "product_id": 28270,
+      "unit_price_before": null,
+      "unit_price_after": 11.75
+    },
+    {
+      "product_id": 28272,
+      "unit_price_before": null,
+      "unit_price_after": 30.06
+    },
+    {
+      "product_id": 28271,
+      "unit_price_before": null,
+      "unit_price_after": 10.52
+    },
+    {
+      "product_id": 28275,
+      "unit_price_before": null,
+      "unit_price_after": 12.92
+    },
+    {
+      "product_id": 29279,
+      "unit_price_before": null,
+      "unit_price_after": 14.15
+    },
+    {
+      "product_id": 28274,
+      "unit_price_before": null,
+      "unit_price_after": 30.06
+    },
+    {
+      "product_id": 28273,
+      "unit_price_before": null,
+      "unit_price_after": 14.15
+    },
+    {
+      "product_id": 28276,
+      "unit_price_before": null,
+      "unit_price_after": 15.57
+    },
+    {
+      "product_id": 28277,
+      "unit_price_before": null,
+      "unit_price_after": 6.96
+    },
+    {
+      "product_id": 28278,
+      "unit_price_before": null,
+      "unit_price_after": 6.96
+    },
+    {
+      "product_id": 28280,
+      "unit_price_before": null,
+      "unit_price_after": 7.68
+    },
+    {
+      "product_id": 28281,
+      "unit_price_before": null,
+      "unit_price_after": 5.24
+    },
+    {
+      "product_id": 28279,
+      "unit_price_before": null,
+      "unit_price_after": 6.21
+    },
+    {
+      "product_id": 28283,
+      "unit_price_before": null,
+      "unit_price_after": 6.21
+    },
+    {
+      "product_id": 28282,
+      "unit_price_before": null,
+      "unit_price_after": 7.68
+    },
+    {
+      "product_id": 28284,
+      "unit_price_before": null,
+      "unit_price_after": 7.68
+    },
+    {
+      "product_id": 28285,
+      "unit_price_before": null,
+      "unit_price_after": 6.11
+    },
+    {
+      "product_id": 28286,
+      "unit_price_before": null,
+      "unit_price_after": 10.52
+    },
+    {
+      "product_id": 28287,
+      "unit_price_before": null,
+      "unit_price_after": 8.41
+    },
+    {
+      "product_id": 28293,
+      "unit_price_before": null,
+      "unit_price_after": 9.46
+    },
+    {
+      "product_id": 28290,
+      "unit_price_before": null,
+      "unit_price_after": 9.63
+    },
+    {
+      "product_id": 28291,
+      "unit_price_before": null,
+      "unit_price_after": 58.5
+    },
+    {
+      "product_id": 28288,
+      "unit_price_before": null,
+      "unit_price_after": 82.37
+    },
+    {
+      "product_id": 28297,
+      "unit_price_before": null,
+      "unit_price_after": 56.59
+    },
+    {
+      "product_id": 28295,
+      "unit_price_before": null,
+      "unit_price_after": 48.02
+    },
+    {
+      "product_id": 28298,
+      "unit_price_before": null,
+      "unit_price_after": 50.6
+    },
+    {
+      "product_id": 28301,
+      "unit_price_before": null,
+      "unit_price_after": 46.54
+    },
+    {
+      "product_id": 28305,
+      "unit_price_before": null,
+      "unit_price_after": 44.29
+    },
+    {
+      "product_id": 28304,
+      "unit_price_before": null,
+      "unit_price_after": 33.29
+    },
+    {
+      "product_id": 28303,
+      "unit_price_before": null,
+      "unit_price_after": 82.99
+    },
+    {
+      "product_id": 29230,
+      "unit_price_before": null,
+      "unit_price_after": 76.35
+    },
+    {
+      "product_id": 28307,
+      "unit_price_before": null,
+      "unit_price_after": 80.57
+    },
+    {
+      "product_id": 28309,
+      "unit_price_before": null,
+      "unit_price_after": 51.67
+    },
+    {
+      "product_id": 28311,
+      "unit_price_before": null,
+      "unit_price_after": 63.83
+    },
+    {
+      "product_id": 28313,
+      "unit_price_before": null,
+      "unit_price_after": 59.9
+    },
+    {
+      "product_id": 28312,
+      "unit_price_before": null,
+      "unit_price_after": 63.83
+    },
+    {
+      "product_id": 28318,
+      "unit_price_before": null,
+      "unit_price_after": 68.17
+    },
+    {
+      "product_id": 28320,
+      "unit_price_before": null,
+      "unit_price_after": 66.83
+    },
+    {
+      "product_id": 28323,
+      "unit_price_before": null,
+      "unit_price_after": 43.37
+    },
+    {
+      "product_id": 28322,
+      "unit_price_before": null,
+      "unit_price_after": 69.19
+    },
+    {
+      "product_id": 28325,
+      "unit_price_before": null,
+      "unit_price_after": 71.27
+    },
+    {
+      "product_id": 29233,
+      "unit_price_before": null,
+      "unit_price_after": 73.41
+    },
+    {
+      "product_id": 28331,
+      "unit_price_before": null,
+      "unit_price_after": 96.12
+    },
+    {
+      "product_id": 28332,
+      "unit_price_before": null,
+      "unit_price_after": 46.54
+    },
+    {
+      "product_id": 28335,
+      "unit_price_before": null,
+      "unit_price_after": 44.29
+    },
+    {
+      "product_id": 28334,
+      "unit_price_before": null,
+      "unit_price_after": 50.5
+    },
+    {
+      "product_id": 28333,
+      "unit_price_before": null,
+      "unit_price_after": 49.02
+    }
+  ]
+}

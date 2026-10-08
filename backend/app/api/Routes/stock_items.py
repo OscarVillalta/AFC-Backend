@@ -6,7 +6,7 @@ from database.models import StockItem, StockItemCategory, Supplier, Product, Qua
 from app.api.Schemas.stock_item_schema import StockItemSchema
 from app.api.Schemas.stock_item_category_schema import StockItemCategorySchema
 from app.api.filters import _parse_stock_param, stock_level_filter
-from app.api.tokens import permission_required, strip_unit_price_unless_permitted
+from app.api.tokens import permission_required, price_filters, strip_unit_price_unless_permitted
 
 stock_item_bp = Blueprint("stock_items", __name__)
 stock_item_schema = StockItemSchema()
@@ -280,6 +280,7 @@ def search_stock_items():
         qty_filters.append(stock_level_filter(q_backordered, back_ordered, back_ordered_cmp))
     if min_backordered is not None:
         qty_filters.append(q_backordered >= min_backordered)
+    qty_filters.extend(price_filters(q_on_hand, Product.unit_price))
     if has_orders:
         order_item_exists = select(OrderItem.id).where(
             OrderItem.product_id == Product.id

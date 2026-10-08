@@ -5,7 +5,7 @@ from database.models import Media, MediaCategory, Supplier, Product, ProductCate
 from marshmallow import ValidationError
 from app.api.Schemas.media_schema import MediaSchema, MediaCategorySchema
 from app.api.filters import _parse_stock_param, stock_level_filter
-from app.api.tokens import permission_required, strip_unit_price_unless_permitted
+from app.api.tokens import permission_required, price_filters, strip_unit_price_unless_permitted
 
 media_bp = Blueprint("media", __name__)
 media_schema = MediaSchema()
@@ -266,6 +266,7 @@ def search_media():
         qty_filters.append(stock_level_filter(q_backordered, back_ordered, back_ordered_cmp))
     if min_backordered is not None:
         qty_filters.append(q_backordered >= min_backordered)
+    qty_filters.extend(price_filters(q_on_hand, Product.unit_price))
     if has_orders:
         order_item_exists = select(OrderItem.id).where(
             OrderItem.product_id == Product.id

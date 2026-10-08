@@ -1,5 +1,6 @@
 from marshmallow import Schema, fields, validate
 from database.models import TransactionReason, TransactionState
+from app.api.Schemas.utc_datetime_field import UTCDateTime
 
 class TransactionSchema(Schema):
     id = fields.Int(dump_only=True)
@@ -21,7 +22,7 @@ class TransactionSchema(Schema):
     )
 
     note = fields.Str(load_default=None)
-    created_at = fields.DateTime(dump_only=True)
-    last_updated_at = fields.DateTime(dump_only=True)
+    created_at = UTCDateTime(dump_only=True)
+    last_updated_at = UTCDateTime(dump_only=True)
     ledger_sequence = fields.Int(dump_only=True, allow_none=True)
 

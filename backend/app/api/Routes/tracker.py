@@ -4,6 +4,7 @@ from sqlalchemy import select, func, or_, case, and_
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from database.models import Order, OrderTracker, OrderHistory, OrderTrackerStage, Department, OutgoingOrderType, Customer, Supplier, OrderType, OrderStatus, OUTGOING_TYPES, User
 from datetime import datetime, timezone
+from app.utils.time import local_day_end_utc, local_day_start_utc, utc_iso
 from typing import Tuple, Any
 
 from app.api.error_handling import (
@@ -202,6 +203,30 @@ def _parse_date(value: str | None) -> datetime | None:
         return datetime.fromisoformat(value)
     except (ValueError, TypeError):
         return None
+
+
+def _local_day_bound(value: str | None, end: bool = False) -> datetime | None:
+    """Los Angeles calendar day -> naive UTC bound; invalid values become None."""
+    if not value:
+        return None
+    try:
+        return local_day_end_utc(value) if end else local_day_start_utc(value)
+    except (ValueError, TypeError):
+        return None
+
+
+def _last_updated_conds(start_raw, end_raw, before_raw, after_raw) -> list:
+    """OrderTracker.updated_at filters for Los Angeles calendar days (inclusive)."""
+    column = OrderTracker.updated_at
+    start, end = _local_day_bound(start_raw), _local_day_bound(end_raw, end=True)
+    before, after = _local_day_bound(before_raw, end=True), _local_day_bound(after_raw)
+    if start and end:
+        return [column.is_not(None), column >= start, column < end]
+    if before:
+        return [column.is_not(None), column < before]
+    if after:
+        return [column.is_not(None), column >= after]
+    return []
 
 
 tracker_bp = Blueprint("tracker", __name__)
@@ -533,10 +558,12 @@ def get_packing_slips() -> Tuple[Any, int]:
     end_date = _parse_date(end_date_raw)
     before_date = _parse_date(before_date_raw)
     after_date = _parse_date(after_date_raw)
-    last_updated_start = _parse_date(last_updated_start_raw)
-    last_updated_end = _parse_date(last_updated_end_raw)
-    last_updated_before = _parse_date(last_updated_before_raw)
-    last_updated_after = _parse_date(last_updated_after_raw)
+    last_updated_conds = _last_updated_conds(
+        last_updated_start_raw,
+        last_updated_end_raw,
+        last_updated_before_raw,
+        last_updated_after_raw,
+    )
 
     # Correlated sub-query: count of completed stages for each order row
     _completed_stages_subq = (
@@ -600,16 +627,8 @@ def get_packing_slips() -> Tuple[Any, int]:
         base_query = base_query.where(Order.created_at >= after_date)
 
     # Last Updated filters (OrderTracker.updated_at)
-    if last_updated_start and last_updated_end:
-        base_query = base_query.where(OrderTracker.updated_at.is_not(None))
-        base_query = base_query.where(OrderTracker.updated_at >= last_updated_start)
-        base_query = base_query.where(OrderTracker.updated_at <= last_updated_end)
-    elif last_updated_before:
-        base_query = base_query.where(OrderTracker.updated_at.is_not(None))
-        base_query = base_query.where(OrderTracker.updated_at <= last_updated_before)
-    elif last_updated_after:
-        base_query = base_query.where(OrderTracker.updated_at.is_not(None))
-        base_query = base_query.where(OrderTracker.updated_at >= last_updated_after)
+    if last_updated_conds:
+        base_query = base_query.where(*last_updated_conds)
 
     # Tracker status filter using stage-completion counts
     if tracker_status == "Not Started":
@@ -688,16 +707,8 @@ def get_packing_slips() -> Tuple[Any, int]:
     elif after_date:
         counts_query = counts_query.where(Order.created_at >= after_date)
 
-    if last_updated_start and last_updated_end:
-        counts_query = counts_query.where(OrderTracker.updated_at.is_not(None))
-        counts_query = counts_query.where(OrderTracker.updated_at >= last_updated_start)
-        counts_query = counts_query.where(OrderTracker.updated_at <= last_updated_end)
-    elif last_updated_before:
-        counts_query = counts_query.where(OrderTracker.updated_at.is_not(None))
-        counts_query = counts_query.where(OrderTracker.updated_at <= last_updated_before)
-    elif last_updated_after:
-        counts_query = counts_query.where(OrderTracker.updated_at.is_not(None))
-        counts_query = counts_query.where(OrderTracker.updated_at >= last_updated_after)
+    if last_updated_conds:
+        counts_query = counts_query.where(*last_updated_conds)
 
     counts_row = db.execute(counts_query).one()
     status_counts = {
@@ -723,7 +734,7 @@ def get_packing_slips() -> Tuple[Any, int]:
             "customer_name": order.customer.name if order.customer else None,
             "supplier_name": order.supplier.name if order.supplier else None,
             "created_at": order.created_at.isoformat() if order.created_at else None,
-            "completed_at": order.completed_at.isoformat() if order.completed_at else None,
+            "completed_at": utc_iso(order.completed_at),
             "eta": order.eta.strftime("%Y-%m-%d") if order.eta else None,
             "is_paid": order.is_paid,
             "is_invoiced": order.is_invoiced,

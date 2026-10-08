@@ -1,5 +1,6 @@
 from marshmallow import Schema, fields, validate, pre_load
 from database.models import OrderStatus, OrderType
+from app.api.Schemas.utc_datetime_field import UTCDateTime
 
 class OrderSchema(Schema):
     id = fields.Int(dump_only=True)
@@ -41,4 +42,4 @@ class OrderSchema(Schema):
     )
 
     created_at = fields.DateTime(dump_only=True)
-    completed_at = fields.DateTime(allow_none=True)
+    completed_at = UTCDateTime(allow_none=True)

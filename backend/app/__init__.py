@@ -2,10 +2,12 @@ import logging
 import os
 
 from flask import Flask, g, request, jsonify
-from datetime import timedelta
+from flask.json.provider import DefaultJSONProvider
+from datetime import date, datetime, timedelta
 from flask_jwt_extended import JWTManager
 
 from app.config import Config
+from app.utils.time import utc_iso
 from database import SessionLocal
 from backend.app.api.Routes.suppliers import supplier_bp
 from backend.app.api.Routes.quantity import quantity_bp
@@ -36,8 +38,22 @@ from flask_cors import CORS
 DEFAULT_WAREHOUSE_ID = 1
 
 
+class UTCJSONProvider(DefaultJSONProvider):
+    """Serialize datetimes as ISO 8601 UTC (with Z) instead of RFC 822."""
+
+    @staticmethod
+    def default(o):
+        if isinstance(o, datetime):
+            return utc_iso(o)
+        if isinstance(o, date):
+            return o.isoformat()
+        return DefaultJSONProvider.default(o)
+
+
 def create_app():
     app = Flask(__name__)
+    app.json_provider_class = UTCJSONProvider
+    app.json = UTCJSONProvider(app)
     CORS(app, resources={r"/*": {"origins": "*"}})
 
     if not Config.calendar_is_configured():
