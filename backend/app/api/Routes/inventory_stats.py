@@ -5,7 +5,8 @@ from flask_jwt_extended import get_jwt, verify_jwt_in_request
 from sqlalchemy import and_, case, desc, func, select
 from sqlalchemy.orm import aliased, selectinload
 from database.models import AirFilter, Media, Product, Quantity, StockItem, Supplier
-from app.api.tokens import PRICE_MANAGE_PERMISSION
+
+ADMIN_ROLE = "admin"
 
 
 inventory_stats_bp = Blueprint("inventory_stats", __name__)
@@ -247,31 +248,11 @@ def _parse_positive_int(name: str):
 
 
 def _inventory_value_permitted() -> bool:
-    """Anonymous callers match /inventory/stats.
-
-    A valid token must include price:manage. Invalid tokens are rejected by
-    verify_jwt_in_request and never reach this check.
-    """
-    verify_jwt_in_request(optional=True)
+    """Only the Admin role may see dollar totals. Missing or invalid tokens are rejected."""
+    verify_jwt_in_request()
     claims = get_jwt() or {}
-    if not claims:
-        return True
-    return PRICE_MANAGE_PERMISSION in (claims.get("permissions") or [])
-
-
-def _restricted_value_payload():
-    return {
-        "restricted": True,
-        "gross_total": None,
-        "on_hand_units": None,
-        "sku_count": None,
-        "unpriced_skus": None,
-        "supplier_id": None,
-        "product_id": None,
-        "group_by": None,
-        "groups": [],
-        "groups_truncated": False,
-    }
+    role = claims.get("role")
+    return isinstance(role, str) and role.strip().lower() == ADMIN_ROLE
 
 
 def _inventory_lines(warehouse_id: int):
@@ -459,9 +440,12 @@ def build_inventory_value(
 
 @inventory_stats_bp.route("/inventory/value", methods=["GET"])
 def get_inventory_value():
-    """Sum of gross inventory value (on-hand x unit price) for the active warehouse."""
+    """Sum of gross inventory value (on-hand x unit price) for the active warehouse.
+
+    Admins only. Anyone else gets 403 and no dollar amounts.
+    """
     if not _inventory_value_permitted():
-        return jsonify(_restricted_value_payload()), 200
+        return jsonify({"error": "Forbidden"}), 403
 
     supplier_id, supplier_error = _parse_positive_int("supplier_id")
     if supplier_error:
