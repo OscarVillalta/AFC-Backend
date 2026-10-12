@@ -4,7 +4,7 @@ from sqlalchemy import func, select, and_, or_
 from database.models import Media, MediaCategory, Supplier, Product, ProductCategory, Quantity, ChildProduct, Warehouse, OrderItem
 from marshmallow import ValidationError
 from app.api.Schemas.media_schema import MediaSchema, MediaCategorySchema
-from app.api.filters import _parse_stock_param, stock_level_filter
+from app.api.filters import _parse_stock_param, apply_sort, stock_level_filter
 from app.api.tokens import permission_required, price_filters, strip_unit_price_unless_permitted
 
 media_bp = Blueprint("media", __name__)
@@ -192,8 +192,8 @@ def search_media():
         q_reserved = Quantity.reserved
         q_ordered = Quantity.ordered
         q_location = Quantity.location
-        q_available = Quantity.available
-        q_backordered = Quantity.backordered
+        q_available = Quantity.available.label("available")
+        q_backordered = Quantity.backordered.label("backordered")
     else:
         qty_join_cond = Quantity.product_id == Product.id
         q_on_hand = func.coalesce(func.sum(Quantity.on_hand), 0).label("on_hand")
@@ -291,6 +291,21 @@ def search_media():
 
     # --- Total Count ---
     total = len(db.execute(query).mappings().all())
+
+    # --- Sorting ---
+    query = apply_sort(query, {
+        "part_number": "part_number",
+        "description": "description",
+        "supplier": "supplier_name",
+        "category": "media_category",
+        "dimensions": "length",
+        "on_hand": "on_hand",
+        "ordered": "ordered",
+        "reserved": "reserved",
+        "available": "available",
+        "unit_price": "unit_price",
+        "gross_value": "gross_value",
+    })
 
     # --- Pagination ---
     query = query.limit(limit).offset(offset)

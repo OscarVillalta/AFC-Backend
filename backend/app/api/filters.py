@@ -3,8 +3,12 @@ Shared helpers for building query filters used across search endpoints.
 """
 
 from flask import request
+from sqlalchemy import func, select, String
+
+from app.api.tokens import PRICE_MANAGE_PERMISSION, has_permission
 
 VALID_COMPARE_MODES = ("eq", "lte", "gte")
+PRICE_SORT_KEYS = ("unit_price", "gross_value")
 
 
 def _parse_stock_param(name):
@@ -37,3 +41,31 @@ def stock_level_filter(quantity_field, value, compare):
         return quantity_field <= value
     else:  # default: gte
         return quantity_field >= value
+
+
+def apply_sort(query, sortable):
+    """Order a search query by the ``sort_by`` / ``sort_dir`` query parameters.
+
+    ``sortable`` maps each accepted ``sort_by`` key to a result column name, or
+    ``"gross_value"`` to ``on_hand * unit_price``. The query is wrapped in a
+    subquery because PostgreSQL requires ``DISTINCT ON`` expressions to lead
+    the ORDER BY of the same SELECT.
+    """
+    sort_by = request.args.get("sort_by")
+    if sort_by not in sortable:
+        return query
+    if sort_by in PRICE_SORT_KEYS and not has_permission(PRICE_MANAGE_PERMISSION):
+        return query
+
+    sub = query.subquery()
+    column_name = sortable[sort_by]
+    if column_name == "gross_value":
+        expr = sub.c.on_hand * sub.c.unit_price
+    else:
+        expr = sub.c[column_name]
+        if isinstance(expr.type, String):
+            expr = func.lower(expr)
+
+    descending = request.args.get("sort_dir", "asc").lower() == "desc"
+    expr = expr.desc() if descending else expr.asc()
+    return select(sub).order_by(expr.nulls_last(), sub.c.id)

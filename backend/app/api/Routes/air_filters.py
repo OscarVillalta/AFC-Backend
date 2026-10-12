@@ -5,7 +5,7 @@ from database.models import AirFilter, AirFilterCategory, Supplier, Product, Pro
 from marshmallow import ValidationError
 from app.api.Schemas.air_filters_schema import AirFilterSchema
 from app.api.Schemas.air_filter_category_schema import AirFilterCategorySchema
-from app.api.filters import _parse_stock_param, stock_level_filter
+from app.api.filters import _parse_stock_param, apply_sort, stock_level_filter
 from app.api.tokens import permission_required, price_filters, strip_unit_price_unless_permitted
 
 air_filter_bp = Blueprint("air_filters", __name__)
@@ -192,8 +192,8 @@ def search_air_filters():
         q_reserved = Quantity.reserved
         q_ordered = Quantity.ordered
         q_location = Quantity.location
-        q_available = Quantity.available
-        q_backordered = Quantity.backordered
+        q_available = Quantity.available.label("available")
+        q_backordered = Quantity.backordered.label("backordered")
     else:
         qty_join_cond = Quantity.product_id == Product.id
         q_on_hand = func.coalesce(func.sum(Quantity.on_hand), 0).label("on_hand")
@@ -294,6 +294,22 @@ def search_air_filters():
 
     # --- Total Count ---
     total = len(db.execute(query).mappings().all())
+
+    # --- Sorting ---
+    query = apply_sort(query, {
+        "part_number": "part_number",
+        "description": "description",
+        "supplier": "supplier_name",
+        "category": "filter_category",
+        "dimensions": "height",
+        "merv": "merv_rating",
+        "on_hand": "on_hand",
+        "ordered": "ordered",
+        "reserved": "reserved",
+        "available": "available",
+        "unit_price": "unit_price",
+        "gross_value": "gross_value",
+    })
 
     # --- Pagination ---
     query = query.limit(limit).offset(offset)

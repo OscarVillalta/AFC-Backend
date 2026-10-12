@@ -5,7 +5,7 @@ from marshmallow import ValidationError
 from database.models import StockItem, StockItemCategory, Supplier, Product, Quantity, ChildProduct, Warehouse, OrderItem
 from app.api.Schemas.stock_item_schema import StockItemSchema
 from app.api.Schemas.stock_item_category_schema import StockItemCategorySchema
-from app.api.filters import _parse_stock_param, stock_level_filter
+from app.api.filters import _parse_stock_param, apply_sort, stock_level_filter
 from app.api.tokens import permission_required, price_filters, strip_unit_price_unless_permitted
 
 stock_item_bp = Blueprint("stock_items", __name__)
@@ -217,8 +217,8 @@ def search_stock_items():
         q_reserved = Quantity.reserved
         q_ordered = Quantity.ordered
         q_location = Quantity.location
-        q_available = Quantity.available
-        q_backordered = Quantity.backordered
+        q_available = Quantity.available.label("available")
+        q_backordered = Quantity.backordered.label("backordered")
     else:
         qty_join_cond = Quantity.product_id == Product.id
         q_on_hand = func.coalesce(func.sum(Quantity.on_hand), 0).label("on_hand")
@@ -305,6 +305,20 @@ def search_stock_items():
 
     # --- Total Count ---
     total = len(db.execute(query).mappings().all())
+
+    # --- Sorting ---
+    query = apply_sort(query, {
+        "name": "name",
+        "description": "description",
+        "supplier": "supplier_name",
+        "category": "category_name",
+        "on_hand": "on_hand",
+        "ordered": "ordered",
+        "reserved": "reserved",
+        "available": "available",
+        "unit_price": "unit_price",
+        "gross_value": "gross_value",
+    })
 
     # --- Pagination ---
     query = query.limit(limit).offset(offset)
