@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from flask import g, jsonify, request, Blueprint
-from flask_jwt_extended import get_jwt, verify_jwt_in_request
+from flask_jwt_extended import verify_jwt_in_request
 from sqlalchemy import and_, case, desc, func, select
 from sqlalchemy.orm import aliased, selectinload
 from database.models import AirFilter, Media, Product, Quantity, StockItem, Supplier
-
-ADMIN_ROLE = "admin"
+from app.api.tokens import PRICE_MANAGE_PERMISSION, has_permission
 
 
 inventory_stats_bp = Blueprint("inventory_stats", __name__)
@@ -248,11 +247,9 @@ def _parse_positive_int(name: str):
 
 
 def _inventory_value_permitted() -> bool:
-    """Only the Admin role may see dollar totals. Missing or invalid tokens are rejected."""
+    """Only price:manage may see dollar totals. Missing or invalid tokens are rejected."""
     verify_jwt_in_request()
-    claims = get_jwt() or {}
-    role = claims.get("role")
-    return isinstance(role, str) and role.strip().lower() == ADMIN_ROLE
+    return has_permission(PRICE_MANAGE_PERMISSION)
 
 
 def _inventory_lines(warehouse_id: int):
@@ -442,7 +439,7 @@ def build_inventory_value(
 def get_inventory_value():
     """Sum of gross inventory value (on-hand x unit price) for the active warehouse.
 
-    Admins only. Anyone else gets 403 and no dollar amounts.
+    Requires price:manage. Anyone else gets 403 and no dollar amounts.
     """
     if not _inventory_value_permitted():
         return jsonify({"error": "Forbidden"}), 403
