@@ -784,10 +784,18 @@ def delete_order_item(item_id):
             "error": "Cannot delete item with transactions."
         }), 400
 
+    order = item.order
     db.delete(item)
+    # Flush so the deleted line is gone before status is derived from remaining items.
+    db.flush()
+    if order is not None:
+        order.update_status()
     db.commit()
 
-    return jsonify({"success": True}), 200
+    return jsonify({
+        "success": True,
+        "order_status": order.status if order is not None else None,
+    }), 200
 
 
 @order_item_bp.route("/orders/<int:order_id>/items/reorder", methods=["PATCH"])
