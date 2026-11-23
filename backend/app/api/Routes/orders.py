@@ -1,5 +1,3 @@
-import logging
-
 from flask import Blueprint, g, jsonify, request
 from flask_jwt_extended import jwt_required
 from sqlalchemy import select, func, null
@@ -8,7 +6,7 @@ from sqlalchemy.exc import IntegrityError, DatabaseError
 from sqlalchemy.orm import joinedload
 from app.api.Schemas.order_schema import OrderSchema
 from database.models import Customer, Supplier, OrderType, OrderStatus, OrderItemType, Transaction, TransactionState, TransactionReason, OUTGOING_TYPES, VALID_ORDER_TYPES
-from database.models import Order, OrderItem, Product, AirFilter, StockItem, StockItemCategory, Quantity, OrderTracker, Department, BlockedItem, Media, CalendarSyncStatus
+from database.models import Order, OrderItem, Product, AirFilter, StockItem, StockItemCategory, Quantity, OrderTracker, Department, BlockedItem, Media
 from marshmallow import ValidationError
 from datetime import datetime, timedelta, timezone, date
 from typing import Optional, Dict, Any, List, Tuple
@@ -42,48 +40,11 @@ from app.services.qb_order_service import (
     assert_external_ref_available,
     infer_qb_doc_type_for_order,
 )
-from app.services.order_calendar_sync import sync_order_to_calendar, delete_order_calendar_event
 from app.services.tracker_import_service import apply_completed_order_state
 
 order_bp = Blueprint("orders", __name__)
 order_schema = OrderSchema()
 order_list_schema = OrderSchema(many=True)
-logger = logging.getLogger(__name__)
-
-
-def _order_for_calendar_sync(db, order: Order) -> Order:
-    return db.execute(
-        select(Order)
-        .options(joinedload(Order.customer), joinedload(Order.supplier))
-        .where(Order.id == order.id)
-    ).scalar_one()
-
-
-def _best_effort_sync_order_calendar(db, order: Order) -> None:
-    if not Config.calendar_is_configured():
-        return
-    try:
-        synced_order = _order_for_calendar_sync(db, order)
-        event, _ = sync_order_to_calendar(db, synced_order, raise_on_error=False)
-        db.commit()
-        if event and event.sync_status == CalendarSyncStatus.ERROR.value:
-            logger.warning(
-                "Calendar sync failed for order %s: %s",
-                order.id,
-                event.last_error,
-            )
-    except Exception:
-        logger.exception("Calendar sync raised for order %s", order.id)
-        db.rollback()
-
-
-def _best_effort_delete_order_calendar(db, order: Order) -> None:
-    try:
-        deleted = delete_order_calendar_event(db, order, raise_on_error=False)
-        if deleted:
-            db.commit()
-    except Exception:
-        db.rollback()
 
 # GET all orders (paginated, filterable)
 @order_bp.route("/orders", methods=["GET"])
@@ -479,7 +440,6 @@ def create_order():
         order.customer_id = None
 
     db.commit()
-    _best_effort_sync_order_calendar(db, order)
 
     return jsonify(order_schema.dump(order)), 201
 
@@ -672,7 +632,6 @@ def void_order(order_id):
         order.description = order.description + " Quickbooks ID: " + str(order.external_order_number)
         order.external_order_number = ""
     db.commit()
-    _best_effort_sync_order_calendar(db, order)
 
     return jsonify({
         "message": "Order voided successfully",
@@ -705,7 +664,6 @@ def delete_order(order_id: int):
                 "error": "Cannot delete order with existing transactions"
             }), 409
 
-        _best_effort_delete_order_calendar(db, order)
         db.delete(order)
         db.commit()
 
@@ -736,10 +694,6 @@ def patch_order(order_id):
         }), 400
 
     data = request.get_json() or {}
-    previous_type = order.type
-    previous_eta = order.eta
-    previous_customer_id = order.customer_id
-    previous_supplier_id = order.supplier_id
 
     # ===============================
     # ❌ Disallowed fields
@@ -873,17 +827,6 @@ def patch_order(order_id):
         order.is_invoiced = bool(data["is_invoiced"])
 
     db.commit()
-    should_sync_calendar = (
-        ("type" in data and order.type != previous_type)
-        or ("eta" in data and order.eta != previous_eta)
-        or ("cs_id" in data and (
-            order.customer_id != previous_customer_id
-            or order.supplier_id != previous_supplier_id
-        ))
-        or ("supplier_id" in data and order.supplier_id != previous_supplier_id)
-    )
-    if should_sync_calendar:
-        _best_effort_sync_order_calendar(db, order)
 
     # ===============================
     # Return updated order (same shape as GET)
@@ -1357,7 +1300,6 @@ def create_order_from_qb():
         }), 500
 
     order = result.order
-    _best_effort_sync_order_calendar(db, order)
 
     return jsonify({
         "message": "Order created successfully from QuickBooks",

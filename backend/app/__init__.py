@@ -1,4 +1,3 @@
-import logging
 import os
 
 from flask import Flask, g, request, jsonify
@@ -6,7 +5,6 @@ from flask.json.provider import DefaultJSONProvider
 from datetime import date, datetime, timedelta
 from flask_jwt_extended import JWTManager
 
-from app.config import Config
 from app.utils.time import utc_iso
 from database import SessionLocal
 from backend.app.api.Routes.suppliers import supplier_bp
@@ -31,7 +29,6 @@ from backend.app.api.Routes.auth import auth_bp
 from backend.app.api.Routes.users import user_bp
 from backend.app.api.Routes.roles import role_bp
 from backend.app.api.Routes.dashboard import dashboard_bp
-from backend.app.api.Routes.calendar import calendar_bp
 from flask_cors import CORS
 
 # Default warehouse ID used when the X-Warehouse-Id header is absent
@@ -55,12 +52,6 @@ def create_app():
     app.json_provider_class = UTCJSONProvider
     app.json = UTCJSONProvider(app)
     CORS(app, resources={r"/*": {"origins": "*"}})
-
-    if not Config.calendar_is_configured():
-        logging.getLogger(__name__).warning(
-            "Google Calendar integration is NOT configured. %s",
-            Config.calendar_not_configured_message(),
-        )
 
     # JWT configuration
     app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
@@ -111,7 +102,6 @@ def create_app():
     app.register_blueprint(user_bp, url_prefix="/api")
     app.register_blueprint(role_bp, url_prefix="/api")
     app.register_blueprint(dashboard_bp, url_prefix="/api")
-    app.register_blueprint(calendar_bp, url_prefix="/api")
 
 
     #Db_session wrappers
